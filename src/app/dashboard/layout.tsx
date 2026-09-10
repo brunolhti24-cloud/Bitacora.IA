@@ -72,7 +72,7 @@ export default async function DashboardLayout({
             </div>
             
             <span className="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-full bg-white/10 text-white/90 border border-white/20 hidden sm:inline-flex items-center gap-1.5 shadow-2xs">
-              <Sparkles className="w-3 h-3 text-emerald-400" /> Bitacor.AI 2.0
+              <Sparkles className="w-3 h-3 text-emerald-400" /> Bitacor.AI
             </span>
 
             {profile?.company_name && (

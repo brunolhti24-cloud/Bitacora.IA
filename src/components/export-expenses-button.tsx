@@ -153,7 +153,7 @@ export function ExportExpensesButton({ expenses, title = 'Control General de Gas
       doc.setTextColor(148, 163, 184)
       doc.setFontSize(8)
       doc.setFont('helvetica', 'bold')
-      doc.text('BITACOR.AI 2.0', 14, 11)
+      doc.text('BITACOR.AI', 14, 11)
 
       doc.setFontSize(7)
       doc.setFont('helvetica', 'normal')
