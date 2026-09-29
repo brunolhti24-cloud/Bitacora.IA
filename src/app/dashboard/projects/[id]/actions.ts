@@ -243,7 +243,8 @@ export async function signDailyReport(reportId: string, projectId: string, areaI
     .from('daily_reports')
     .update({
       status: 'firmada',
-      signature_url: signatureUrl
+      director_signature_url: signatureUrl,
+      signed_by: user.id
     })
     .eq('id', reportId)
 

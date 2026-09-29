@@ -55,7 +55,7 @@ export default async function AreaDetailsPage({ params }: { params: Promise<{ id
   // Obtener las bitácoras del área
   const { data: reports } = await supabase
     .from('daily_reports')
-    .select('*, creator:profiles!daily_reports_created_by_fkey(full_name), acceptor:profiles!daily_reports_accepted_by_fkey(full_name)')
+    .select('*, creator:profiles!daily_reports_created_by_fkey(full_name), acceptor:profiles!daily_reports_accepted_by_fkey(full_name), signer:profiles!daily_reports_signed_by_fkey(full_name)')
     .eq('area_id', resolvedParams.areaId)
     .order('report_date', { ascending: false })
 
@@ -92,6 +92,7 @@ export default async function AreaDetailsPage({ params }: { params: Promise<{ id
               const status = report.status || 'pendiente'
               const creatorName = report.creator?.full_name || 'Personal de Obra'
               const acceptorName = report.acceptor?.full_name || 'Residente'
+              const directorName = (report.signer as any)?.full_name || (report.acceptor as any)?.full_name || 'Director de Obra'
 
               return (
                 <Card key={report.id} className="hover:shadow-md transition-all border rounded-2xl overflow-hidden">
@@ -153,6 +154,9 @@ export default async function AreaDetailsPage({ params }: { params: Promise<{ id
                             area_name: area.name,
                             project_name: area.projects?.name,
                             signature_url: report.signature_url,
+                            director_signature_url: report.director_signature_url,
+                            director_name: directorName,
+                            status: status,
                             company_name: companyName,
                             company_logo_url: companyLogoUrl
                           }}
@@ -180,14 +184,35 @@ export default async function AreaDetailsPage({ params }: { params: Promise<{ id
                       </div>
                     )}
 
-                    {report.signature_url && (
-                      <div className="pt-2 border-t flex items-center justify-between text-xs text-slate-500">
-                        <span className="font-medium text-slate-700">Firma del Director / Responsable:</span>
-                        <img
-                          src={report.signature_url}
-                          alt="Firma digital"
-                          className="h-10 border rounded bg-white p-1 max-w-[140px] object-contain shadow-xs"
-                        />
+                    {/* Visualización de Firmas */}
+                    {(report.signature_url || report.director_signature_url) && (
+                      <div className="pt-3 border-t grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-500">
+                        {report.signature_url && report.signature_url !== report.director_signature_url && (
+                          <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                            <div>
+                              <span className="font-bold text-slate-700 block text-xs">Firma Responsable:</span>
+                              <span className="text-[11px] text-slate-500">{creatorName}</span>
+                            </div>
+                            <img
+                              src={report.signature_url}
+                              alt="Firma Responsable"
+                              className="h-10 border rounded bg-white p-1 max-w-[130px] object-contain shadow-2xs"
+                            />
+                          </div>
+                        )}
+                        {report.director_signature_url && (
+                          <div className="flex items-center justify-between p-2.5 bg-emerald-50/70 rounded-xl border border-emerald-200">
+                            <div>
+                              <span className="font-bold text-emerald-800 block text-xs">Firma Director / Vo.Bo.:</span>
+                              <span className="text-[11px] text-emerald-600 font-medium">{directorName}</span>
+                            </div>
+                            <img
+                              src={report.director_signature_url}
+                              alt="Firma Director"
+                              className="h-10 border border-emerald-300 rounded bg-white p-1 max-w-[130px] object-contain shadow-2xs"
+                            />
+                          </div>
+                        )}
                       </div>
                     )}
                   </CardContent>

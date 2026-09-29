@@ -15,6 +15,9 @@ interface BitacoraReport {
   area_name?: string
   project_name?: string
   signature_url?: string | null
+  director_signature_url?: string | null
+  director_name?: string | null
+  status?: string | null
   company_name?: string | null
   company_logo_url?: string | null
 }
@@ -88,13 +91,18 @@ export function ExportBitacoraPdfButton({ report }: { report: BitacoraReport }) 
     setExporting(true)
 
     try {
-      // Obtener datos de la empresa si faltan
+      // Obtener datos de la empresa y firmas si faltan
       let companyLogoUrl = report.company_logo_url
       let companyName = report.company_name
+      let directorSignatureUrl = report.director_signature_url
+      let directorName = report.director_name
+      let residentSignatureUrl = report.signature_url
+      let status = report.status
 
-      if (!companyLogoUrl || !companyName) {
-        try {
-          const supabase = createClient()
+      try {
+        const supabase = createClient()
+
+        if (!companyLogoUrl || !companyName) {
           const { data: { user } } = await supabase.auth.getUser()
           if (user) {
             const { data: myProfile } = await supabase
@@ -126,9 +134,33 @@ export function ExportBitacoraPdfButton({ report }: { report: BitacoraReport }) 
               }
             }
           }
-        } catch (dbErr) {
-          console.warn('No se pudo obtener datos de la empresa:', dbErr)
         }
+
+        // Consultar firmas si faltan
+        if ((!directorSignatureUrl || !directorName) && report.id) {
+          const { data: repData } = await supabase
+            .from('daily_reports')
+            .select('signature_url, director_signature_url, status, signer:profiles!daily_reports_signed_by_fkey(full_name), acceptor:profiles!daily_reports_accepted_by_fkey(full_name)')
+            .eq('id', report.id)
+            .single()
+
+          if (repData) {
+            if (!directorSignatureUrl && repData.director_signature_url) {
+              directorSignatureUrl = repData.director_signature_url
+            }
+            if (!directorName) {
+              directorName = (repData.signer as any)?.full_name || (repData.acceptor as any)?.full_name
+            }
+            if (!residentSignatureUrl && repData.signature_url) {
+              residentSignatureUrl = repData.signature_url
+            }
+            if (!status && repData.status) {
+              status = repData.status
+            }
+          }
+        }
+      } catch (dbErr) {
+        console.warn('No se pudo obtener datos complementarios:', dbErr)
       }
 
       // Cargar logo si existe
@@ -246,16 +278,33 @@ export function ExportBitacoraPdfButton({ report }: { report: BitacoraReport }) 
       const notesHeight = splitNotes.length * 5
       const footerY = Math.max(93 + notesHeight + 35, 190)
 
-      // Draw signature image if present
-      if (report.signature_url) {
+      // Resolución de firmas:
+      // Si la bitácora está firmada y directorSignatureUrl está vacío pero residentSignatureUrl tiene firma,
+      // corresponde a la firma de director anterior.
+      const directorSig = directorSignatureUrl || (status === 'firmada' ? residentSignatureUrl : null)
+      const residentSig = (residentSignatureUrl && residentSignatureUrl !== directorSig)
+        ? residentSignatureUrl
+        : (status !== 'firmada' ? residentSignatureUrl : null)
+
+      // Columna Izquierda: Firma Responsable de Elaboración
+      if (residentSig) {
         try {
-          doc.addImage(report.signature_url, 'PNG', 14, footerY - 26, 60, 24)
+          doc.addImage(residentSig, 'PNG', 14, footerY - 26, 60, 24)
         } catch (imgErr) {
-          console.error('Error dibujando imagen de firma:', imgErr)
+          console.error('Error dibujando imagen de firma residente:', imgErr)
         }
       }
 
-      // Signature area
+      // Columna Derecha: Firma Director / Supervisión
+      if (directorSig) {
+        try {
+          doc.addImage(directorSig, 'PNG', 130, footerY - 26, 60, 24)
+        } catch (imgErr) {
+          console.error('Error dibujando imagen de firma director:', imgErr)
+        }
+      }
+
+      // Línea y textos - Columna Izquierda
       doc.setDrawColor(203, 213, 225)
       doc.line(14, footerY, 80, footerY)
       doc.setFontSize(9)
@@ -267,11 +316,16 @@ export function ExportBitacoraPdfButton({ report }: { report: BitacoraReport }) 
       doc.setTextColor(100, 116, 139)
       doc.text(report.created_by_name || 'Residente de Obra', 14, footerY + 9)
 
+      // Línea y textos - Columna Derecha
       doc.line(130, footerY, 196, footerY)
       doc.setFontSize(9)
       doc.setFont('helvetica', 'bold')
       doc.setTextColor(51, 65, 85)
       doc.text('Firma Director / Supervisión', 130, footerY + 5)
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(8)
+      doc.setTextColor(100, 116, 139)
+      doc.text(directorName || 'Director Responsable de Obra', 130, footerY + 9)
 
       // Footer
       doc.setFontSize(8)

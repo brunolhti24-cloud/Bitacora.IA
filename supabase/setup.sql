@@ -48,6 +48,13 @@ CREATE TABLE daily_reports (
   weather TEXT NOT NULL,
   workers_count INTEGER DEFAULT 0,
   progress_notes TEXT,
+  signature_url TEXT,
+  director_signature_url TEXT,
+  status TEXT DEFAULT 'pendiente' CHECK (status IN ('pendiente', 'aceptada', 'firmada')),
+  accepted_by UUID REFERENCES profiles(id),
+  accepted_at TIMESTAMPTZ,
+  signed_by UUID REFERENCES profiles(id),
+  special_request TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
