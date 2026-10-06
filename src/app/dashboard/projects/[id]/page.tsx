@@ -37,7 +37,7 @@ export default async function ProjectDetailsPage({ params }: { params: Promise<{
     .from('projects')
     .select('*')
     .eq('id', resolvedParams.id)
-    .single()
+    .maybeSingle()
 
   if (!project) {
     return <div>Proyecto no encontrado</div>
@@ -55,7 +55,7 @@ export default async function ProjectDetailsPage({ params }: { params: Promise<{
   let isAdmin = false
   let isOperador = false
   if (user) {
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle()
     const role = profile?.role || 'admin'
     isAdmin = role === 'admin' || role === 'director'
     isOperador = role === 'operador'

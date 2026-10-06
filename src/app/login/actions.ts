@@ -5,36 +5,48 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
 export async function login(prevState: any, formData: FormData) {
-  const supabase = await createClient()
+  try {
+    const supabase = await createClient()
 
-  const data = {
-    email: formData.get('email') as string,
-    password: formData.get('password') as string,
-  }
+    const data = {
+      email: (formData.get('email') as string || '').trim().toLowerCase(),
+      password: formData.get('password') as string,
+    }
 
-  const { data: authData, error } = await supabase.auth.signInWithPassword(data)
+    if (!data.email || !data.password) {
+      return { error: 'El correo y la contraseña son requeridos.' }
+    }
 
-  if (error) {
-    return { error: error.message }
-  }
+    const { data: authData, error } = await supabase.auth.signInWithPassword(data)
 
-  if (authData.user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', authData.user.id)
-      .single()
+    if (error) {
+      return { error: error.message || 'Credenciales inválidas.' }
+    }
+
+    if (authData?.user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', authData.user.id)
+        .maybeSingle()
+
+      revalidatePath('/', 'layout')
+      if (profile?.role === 'subcontratista') {
+        redirect('/dashboard/mis-tareas')
+      } else {
+        redirect('/dashboard')
+      }
+    }
 
     revalidatePath('/', 'layout')
-    if (profile?.role === 'subcontratista') {
-      redirect('/dashboard/mis-tareas')
-    } else {
-      redirect('/dashboard')
+    redirect('/dashboard')
+  } catch (err: any) {
+    if (err?.digest?.startsWith('NEXT_REDIRECT') || err?.message === 'NEXT_REDIRECT') {
+      throw err
     }
+    console.error('Login action error:', err)
+    return { error: err?.message || 'Error al iniciar sesión' }
   }
-
-  revalidatePath('/', 'layout')
-  redirect('/dashboard')
 }
 
 // validateInviteCode: Valida el código de invitación y devuelve el rol y empresa

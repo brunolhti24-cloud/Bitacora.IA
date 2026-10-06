@@ -38,7 +38,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       )
-      const { data } = await supabase.from('projects').select('*').eq('id', id).single()
+      const { data } = await supabase.from('projects').select('*').eq('id', id).maybeSingle()
       if (data) {
         setProject(data)
         if (data.image_url) setImagePreview(data.image_url)

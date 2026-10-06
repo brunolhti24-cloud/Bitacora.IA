@@ -9,11 +9,15 @@ export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
+  if (!user) {
+    redirect('/login')
+  }
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('role, invited_by')
-    .eq('id', user?.id)
-    .single()
+    .eq('id', user.id)
+    .maybeSingle()
 
   const isAdmin = profile?.role === 'admin'
   const isSubcontratista = profile?.role === 'subcontratista'
@@ -25,7 +29,7 @@ export default async function DashboardPage() {
   let projectsQuery = supabase.from('projects').select('*')
 
   if (isAdmin) {
-    projectsQuery = projectsQuery.eq('created_by', user?.id)
+    projectsQuery = projectsQuery.eq('created_by', user.id)
   } else if (profile?.invited_by) {
     projectsQuery = projectsQuery.eq('created_by', profile.invited_by)
   } else {
@@ -34,7 +38,7 @@ export default async function DashboardPage() {
       .select('id')
       .eq('role', 'admin')
       .limit(1)
-      .single()
+      .maybeSingle()
 
     if (mainAdmin) {
       projectsQuery = projectsQuery.eq('created_by', mainAdmin.id)

@@ -8,7 +8,7 @@ export async function KanbanTab({ projectId }: { projectId: string }) {
 
   let userRole = 'operador'
   if (user) {
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle()
     if (profile?.role) userRole = profile.role
   }
 
