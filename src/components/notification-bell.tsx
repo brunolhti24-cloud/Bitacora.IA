@@ -132,26 +132,42 @@ export function NotificationBell({ userId }: { userId: string }) {
 
       {/* Panel Desplegable de Notificaciones */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-white shadow-2xl border border-slate-200 z-50 animate-in fade-in zoom-in-95 duration-150 overflow-hidden">
-          {/* Cabecera */}
-          <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-200">
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-slate-900 text-sm">Notificaciones</span>
-              {unreadCount > 0 && (
-                <span className="bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-full">
-                  {unreadCount} nuevas
-                </span>
-              )}
+        <>
+          {/* Backdrop para móvil */}
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-xs z-40 sm:hidden"
+            onClick={() => setIsOpen(false)}
+          />
+
+          <div className="fixed inset-x-3 top-16 z-50 max-w-sm mx-auto sm:max-w-none sm:mx-0 sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96 rounded-2xl bg-white shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150 overflow-hidden">
+            {/* Cabecera */}
+            <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-200">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-slate-900 text-sm">Notificaciones</span>
+                {unreadCount > 0 && (
+                  <span className="bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-full">
+                    {unreadCount} nuevas
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-3">
+                {unreadCount > 0 && (
+                  <button
+                    onClick={markAllAsRead}
+                    className="text-xs text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1 hover:underline"
+                  >
+                    <Check className="w-3.5 h-3.5" /> Marcar leídas
+                  </button>
+                )}
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="sm:hidden text-slate-400 hover:text-slate-600 p-1"
+                  aria-label="Cerrar"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
-            {unreadCount > 0 && (
-              <button
-                onClick={markAllAsRead}
-                className="text-xs text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1 hover:underline"
-              >
-                <Check className="w-3.5 h-3.5" /> Marcar todo leído
-              </button>
-            )}
-          </div>
 
           {/* Lista de Notificaciones */}
           <div className="max-h-[380px] overflow-y-auto divide-y divide-slate-100">
@@ -216,7 +232,8 @@ export function NotificationBell({ userId }: { userId: string }) {
             </span>
           </div>
         </div>
-      )}
+      </>
+    )}
     </div>
   )
 }

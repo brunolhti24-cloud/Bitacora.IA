@@ -44,74 +44,64 @@ export default async function DashboardLayout({
   return (
     <div className="flex min-h-screen flex-col bg-white text-slate-900 font-sans">
       {/* High-Tech Header with Glassmorphism */}
-      <header className="sticky top-0 z-30 flex h-16 items-center justify-between bg-[#031033] px-4 shadow-md md:px-6 transition-all">
-        <div className="flex items-center gap-3">
-          <Link href="/dashboard" className="flex items-center gap-2.5 group">
-            <div className="flex items-center gap-3">
-              {profile?.company_logo_url ? (
-                <div className="flex items-center gap-2.5">
-                  <img
-                    src={profile.company_logo_url}
-                    alt="Logo Empresa"
-                    className="h-9 w-auto max-w-[160px] object-contain drop-shadow-xs rounded-md"
-                  />
-                  {profile?.company_name && (
-                    <span className="text-lg font-black tracking-tight text-white hidden sm:inline">
-                      {profile.company_name}
-                    </span>
-                  )}
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <img src="/logo.png" alt="Bitacor.AI Logo" className="h-8 w-8 object-contain" />
-                  <span className="text-xl font-black tracking-tight text-white">
-                    {profile?.company_name || 'Bitacor.AI'}
-                  </span>
-                </div>
-              )}
-            </div>
-            
-            <span className="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-full bg-white/10 text-white/90 border border-white/20 hidden sm:inline-flex items-center gap-1.5 shadow-2xs">
-              <Sparkles className="w-3 h-3 text-emerald-400" /> Bitacor.AI
-            </span>
-
-            {profile?.company_name && (
-              <span className="text-xs font-bold text-slate-300 border-l border-white/20 pl-3 hidden md:inline">
-                {profile.company_name}
-              </span>
+      <header className="sticky top-0 z-30 flex h-16 items-center justify-between bg-[#031033] px-3 sm:px-4 md:px-6 shadow-md transition-all gap-2">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <Link href="/dashboard" className="flex items-center gap-2 group shrink-0">
+            {profile?.company_logo_url ? (
+              <img
+                src={profile.company_logo_url}
+                alt="Logo Empresa"
+                className="h-8 sm:h-9 w-auto max-w-[80px] xs:max-w-[120px] sm:max-w-[160px] object-contain drop-shadow-xs rounded-md"
+              />
+            ) : (
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <img src="/logo.png" alt="Bitacor.AI Logo" className="h-7 w-7 sm:h-8 sm:w-8 object-contain" />
+                <span className="text-base sm:text-xl font-black tracking-tight text-white hidden xs:inline">
+                  {profile?.company_name || 'Bitacor.AI'}
+                </span>
+              </div>
             )}
+            
+            <span className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-white/10 text-white/90 border border-white/20 inline-flex items-center gap-1 shadow-2xs">
+              <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-emerald-400" /> Bitacor.AI
+            </span>
           </Link>
         </div>
 
-        <div className="flex items-center gap-4 sm:gap-6">
+        <div className="flex items-center gap-2 sm:gap-4 md:gap-6 shrink-0">
           <div className="text-white">
             <NotificationBell userId={user.id} />
           </div>
           
-          <div className="hidden md:block text-right mr-2">
-            <p className="text-2xl font-normal text-white leading-tight">{profile?.full_name || user.email}</p>
+          {/* Identidad del Usuario: Visible en Computadora y Móvil */}
+          <div className="text-right">
+            <p className="text-xs sm:text-base md:text-xl font-bold sm:font-normal text-white leading-tight truncate max-w-[80px] xs:max-w-[120px] sm:max-w-[180px] md:max-w-none">
+              {profile?.full_name || user.email?.split('@')[0]}
+            </p>
             <div className="flex items-center justify-end gap-1 mt-0.5">
-              <span className="inline-block w-2 h-2 rounded-full bg-[#22c55e]"></span>
-              <span className="text-sm font-light tracking-wide text-[#22c55e]">
+              <span className="inline-block w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-[#22c55e]"></span>
+              <span className="text-[10px] sm:text-xs md:text-sm font-medium sm:font-light tracking-wide text-[#22c55e] truncate max-w-[80px] xs:max-w-[120px] sm:max-w-none">
                 {roleLabel}
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 border-l border-white/20 pl-4">
-            <User className="w-6 h-6 text-white" />
+          <div className="flex items-center gap-1.5 sm:gap-3 border-l border-white/20 pl-2 sm:pl-4">
             <Link
               href="/dashboard/perfil"
-              className="text-sm font-normal text-white px-4 py-1.5 rounded-full border border-white hover:bg-white/10 transition-all flex items-center"
+              className="text-xs sm:text-sm font-normal text-white px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-full border border-white hover:bg-white/10 transition-all flex items-center gap-1 shrink-0"
+              title="Mi Perfil"
             >
-              Perfil
+              <User className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden xs:inline">Perfil</span>
             </Link>
 
             <form action={logout}>
               <Button
                 type="submit"
                 variant="outline"
-                className="rounded-full h-8 px-4 py-1.5 text-sm font-normal bg-transparent text-white border-white hover:bg-white/10 hover:text-white transition-colors hidden sm:block"
+                className="rounded-full h-7 sm:h-8 px-2.5 sm:px-4 py-1 sm:py-1.5 text-xs sm:text-sm font-normal bg-transparent text-white border-white hover:bg-white/10 hover:text-white transition-colors"
+                title="Cerrar Sesión"
               >
                 Salir
               </Button>
@@ -123,6 +113,9 @@ export default async function DashboardLayout({
               isAdminis={isAdminis}
               isSub={isSub}
               isOperador={isOperador}
+              profile={profile}
+              roleLabel={roleLabel}
+              userEmail={user.email}
             />
           </div>
         </div>
@@ -201,7 +194,7 @@ export default async function DashboardLayout({
           </div>
         </aside>
 
-        <main className="flex-1 p-4 md:p-6 lg:p-8">
+        <main className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 overflow-x-hidden">
           {children}
         </main>
       </div>

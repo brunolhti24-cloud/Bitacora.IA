@@ -135,7 +135,7 @@ export function NewTicketModal({
           </Button>
         }
       />
-      <DialogContent className="sm:max-w-[520px] rounded-2xl">
+      <DialogContent className="w-[95vw] sm:max-w-[520px] rounded-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <form action={action}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl font-bold text-slate-900">

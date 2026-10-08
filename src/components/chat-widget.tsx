@@ -126,14 +126,15 @@ export function ChatWidget({ isAdmin }: { isAdmin: boolean }) {
       {/* Botón flotante */}
       <Button
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-xl transition-transform hover:scale-110 z-50 ${isOpen ? 'scale-0' : 'scale-100'}`}
+        className={`fixed bottom-4 right-4 sm:bottom-6 sm:right-6 h-12 w-12 sm:h-14 sm:w-14 rounded-full shadow-xl transition-transform hover:scale-110 z-50 bg-blue-600 hover:bg-blue-700 text-white ${isOpen ? 'scale-0' : 'scale-100'}`}
+        aria-label="Abrir asistente IA"
       >
-        <MessageSquare className="h-6 w-6" />
+        <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6" />
       </Button>
 
       {/* Ventana de Chat */}
       <Card 
-        className={`fixed bottom-6 right-6 w-[350px] sm:w-[400px] h-[500px] shadow-2xl flex flex-col z-50 transition-all duration-300 ease-in-out origin-bottom-right ${
+        className={`fixed inset-x-3 bottom-3 sm:inset-auto sm:bottom-6 sm:right-6 sm:w-[400px] h-[480px] sm:h-[520px] max-h-[85vh] shadow-2xl flex flex-col z-50 transition-all duration-300 ease-in-out origin-bottom-right rounded-2xl overflow-hidden border border-slate-700/60 ${
           isOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none'
         }`}
       >
