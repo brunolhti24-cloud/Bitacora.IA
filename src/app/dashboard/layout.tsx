@@ -44,69 +44,94 @@ export default async function DashboardLayout({
   return (
     <div className="flex min-h-screen flex-col bg-white text-slate-900 font-sans">
       {/* High-Tech Header with Glassmorphism */}
-      <header className="sticky top-0 z-30 flex h-16 items-center justify-between bg-[#031033] px-3 sm:px-4 md:px-6 shadow-md transition-all gap-2">
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-          <Link href="/dashboard" className="flex items-center gap-2 group shrink-0">
+      <header className="sticky top-0 z-30 flex h-16 items-center justify-between bg-[#031033] px-3 sm:px-4 md:px-6 shadow-md transition-all gap-3">
+        {/* Lado Izquierdo: Logo y Marca */}
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink-0">
+          <Link href="/dashboard" className="flex items-center gap-2 group">
             {profile?.company_logo_url ? (
               <img
                 src={profile.company_logo_url}
                 alt="Logo Empresa"
-                className="h-8 sm:h-9 w-auto max-w-[80px] xs:max-w-[120px] sm:max-w-[160px] object-contain drop-shadow-xs rounded-md"
+                className="h-8 sm:h-9 w-auto max-w-[90px] sm:max-w-[150px] object-contain drop-shadow-xs rounded-md"
               />
             ) : (
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <img src="/logo.png" alt="Bitacor.AI Logo" className="h-7 w-7 sm:h-8 sm:w-8 object-contain" />
-                <span className="text-base sm:text-xl font-black tracking-tight text-white hidden xs:inline">
+                <span className="text-base sm:text-lg font-black tracking-tight text-white">
                   {profile?.company_name || 'Bitacor.AI'}
                 </span>
               </div>
             )}
             
-            <span className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-white/10 text-white/90 border border-white/20 inline-flex items-center gap-1 shadow-2xs">
-              <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-emerald-400" /> Bitacor.AI
+            <span className="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-white/10 text-white/90 border border-white/20 hidden sm:inline-flex items-center gap-1 shadow-2xs">
+              <Sparkles className="w-3 h-3 text-emerald-400" /> Bitacor.AI
             </span>
           </Link>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-4 md:gap-6 shrink-0">
+        {/* Lado Derecho: Notificaciones, Usuario y Menú */}
+        <div className="flex items-center gap-2 sm:gap-3 md:gap-5 shrink-0">
+          {/* Campanita */}
           <div className="text-white">
             <NotificationBell userId={user.id} />
           </div>
           
-          {/* Identidad del Usuario: Visible en Computadora y Móvil */}
-          <div className="text-right">
-            <p className="text-xs sm:text-base md:text-xl font-bold sm:font-normal text-white leading-tight truncate max-w-[80px] xs:max-w-[120px] sm:max-w-[180px] md:max-w-none">
-              {profile?.full_name || user.email?.split('@')[0]}
+          {/* En Celular: Chip Elegante con Avatar, Nombre y Rol */}
+          <Link
+            href="/dashboard/perfil"
+            className="md:hidden flex items-center gap-1.5 px-2 py-1 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-white transition-all max-w-[130px]"
+            title="Mi Perfil"
+          >
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center font-black text-xs text-white shrink-0 shadow-xs">
+              {(profile?.full_name || user.email || 'U').charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0 flex-1">
+              <span className="text-xs font-bold block truncate leading-tight text-white">
+                {profile?.full_name?.split(' ')[0] || user.email?.split('@')[0]}
+              </span>
+              <div className="flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e] shrink-0"></span>
+                <span className="text-[9px] text-[#22c55e] font-medium block truncate leading-none">{roleLabel}</span>
+              </div>
+            </div>
+          </Link>
+
+          {/* En Computadora (md y superior): Nombre grande y Rol */}
+          <div className="hidden md:block text-right">
+            <p className="text-lg lg:text-xl font-normal text-white leading-tight">
+              {profile?.full_name || user.email}
             </p>
             <div className="flex items-center justify-end gap-1 mt-0.5">
-              <span className="inline-block w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-[#22c55e]"></span>
-              <span className="text-[10px] sm:text-xs md:text-sm font-medium sm:font-light tracking-wide text-[#22c55e] truncate max-w-[80px] xs:max-w-[120px] sm:max-w-none">
+              <span className="inline-block w-2 h-2 rounded-full bg-[#22c55e]"></span>
+              <span className="text-xs lg:text-sm font-light tracking-wide text-[#22c55e]">
                 {roleLabel}
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 sm:gap-3 border-l border-white/20 pl-2 sm:pl-4">
+          {/* En Computadora: Botones Perfil y Salir */}
+          <div className="hidden md:flex items-center gap-3 border-l border-white/20 pl-4">
             <Link
               href="/dashboard/perfil"
-              className="text-xs sm:text-sm font-normal text-white px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-full border border-white hover:bg-white/10 transition-all flex items-center gap-1 shrink-0"
-              title="Mi Perfil"
+              className="text-sm font-normal text-white px-4 py-1.5 rounded-full border border-white hover:bg-white/10 transition-all flex items-center gap-1.5"
             >
-              <User className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span className="hidden xs:inline">Perfil</span>
+              <User className="w-4 h-4" />
+              <span>Perfil</span>
             </Link>
 
             <form action={logout}>
               <Button
                 type="submit"
                 variant="outline"
-                className="rounded-full h-7 sm:h-8 px-2.5 sm:px-4 py-1 sm:py-1.5 text-xs sm:text-sm font-normal bg-transparent text-white border-white hover:bg-white/10 hover:text-white transition-colors"
-                title="Cerrar Sesión"
+                className="rounded-full h-8 px-4 py-1.5 text-sm font-normal bg-transparent text-white border-white hover:bg-white/10 hover:text-white transition-colors"
               >
                 Salir
               </Button>
             </form>
+          </div>
 
+          {/* Menú Hamburguesa para Móvil y Tablet */}
+          <div className="md:hidden flex items-center">
             <MobileNav 
               isAdmin={isAdmin}
               isResidente={isResidente}
