@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { updateProfile } from '../actions'
-import { createBrowserClient } from '@supabase/ssr'
+import { createClient } from '@/lib/supabase/client'
 import { 
   User, 
   Building, 
@@ -36,10 +36,7 @@ export default function PerfilPage() {
 
   useEffect(() => {
     async function loadUserData() {
-      const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
+      const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         setEmail(user.email || '')

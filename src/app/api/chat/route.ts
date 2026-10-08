@@ -3,6 +3,7 @@ import { streamText, convertToModelMessages } from 'ai'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import { getSupabaseConfig } from '@/lib/supabase/config'
 
 export const maxDuration = 30
 
@@ -20,10 +21,11 @@ export async function POST(req: Request) {
       return new Response('Unauthorized', { status: 401 })
     }
 
+    const { url } = getSupabaseConfig()
     // IMPORTANTE: Creamos un cliente con Service Role Key para las herramientas
     const toolSupabase = createSupabaseClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+      url,
+      process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5d3B6ZmJvc3NnamVtdnNwbmxsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDgyNjk1MiwiZXhwIjoyMTAwNDAyOTUyfQ.rXc5t-zZIGeyt_-UL5zqBnvK1TSa60Q-pYPz3bKmIGE'
     )
 
     const modelMessages = await convertToModelMessages(messages)

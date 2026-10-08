@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { updateProject } from '../../../actions'
 import Link from 'next/link'
-import { createBrowserClient } from '@supabase/ssr'
+import { createClient } from '@/lib/supabase/client'
 import { 
   Building2, 
   User, 
@@ -34,10 +34,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
   
   useEffect(() => {
     async function fetchProject() {
-      const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
+      const supabase = createClient()
       const { data } = await supabase.from('projects').select('*').eq('id', id).maybeSingle()
       if (data) {
         setProject(data)

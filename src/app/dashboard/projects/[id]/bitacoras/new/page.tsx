@@ -9,7 +9,7 @@ import Link from 'next/link'
 import { createDailyReport } from '../../actions'
 import { SignaturePad } from '@/components/signature-pad'
 import { AiBitacoraEnhancer } from '@/components/ai-bitacora-enhancer'
-import { createBrowserClient } from '@supabase/ssr'
+import { createClient } from '@/lib/supabase/client'
 
 const initialState = {
   error: null as string | null,
@@ -25,10 +25,7 @@ export default function NewBitacoraPage({ params }: { params: Promise<{ id: stri
   const [selectedAreaId, setSelectedAreaId] = useState('')
 
   useEffect(() => {
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    const supabase = createClient()
     supabase
       .from('project_areas')
       .select('id, name')
