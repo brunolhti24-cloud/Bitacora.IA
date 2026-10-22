@@ -1,3 +1,6 @@
+import { formatDateOnly } from '@/lib/dates'
+import { summarizeFinance, formatMoney } from '@/lib/finance'
+import { ProgressTape } from '@/components/progress-tape'
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -21,9 +24,8 @@ export async function FinanceTab({ projectId, baseBudget, isAdmin }: { projectId
     .eq('project_id', projectId)
     .order('income_date', { ascending: false }) : { data: [] }
 
-  const totalExpenses = expenses?.reduce((sum, exp) => sum + (Number(exp.amount) || 0), 0) || 0
-  const totalIncomes = incomes?.reduce((sum, inc) => sum + (Number(inc.amount) || 0), 0) || 0
-  const availableBalance = baseBudget + totalIncomes - totalExpenses
+  // El presupuesto autorizado no es efectivo: se muestran por separado
+  const fin = summarizeFinance(baseBudget, incomes, expenses)
 
   const exportItems = (expenses || []).map((exp: any) => ({
     id: exp.id,
@@ -36,41 +38,67 @@ export async function FinanceTab({ projectId, baseBudget, isAdmin }: { projectId
 
   return (
     <div className="space-y-6">
-      {/* Resumen Financiero */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
-        <Card className="border border-border shadow-sm rounded-lg bg-white">
-          <CardHeader className="p-4 pb-2">
-            <CardDescription className="text-xs font-medium text-muted-foreground">
-              Presupuesto Base + Ingresos
-            </CardDescription>
-            <CardTitle className="text-2xl font-bold text-plano">
-              ${(baseBudget + totalIncomes).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-            </CardTitle>
-          </CardHeader>
-        </Card>
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* Presupuesto: cuánto se autorizó y cuánto falta por ejercer */}
+        <section aria-labelledby="fin-presupuesto" className="rounded-lg border border-border bg-card p-5">
+          <h3 id="fin-presupuesto" className="text-base font-bold text-plano">Presupuesto de la obra</h3>
+          <dl className="mt-3 grid grid-cols-3 gap-3">
+            <div>
+              <dt className="text-sm text-muted-foreground">Autorizado</dt>
+              <dd className="text-xl font-bold text-plano">{formatMoney(fin.budget)}</dd>
+            </div>
+            <div>
+              <dt className="text-sm text-muted-foreground">Ejercido</dt>
+              <dd className="text-xl font-bold text-plano">{formatMoney(fin.expenses)}</dd>
+            </div>
+            <div>
+              <dt className="text-sm text-muted-foreground">Por ejercer</dt>
+              <dd className={`text-xl font-bold ${fin.budgetRemaining < 0 ? 'text-destructive' : 'text-plano'}`}>{formatMoney(fin.budgetRemaining)}</dd>
+            </div>
+          </dl>
+          {fin.budgetUsedPct !== null ? (
+            <div className="mt-4 space-y-1.5">
+              <ProgressTape value={fin.budgetUsedPct} label="Presupuesto ejercido" />
+              <p className="text-sm text-muted-foreground">
+                {fin.budgetUsedPct > 100
+                  ? `Se rebasó el presupuesto: se ha gastado el ${fin.budgetUsedPct}% de lo autorizado.`
+                  : `Se ha ejercido el ${fin.budgetUsedPct}% del presupuesto.`}
+              </p>
+            </div>
+          ) : (
+            <p className="mt-4 text-sm text-muted-foreground">Esta obra no tiene presupuesto autorizado. Agrégalo al editar la obra.</p>
+          )}
+        </section>
 
-        <Card className="border border-border shadow-sm rounded-lg bg-white">
-          <CardHeader className="p-4 pb-2">
-            <CardDescription className="text-xs font-medium text-muted-foreground">
-              Gastos Totales (Tickets)
-            </CardDescription>
-            <CardTitle className="text-2xl font-bold text-destructive flex items-center gap-1">
-              <TrendingDown className="h-5 w-5" />
-              -${totalExpenses.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-
-        <Card className="border border-border shadow-sm rounded-lg bg-white">
-          <CardHeader className="p-4 pb-2">
-            <CardDescription className="text-xs font-medium text-muted-foreground">
-              Saldo Disponible
-            </CardDescription>
-            <CardTitle className={`text-2xl font-bold ${availableBalance < 0 ? 'text-destructive' : 'text-ok'}`}>
-              ${availableBalance.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-            </CardTitle>
-          </CardHeader>
-        </Card>
+        {/* Caja: dinero que realmente entró y salió */}
+        <section aria-labelledby="fin-caja" className="rounded-lg border border-border bg-card p-5">
+          <h3 id="fin-caja" className="text-base font-bold text-plano">Flujo de efectivo</h3>
+          {isAdmin ? (
+            <>
+              <dl className="mt-3 grid grid-cols-3 gap-3">
+                <div>
+                  <dt className="text-sm text-muted-foreground">Ingresos recibidos</dt>
+                  <dd className="text-xl font-bold text-ok">{formatMoney(fin.incomes)}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-muted-foreground">Gastos pagados</dt>
+                  <dd className="text-xl font-bold text-plano">{formatMoney(fin.expenses)}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-muted-foreground">Saldo de caja</dt>
+                  <dd className={`text-xl font-bold ${fin.cash < 0 ? 'text-destructive' : 'text-plano'}`}>{formatMoney(fin.cash)}</dd>
+                </div>
+              </dl>
+              <p className="mt-4 text-sm text-muted-foreground">
+                {fin.cash < 0
+                  ? 'Se ha pagado más de lo que el cliente ha depositado. Registra los anticipos pendientes o revisa los gastos.'
+                  : 'Saldo de caja = ingresos recibidos menos gastos pagados. No incluye el presupuesto autorizado.'}
+              </p>
+            </>
+          ) : (
+            <p className="mt-3 text-sm text-muted-foreground">Los ingresos y el saldo de caja solo los ve el director de obra.</p>
+          )}
+        </section>
       </div>
 
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
@@ -104,8 +132,8 @@ export async function FinanceTab({ projectId, baseBudget, isAdmin }: { projectId
                 <Card key={exp.id} className="p-4 border border-border/80 shadow-sm hover:shadow-md transition-all rounded-md bg-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <div className="flex items-start gap-3">
                     {exp.receipt_url ? (
-                      <a href={exp.receipt_url} target="_blank" rel="noreferrer" className="h-12 w-12 rounded-lg border overflow-hidden shrink-0 bg-muted group relative block">
-                        <img src={exp.receipt_url} alt="Comprobante" className="h-full w-full object-cover group-hover:scale-105 transition-transform" />
+                      <a href={exp.receipt_url} target="_blank" rel="noreferrer" aria-label={`Abrir comprobante de ${exp.description || exp.concept}`} className="h-12 w-12 rounded-lg border overflow-hidden shrink-0 bg-muted group relative block">
+                        <img src={exp.receipt_url} alt="" className="h-full w-full object-cover group-hover:scale-105 transition-transform" />
                       </a>
                     ) : (
                       <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center text-muted-foreground shrink-0">
@@ -124,7 +152,7 @@ export async function FinanceTab({ projectId, baseBudget, isAdmin }: { projectId
                         </span>
                         <span className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          {exp.expense_date ? new Date(exp.expense_date).toLocaleDateString('es-MX') : 'Sin fecha'}
+                          {exp.expense_date ? formatDateOnly(exp.expense_date, { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'Sin fecha'}
                         </span>
                         <span className="flex items-center gap-1 text-muted-foreground">
                           <User className="h-3 w-3" />
@@ -188,7 +216,7 @@ export async function FinanceTab({ projectId, baseBudget, isAdmin }: { projectId
                       <p className="font-bold text-plano text-sm">{inc.description}</p>
                       <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        {new Date(inc.income_date).toLocaleDateString('es-MX')}
+                        {formatDateOnly(inc.income_date, { day: '2-digit', month: '2-digit', year: 'numeric' })}
                       </p>
                     </div>
                     <div className="text-right">

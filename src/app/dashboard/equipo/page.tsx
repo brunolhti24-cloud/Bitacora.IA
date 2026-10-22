@@ -1,3 +1,4 @@
+import { formatDateTime } from '@/lib/dates'
 import { Card } from '@/components/ui/card'
 import { createClient } from '@/lib/supabase/server'
 import { NewInviteModal } from '@/components/new-invite-modal'
@@ -162,7 +163,7 @@ export default async function EquipoPage() {
 
                   <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t border-border">
                     <span>Rol: <strong className="capitalize">{inv.role}</strong></span>
-                    <span className="text-muted-foreground">{new Date(inv.created_at).toLocaleDateString('es-MX')}</span>
+                    <span className="text-muted-foreground">{formatDateTime(inv.created_at, { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
                   </div>
                 </Card>
               ))}

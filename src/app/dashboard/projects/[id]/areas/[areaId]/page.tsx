@@ -1,3 +1,4 @@
+import { formatDateOnly, formatDateTime } from '@/lib/dates'
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -96,7 +97,8 @@ export default async function AreaDetailsPage({ params }: { params: Promise<{ id
         ) : (
           <div className="space-y-4">
             {reports?.map((report, idx) => {
-              const noteNumber = String((reports?.length || 0) - idx).padStart(3, '0')
+              // El folio lo asigna la base de datos; el número de posición queda solo como respaldo
+              const noteLabel = report.folio ? `Folio ${report.folio}` : `Nota ${String((reports?.length || 0) - idx).padStart(3, '0')}`
               const status = report.status || 'pendiente'
               const creatorName = report.creator?.full_name || 'Personal de Obra'
               const acceptorName = report.acceptor?.full_name || 'Residente'
@@ -107,10 +109,13 @@ export default async function AreaDetailsPage({ params }: { params: Promise<{ id
                   <CardHeader className="border-b border-border bg-muted/40 py-4">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div>
-                        <p className="text-sm font-semibold text-obra">Nota {noteNumber}</p>
+                        <p className="text-sm font-semibold text-obra">
+                          {noteLabel}
+                          {(report.version || 1) > 1 && <span className="ml-2 font-normal text-muted-foreground">Versión {report.version}</span>}
+                        </p>
                         <div className="flex flex-wrap items-center gap-2">
                           <CardTitle className="text-lg font-bold text-plano">
-                            {new Date(report.report_date).toLocaleDateString('es-MX', {
+                            {formatDateOnly(report.report_date, {
                               day: 'numeric', month: 'long', year: 'numeric'
                             })}
                           </CardTitle>
@@ -201,6 +206,7 @@ export default async function AreaDetailsPage({ params }: { params: Promise<{ id
                             <div>
                               <span className="font-semibold text-plano block text-xs">Firma del responsable</span>
                               <span className="text-xs text-muted-foreground">{creatorName}</span>
+                              <span className="block text-xs text-muted-foreground">{formatDateTime(report.created_at)}</span>
                             </div>
                             <img
                               src={report.signature_url}
@@ -214,6 +220,7 @@ export default async function AreaDetailsPage({ params }: { params: Promise<{ id
                             <div>
                               <span className="font-semibold text-ok block text-xs">Visto bueno del director</span>
                               <span className="text-xs text-ok font-medium">{directorName}</span>
+                              {report.signed_at && <span className="block text-xs text-ok/80">{formatDateTime(report.signed_at)}</span>}
                             </div>
                             <img
                               src={report.director_signature_url}

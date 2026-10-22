@@ -72,7 +72,7 @@
   --junta: #D8DCE2;        /* bordes */
   --senal: #C2410C;        /* pendientes / advertencias (5.2:1 sobre blanco) */
   --senal-soft: #FFF1E8;
-  --ok: #23803A;           /* completado / aprobado (5.0:1 sobre blanco) */
+  --ok: #1E7532;           /* completado / aprobado (5.8:1 sobre blanco, 5.2:1 sobre ok-soft) */
   --ok-soft: #EAF6EC;
 
   --background: #F1F2F4;

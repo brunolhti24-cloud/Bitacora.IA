@@ -1,7 +1,8 @@
 'use client'
 
+import { formatDateOnly, formatDateTime, todayInObra } from '@/lib/dates'
 import { useState, useTransition } from 'react'
-import { updateSpecialRequestStatus } from '@/app/dashboard/actions'
+import { updateSpecialRequestStatus, advanceSpecialRequest } from '@/app/dashboard/actions'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,17 +20,41 @@ export interface SpecialRequest {
   status: 'pendiente' | 'aprobada' | 'rechazada'
   director_comment?: string
   created_at: string
+  needed_by?: string | null
+  stage?: 'aprobada' | 'comprada' | 'entregada' | 'recibida' | null
+  events?: { stage: string; note: string | null; created_at: string; actor: { full_name: string | null } | null }[]
   projects?: { name: string }
   profiles?: { full_name: string; role: string }
 }
 
-export function SpecialRequestsList({ 
-  requests = [], 
-  isAdmin = false 
-}: { 
+const TRACK: { stage: string; label: string }[] = [
+  { stage: 'solicitada', label: 'Solicitada' },
+  { stage: 'aprobada', label: 'Aprobada' },
+  { stage: 'comprada', label: 'Comprada' },
+  { stage: 'entregada', label: 'Entregada en obra' },
+  { stage: 'recibida', label: 'Recibida' },
+]
+const NEXT: Record<string, { stage: 'comprada' | 'entregada' | 'recibida'; action: string; roles: string[] }> = {
+  aprobada: { stage: 'comprada', action: 'Registrar compra', roles: ['admin', 'director', 'administracion'] },
+  comprada: { stage: 'entregada', action: 'Registrar entrega en obra', roles: ['admin', 'director', 'administracion', 'residente'] },
+  entregada: { stage: 'recibida', action: 'Confirmar recepción', roles: ['admin', 'director', 'residente'] },
+}
+
+function daysUntil(date: string, today: string) {
+  return Math.round((Date.parse(date) - Date.parse(today)) / 86400000)
+}
+
+export function SpecialRequestsList({
+  requests = [],
+  isAdmin = false,
+  userRole = '',
+}: {
   requests: SpecialRequest[]
-  isAdmin?: boolean 
+  isAdmin?: boolean
+  userRole?: string
 }) {
+  const today = todayInObra()
+  const [stageError, setStageError] = useState<{ id: string; message: string } | null>(null)
   const [filterCategory, setFilterCategory] = useState<string>('all')
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [commentingId, setCommentingId] = useState<string | null>(null)
@@ -115,9 +140,18 @@ export function SpecialRequestsList({
 
   const handleStatusUpdate = (requestId: string, newStatus: 'aprobada' | 'rechazada') => {
     startTransition(async () => {
-      await updateSpecialRequestStatus(requestId, newStatus, directorComment)
+      const res = await updateSpecialRequestStatus(requestId, newStatus, directorComment)
+      if (res?.error) return setStageError({ id: requestId, message: res.error })
       setCommentingId(null)
       setDirectorComment('')
+    })
+  }
+
+  const handleAdvance = (requestId: string, stage: 'comprada' | 'entregada' | 'recibida') => {
+    setStageError(null)
+    startTransition(async () => {
+      const res = await advanceSpecialRequest(requestId, stage)
+      if (res?.error) setStageError({ id: requestId, message: res.error })
     })
   }
 
@@ -137,6 +171,7 @@ export function SpecialRequestsList({
             <button
               key={cat.id}
               onClick={() => setFilterCategory(cat.id)}
+              aria-pressed={filterCategory === cat.id}
               className={`min-h-9 px-3 rounded-md text-sm font-medium transition-colors ${
                 filterCategory === cat.id
                   ? 'bg-plano text-white shadow-sm'
@@ -148,7 +183,7 @@ export function SpecialRequestsList({
           ))}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-semibold text-muted-foreground mr-2">Estado:</span>
           {[
             { id: 'all', label: 'Todos' },
@@ -159,6 +194,7 @@ export function SpecialRequestsList({
             <button
               key={st.id}
               onClick={() => setFilterStatus(st.id)}
+              aria-pressed={filterStatus === st.id}
               className={`min-h-9 px-3 rounded-md text-sm font-medium transition-colors ${
                 filterStatus === st.id
                   ? 'bg-senal text-white shadow-sm'
@@ -177,7 +213,7 @@ export function SpecialRequestsList({
           <AlertCircle className="w-12 h-12 text-muted-foreground/50 mx-auto mb-3" aria-hidden />
           <CardTitle className="text-lg text-plano/80">No hay solicitudes registradas</CardTitle>
           <CardDescription className="mt-1">
-            Usa el botón "Nueva Solicitud Especial" para solicitar materiales o equipos.
+            Usa “Nueva solicitud” para pedir materiales, maquinaria o equipo con la fecha en que se necesitan.
           </CardDescription>
         </Card>
       ) : (
@@ -206,7 +242,7 @@ export function SpecialRequestsList({
                 <div className="space-y-3">
                   {req.description && (
                     <p className="text-xs text-muted-foreground bg-muted/50 p-2.5 rounded-md border border-border italic">
-                      "{req.description}"
+                      “{req.description}”
                     </p>
                   )}
 
@@ -217,16 +253,61 @@ export function SpecialRequestsList({
                     {req.profiles?.full_name && (
                       <p><strong className="text-plano/80">Solicitado por:</strong> {req.profiles.full_name}</p>
                     )}
-                    <p><strong className="text-plano/80">Fecha:</strong> {new Date(req.created_at).toLocaleDateString('es-MX', {
-                      day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
-                    })}</p>
+                    <p><strong className="text-plano/80">Solicitada:</strong> {formatDateTime(req.created_at)}</p>
                   </div>
+
+                  {req.needed_by && (() => {
+                    const d = daysUntil(req.needed_by, today)
+                    const done = req.stage === 'recibida' || req.status === 'rechazada'
+                    const late = !done && d < 0
+                    return (
+                      <p className={`rounded-md px-2.5 py-1.5 text-sm ${late ? 'bg-destructive/10 font-semibold text-destructive' : !done && d <= 2 ? 'bg-senal-soft text-senal' : 'bg-muted text-plano'}`}>
+                        Se necesita el {formatDateOnly(req.needed_by, { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {!done && (late ? ` · atrasada ${-d} ${-d === 1 ? 'día' : 'días'}` : d === 0 ? ' · hoy' : ` · faltan ${d} ${d === 1 ? 'día' : 'días'}`)}
+                      </p>
+                    )
+                  })()}
                 </div>
 
                 <div className="space-y-3 pt-3 border-t">
                   <div className="flex items-center justify-between">
                     {getStatusBadge(req.status)}
                   </div>
+
+                  {/* Seguimiento: cada etapa con quién y cuándo */}
+                  {req.status !== 'rechazada' && (
+                    <ol className="space-y-1.5" aria-label="Seguimiento de la solicitud">
+                      {TRACK.map((step) => {
+                        const ev = [...(req.events || [])].reverse().find((e) => e.stage === step.stage)
+                        const reached = !!ev || (step.stage === 'solicitada') || (step.stage === 'aprobada' && req.status === 'aprobada')
+                        return (
+                          <li key={step.stage} className="flex items-start gap-2 text-xs">
+                            <span className={`mt-1 h-2 w-2 shrink-0 rounded-full ${reached ? 'bg-ok' : 'bg-junta'}`} aria-hidden />
+                            <span className={reached ? 'text-plano' : 'text-muted-foreground'}>
+                              <strong className="font-semibold">{step.label}</strong>
+                              {ev ? ` · ${ev.actor?.full_name || 'Sin nombre'}, ${formatDateTime(ev.created_at)}` : reached ? '' : ' · pendiente'}
+                              {ev?.note && step.stage !== 'aprobada' && <span className="block text-muted-foreground">{ev.note}</span>}
+                            </span>
+                          </li>
+                        )
+                      })}
+                    </ol>
+                  )}
+
+                  {req.status === 'aprobada' && NEXT[req.stage || 'aprobada'] && NEXT[req.stage || 'aprobada'].roles.includes(userRole) && (
+                    <Button
+                      variant="outline"
+                      disabled={isPending}
+                      onClick={() => handleAdvance(req.id, NEXT[req.stage || 'aprobada'].stage)}
+                      className="w-full"
+                    >
+                      {NEXT[req.stage || 'aprobada'].action}
+                    </Button>
+                  )}
+
+                  {stageError?.id === req.id && (
+                    <p role="alert" className="text-sm text-destructive">{stageError.message}</p>
+                  )}
 
                   {/* Comentario del Director */}
                   {req.director_comment && (
@@ -239,15 +320,16 @@ export function SpecialRequestsList({
                   )}
 
                   {/* Acciones para el Director (Admin) */}
-                  {isAdmin && (
+                  {isAdmin && req.status === 'pendiente' && (
                     <div className="pt-2 border-t space-y-2">
                       {commentingId === req.id ? (
                         <div className="space-y-2 bg-muted/50 p-3 rounded-lg border">
-                          <label className="text-xs font-semibold text-plano/80 block">
-                            Comentario para el solicitante (opcional):
+                          <label htmlFor={`comment-${req.id}`} className="text-sm font-semibold text-plano block">
+                            Comentario para quien solicita <span className="font-normal text-muted-foreground">(opcional)</span>
                           </label>
                           <Input
-                            placeholder="Ej: Aprobado para entrega el viernes…"
+                            id={`comment-${req.id}`}
+                            placeholder="Aprobado, se entrega el viernes"
                             value={directorComment}
                             onChange={(e) => setDirectorComment(e.target.value)}
                             className="text-xs bg-white"

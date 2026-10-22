@@ -12,14 +12,12 @@ export async function KanbanTab({ projectId }: { projectId: string }) {
     if (profile?.role) userRole = profile.role
   }
 
-  const { data: tasks, error } = await supabase
-    .from('tasks')
-    .select(`
-      *,
-      assigned_to:profiles(id, full_name, role)
-    `)
-    .eq('project_id', projectId)
-    .order('created_at', { ascending: false })
+  const query = (fields: string) =>
+    supabase.from('tasks').select(fields).eq('project_id', projectId).order('created_at', { ascending: false })
+
+  // Si la migración de trazabilidad aún no se aplica, se cargan las tareas sin el área
+  let { data: tasks, error } = await query('*, assigned_to:profiles(id, full_name, role), area:project_areas(name)')
+  if (error) ({ data: tasks, error } = await query('*, assigned_to:profiles(id, full_name, role)'))
 
   if (error) {
     console.error('Error fetching tasks:', error)
@@ -32,13 +30,20 @@ export async function KanbanTab({ projectId }: { projectId: string }) {
   // Obtener todos los miembros que tienen acceso a este proyecto
   const projectMembers = await getProjectMembers(projectId)
 
+  const { data: areas } = await supabase
+    .from('project_areas')
+    .select('id, name')
+    .eq('project_id', projectId)
+    .order('name', { ascending: true })
+
   return (
     <div className="space-y-4">
       <KanbanBoard 
-        initialTasks={tasks || []} 
+        initialTasks={(tasks as any[]) || []} 
         projectId={projectId} 
         hideNewTask={!canCreateTask}
         projectMembers={projectMembers}
+        areas={areas || []}
       />
     </div>
   )

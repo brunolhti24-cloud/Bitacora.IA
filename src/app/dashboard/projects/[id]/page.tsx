@@ -53,25 +53,25 @@ export default async function ProjectDetailsPage({ params }: { params: Promise<{
   const { data: { user } } = await supabase.auth.getUser()
   let isAdmin = false
   let isOperador = false
+  let role = 'operador'
   if (user) {
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle()
-    const role = profile?.role || 'admin'
+    role = profile?.role || 'admin'
     isAdmin = role === 'admin' || role === 'director'
     isOperador = role === 'operador'
   }
 
   // Obtener solicitudes especiales del proyecto
-  const { data: rawRequests } = await supabase
-    .from('special_requests')
-    .select(`
-      *,
-      projects ( name ),
-      profiles:requested_by ( full_name, role )
-    `)
-    .eq('project_id', resolvedParams.id)
-    .order('created_at', { ascending: false })
+  const requestsQuery = (fields: string) =>
+    supabase.from('special_requests').select(fields).eq('project_id', resolvedParams.id).order('created_at', { ascending: false })
 
-  const specialRequests: SpecialRequest[] = (rawRequests || []).map((req: any) => ({
+  // Si la migración de trazabilidad aún no se aplica, se cargan sin el historial de etapas
+  let { data: rawRequests, error: requestsError } = await requestsQuery(
+    '*, projects ( name ), profiles:requested_by ( full_name, role ), events:special_request_events ( stage, note, created_at, actor:profiles!special_request_events_actor_fkey ( full_name ) )'
+  )
+  if (requestsError) ({ data: rawRequests } = await requestsQuery('*, projects ( name ), profiles:requested_by ( full_name, role )'))
+
+  const specialRequests: SpecialRequest[] = ((rawRequests as any[]) || []).map((req: any) => ({
     id: req.id,
     project_id: req.project_id,
     category: req.category,
@@ -83,33 +83,13 @@ export default async function ProjectDetailsPage({ params }: { params: Promise<{
     status: req.status,
     director_comment: req.director_comment,
     created_at: req.created_at,
+    needed_by: req.needed_by,
+    stage: req.stage,
+    events: (req.events || []).sort((x: any, y: any) => x.created_at.localeCompare(y.created_at)),
     projects: req.projects ? { name: req.projects.name } : undefined,
     profiles: req.profiles ? { full_name: req.profiles.full_name, role: req.profiles.role } : undefined
   }))
 
-  // Obtener reportes diarios recientes para el PDF del proyecto
-  const { data: rawReports } = await supabase
-    .from('daily_reports')
-    .select('id, report_date, progress_notes, created_by_name, project_areas(name)')
-    .eq('project_id', resolvedParams.id)
-    .order('report_date', { ascending: false })
-    .limit(15)
-
-  const recentReports = (rawReports || []).map((rep: any) => ({
-    id: rep.id,
-    report_date: rep.report_date,
-    progress_notes: rep.progress_notes,
-    created_by_name: rep.created_by_name,
-    area_name: rep.project_areas?.name || 'General'
-  }))
-
-  // Obtener suma de gastos del proyecto
-  const { data: projectExpenses } = await supabase
-    .from('expenses')
-    .select('amount')
-    .eq('project_id', resolvedParams.id)
-
-  const totalExpenses = (projectExpenses || []).reduce((sum, exp) => sum + (Number(exp.amount) || 0), 0)
   const totalReportsCount = areas?.reduce((acc, a) => acc + (a.daily_reports[0]?.count || 0), 0) || 0
 
   return (
@@ -136,12 +116,7 @@ export default async function ProjectDetailsPage({ params }: { params: Promise<{
           </div>
 
           <div className="flex items-center gap-3">
-            <ExportProjectPdfButton 
-              project={project} 
-              areasCount={areas?.length || 0} 
-              recentReports={recentReports} 
-              totalExpenses={totalExpenses} 
-            />
+            <ExportProjectPdfButton project={project} />
           </div>
         </div>
       </div>
@@ -271,7 +246,7 @@ export default async function ProjectDetailsPage({ params }: { params: Promise<{
             <h2 className="text-xl font-bold text-plano">Solicitudes de la obra</h2>
             <NewSpecialRequestModal defaultProjectId={project.id} />
           </div>
-          <SpecialRequestsList requests={specialRequests} isAdmin={isAdmin} />
+          <SpecialRequestsList requests={specialRequests} isAdmin={isAdmin} userRole={role} />
         </TabsContent>
       </Tabs>
     </div>

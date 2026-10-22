@@ -1,314 +1,258 @@
 'use client'
 
 import { useState } from 'react'
+import { FileText, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Download, FileText, Building2, CheckCircle2 } from 'lucide-react'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { createClient } from '@/lib/supabase/client'
+import { addDays, formatDateOnly, formatDateTime, startOfMonth, todayInObra } from '@/lib/dates'
+import { summarizeFinance, formatMoney } from '@/lib/finance'
+import { createPdf, roleLabel, slug, STATUS_LABELS } from '@/lib/pdf'
 
 interface ProjectPdfProps {
   project: {
     id: string
     name: string
-    location: string
-    physical_progress: number
-    base_budget: number
-    status?: string
+    location?: string | null
+    physical_progress?: number | null
+    base_budget?: number | null
+    start_date?: string | null
+    client_name?: string | null
   }
-  areasCount: number
-  recentReports: {
-    id: string
-    report_date: string
-    progress_notes: string
-    created_by_name?: string
-    area_name?: string
-  }[]
-  totalExpenses?: number
 }
 
-async function loadLogo(url: string): Promise<{ base64: string; width: number; height: number; format: 'PNG' | 'JPEG' } | null> {
-  if (!url) return null
-  try {
-    const res = await fetch(url)
-    if (res.ok) {
-      const blob = await res.blob()
-      const isJpeg = blob.type.includes('jpeg') || blob.type.includes('jpg')
-      const format = isJpeg ? 'JPEG' : 'PNG'
-      const base64 = await new Promise<string>((resBlob, rejBlob) => {
-        const reader = new FileReader()
-        reader.onloadend = () => resBlob(reader.result as string)
-        reader.onerror = rejBlob
-        reader.readAsDataURL(blob)
-      })
-      const dims = await new Promise<{ width: number; height: number }>((resDim) => {
-        const img = new Image()
-        img.onload = () => resDim({ width: img.naturalWidth || 200, height: img.naturalHeight || 100 })
-        img.onerror = () => resDim({ width: 200, height: 100 })
-        img.src = base64
-      })
-      return { base64, width: dims.width, height: dims.height, format }
-    }
-  } catch {}
-  return null
-}
+type Period = 'todo' | 'mes' | 'semana' | 'rango'
 
-export function ExportProjectPdfButton({ project, areasCount, recentReports, totalExpenses = 0 }: ProjectPdfProps) {
+const PERIODS: { value: Period; label: string }[] = [
+  { value: 'todo', label: 'Todo el historial' },
+  { value: 'mes', label: 'Este mes' },
+  { value: 'semana', label: 'Últimos 7 días' },
+  { value: 'rango', label: 'Elegir fechas' },
+]
+
+type Person = { full_name: string | null; role: string | null } | null
+type Company = { full_name: string | null; role: string | null; company_name?: string | null; company_logo_url?: string | null } | null
+
+export function ExportProjectPdfButton({ project }: ProjectPdfProps) {
+  const today = todayInObra()
+  const [open, setOpen] = useState(false)
+  const [period, setPeriod] = useState<Period>('todo')
+  const [from, setFrom] = useState(startOfMonth(today))
+  const [to, setTo] = useState(today)
   const [exporting, setExporting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const generatePDF = async (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
+  const range = (): { from: string | null; to: string } => {
+    if (period === 'mes') return { from: startOfMonth(today), to: today }
+    if (period === 'semana') return { from: addDays(today, -6), to: today }
+    if (period === 'rango') return { from, to }
+    return { from: null, to: today }
+  }
+
+  const generate = async () => {
+    setError(null)
+    const { from: dFrom, to: dTo } = range()
+    if (dFrom && dFrom > dTo) {
+      setError('La fecha inicial es posterior a la final. Corrige el periodo.')
+      return
+    }
     setExporting(true)
 
     try {
-      let companyLogoUrl: string | null = null
-      let companyName: string | null = null
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
 
-      try {
-        const supabase = createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          const { data: prof } = await supabase
-            .from('profiles')
-            .select('company_name, company_logo_url')
-            .eq('id', user.id)
-            .single()
-          if (prof?.company_logo_url) companyLogoUrl = prof.company_logo_url
-          if (prof?.company_name) companyName = prof.company_name
-        }
-      } catch (dbErr) {
-        console.warn('Error fetching profile logo:', dbErr)
-      }
+      const [{ data: me }, { data: proj }, { count: areasCount }] = await Promise.all([
+        supabase.from('profiles').select('full_name, role, company_name, company_logo_url').eq('id', user?.id || '').maybeSingle(),
+        supabase.from('projects').select('*, director:profiles!projects_created_by_fkey(full_name, role, company_name, company_logo_url)').eq('id', project.id).maybeSingle(),
+        supabase.from('project_areas').select('id', { count: 'exact', head: true }).eq('project_id', project.id),
+      ])
 
-      const logoData = companyLogoUrl ? await loadLogo(companyLogoUrl) : null
+      let reportsQuery = supabase
+        .from('daily_reports')
+        .select('id, folio, version, report_date, progress_notes, status, created_at, accepted_at, signed_at, creator:profiles!daily_reports_created_by_fkey(full_name, role), acceptor:profiles!daily_reports_accepted_by_fkey(full_name), signer:profiles!daily_reports_signed_by_fkey(full_name), project_areas(name)')
+        .eq('project_id', project.id)
+        .lte('report_date', dTo)
+        .order('report_date', { ascending: true })
+        .order('created_at', { ascending: true })
+      if (dFrom) reportsQuery = reportsQuery.gte('report_date', dFrom)
 
-      const { jsPDF } = await import('jspdf')
-      const doc = new jsPDF()
-      const pageHeight = doc.internal.pageSize.getHeight()
+      const [reportsRes, expensesRes, incomesRes] = await Promise.all([
+        reportsQuery,
+        supabase.from('expenses').select('amount, expense_date').eq('project_id', project.id).lte('expense_date', dTo),
+        supabase.from('incomes').select('amount, income_date').eq('project_id', project.id).lte('income_date', dTo),
+      ])
 
-      // Function to check page overflow and create new page
-      let currentY = 0
-      const checkPageBreak = (neededHeight: number) => {
-        if (currentY + neededHeight > pageHeight - 35) {
-          doc.addPage()
-          // Re-draw subheader on new page
-          doc.setFillColor(248, 250, 252)
-          doc.rect(14, 15, 182, 8, 'F')
-          doc.setTextColor(100, 116, 139)
-          doc.setFontSize(8)
-          doc.setFont('helvetica', 'bold')
-          doc.text(`Bitacor.AI - Expediente Técnico: ${project.name} (continuación)`, 18, 20)
-          currentY = 30
-        }
-      }
+      // Antes un error de consulta se mostraba como "no hay reportes"; ahora se informa
+      if (reportsRes.error) throw new Error(`No se pudieron leer las bitácoras: ${reportsRes.error.message}`)
 
-      // 1. Header Branding
-      doc.setFillColor(26, 26, 46) // #1a1a2e Dark Navy
-      doc.rect(0, 0, 210, 36, 'F')
-      
-      // Nosotros en chico a la izquierda
-      doc.setTextColor(148, 163, 184)
-      doc.setFontSize(8)
-      doc.setFont('helvetica', 'bold')
-      doc.text('BITACOR.AI', 14, 11)
+      const p = { ...project, ...(proj || {}) }
+      const director = (proj?.director as unknown as Company) || null
+      const reports = reportsRes.data || []
+      const canSeeIncomes = !incomesRes.error && ['admin', 'director'].includes(me?.role || '')
+      const fin = summarizeFinance(p.base_budget, canSeeIncomes ? incomesRes.data : [], expensesRes.data)
+      const signed = reports.filter((r) => r.status === 'firmada').length
 
-      doc.setFontSize(7)
-      doc.setFont('helvetica', 'normal')
-      doc.setTextColor(203, 213, 225)
-      doc.text('Sistema Multirrol de Gestión y Supervisión de Obra', 14, 16)
+      const periodLabel = dFrom
+        ? `${formatDateOnly(dFrom)} al ${formatDateOnly(dTo)}`
+        : `todo el historial hasta el ${formatDateOnly(dTo)}`
 
-      // Nombre de la empresa en grande
-      const companyDisplayName = companyName || project.name
-      doc.setTextColor(255, 255, 255)
-      doc.setFontSize(15)
-      doc.setFont('helvetica', 'bold')
-      doc.text(companyDisplayName, 14, 26)
+      const pdf = await createPdf({
+        companyName: me?.company_name || director?.company_name,
+        logoUrl: me?.company_logo_url || director?.company_logo_url,
+        docLabel: 'Expediente de obra',
+      })
 
-      // Logo de la empresa en el header
-      if (logoData) {
-        try {
-          const maxWidth = 48
-          const maxHeight = 24
-          const ratio = Math.min(maxWidth / logoData.width, maxHeight / logoData.height)
-          const renderW = logoData.width * ratio
-          const renderH = logoData.height * ratio
-          const renderX = 196 - renderW
-          const renderY = 6 + (maxHeight - renderH) / 2
+      pdf.title(`Expediente de obra: ${p.name}`, [
+        `Periodo: ${periodLabel}`,
+        `Emitido: ${formatDateTime(new Date())}${me?.full_name ? ` por ${me.full_name}` : ''}`,
+      ])
 
-          doc.setFillColor(255, 255, 255)
-          doc.roundedRect(renderX - 2.5, renderY - 1.5, renderW + 5, renderH + 3, 2, 2, 'F')
-          doc.addImage(logoData.base64, logoData.format, renderX, renderY, renderW, renderH, undefined, 'FAST')
-        } catch (imgErr) {
-          console.warn('Error dibujando logo:', imgErr)
-        }
-      }
+      pdf.section('Datos de la obra')
+      pdf.fields([
+        ['Obra', p.name],
+        ['Ubicación', p.location || 'Sin ubicación registrada'],
+        ['Cliente', p.client_name || 'Sin registro'],
+        ['Inicio de obra', p.start_date ? formatDateOnly(p.start_date) : 'Sin registro'],
+        ['Director de obra', director?.full_name || 'Sin registro'],
+        ['Áreas o frentes', `${areasCount ?? 0}`],
+        ['Avance físico actual', `${p.physical_progress || 0}%`],
+        ['Bitácoras en el periodo', `${reports.length} (${signed} firmadas, ${reports.length - signed} pendientes)`],
+      ])
 
-      // 2. Report Title
-      doc.setTextColor(30, 41, 59)
-      doc.setFontSize(16)
-      doc.setFont('helvetica', 'bold')
-      doc.text('EXPEDIENTE TÉCNICO Y AVANCE DE OBRA', 14, 48)
+      pdf.section(`Resumen financiero al ${formatDateOnly(dTo)}`)
+      pdf.fields([
+        ['Presupuesto autorizado', formatMoney(fin.budget)],
+        ['Presupuesto por ejercer', `${formatMoney(fin.budgetRemaining)}${fin.budgetUsedPct !== null ? ` (ejercido ${fin.budgetUsedPct}%)` : ''}`],
+        ['Ingresos recibidos', canSeeIncomes ? formatMoney(fin.incomes) : 'Solo visible para el director'],
+        ['Gastos pagados', formatMoney(fin.expenses)],
+        ['Saldo de caja (ingresos menos gastos)', canSeeIncomes ? formatMoney(fin.cash) : 'Solo visible para el director'],
+      ])
+      pdf.paragraph('El presupuesto autorizado no es dinero disponible. El saldo de caja solo considera ingresos recibidos y gastos pagados.', { size: 8, color: [90, 100, 120] })
 
-      doc.setFontSize(9)
-      doc.setFont('helvetica', 'normal')
-      doc.setTextColor(100, 116, 139)
-      doc.text(`Fecha de Emisión: ${new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}`, 130, 48)
-
-      // Divider
-      doc.setDrawColor(226, 232, 240)
-      doc.setLineWidth(0.5)
-      doc.line(14, 52, 196, 52)
-
-      // 3. Project Summary Box
-      doc.setFillColor(248, 250, 252)
-      doc.rect(14, 58, 182, 38, 'F')
-      doc.setDrawColor(203, 213, 225)
-      doc.rect(14, 58, 182, 38, 'S')
-
-      doc.setFontSize(10)
-      
-      // Left Column
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(51, 65, 85)
-      doc.text('Nombre de la Obra:', 18, 68)
-      doc.setFont('helvetica', 'normal')
-      doc.text(project.name || 'N/A', 60, 68)
-
-      doc.setFont('helvetica', 'bold')
-      doc.text('Ubicación:', 18, 76)
-      doc.setFont('helvetica', 'normal')
-      doc.text(project.location || 'Sin ubicación registrada', 60, 76)
-
-      doc.setFont('helvetica', 'bold')
-      doc.text('Áreas / Frentes:', 18, 84)
-      doc.setFont('helvetica', 'normal')
-      doc.text(`${areasCount} área(s) activas`, 60, 84)
-
-      // Right Column
-      doc.setFont('helvetica', 'bold')
-      doc.text('Avance Físico:', 125, 68)
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(37, 99, 235) // Blue-600
-      doc.text(`${project.physical_progress || 0}%`, 160, 68)
-
-      doc.setTextColor(51, 65, 85)
-      doc.setFont('helvetica', 'bold')
-      doc.text('Presupuesto Base:', 125, 76)
-      doc.setFont('helvetica', 'normal')
-      doc.text(`$${(project.base_budget || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN`, 160, 76)
-
-      doc.setFont('helvetica', 'bold')
-      doc.text('Gastos Registrados:', 125, 84)
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(220, 38, 38) // Red-600
-      doc.text(`-$${totalExpenses.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN`, 160, 84)
-
-      // 4. Recent Reports Section
-      currentY = 108
-      doc.setTextColor(30, 41, 59)
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(13)
-      doc.text('ÚLTIMOS REPORTES DIARIOS DE BITÁCORA', 14, currentY)
-
-      doc.setDrawColor(226, 232, 240)
-      doc.line(14, currentY + 3, 196, currentY + 3)
-      currentY += 10
-
-      if (recentReports.length === 0) {
-        doc.setFont('helvetica', 'italic')
-        doc.setFontSize(10)
-        doc.setTextColor(100, 116, 139)
-        doc.text('No hay reportes diarios registrados recientemente en esta obra.', 14, currentY)
-        currentY += 15
+      pdf.section('Bitácoras del periodo')
+      if (reports.length === 0) {
+        pdf.paragraph(`No hay bitácoras registradas en el periodo: ${periodLabel}.`, { color: [90, 100, 120] })
       } else {
-        recentReports.forEach((rep, index) => {
-          const repDate = new Date(rep.report_date).toLocaleDateString('es-MX', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-          })
-          const notesText = rep.progress_notes || 'Sin observaciones.'
-          const splitNotes = doc.splitTextToSize(notesText, 172)
-          const boxHeight = 16 + (splitNotes.length * 4.5)
-
-          checkPageBreak(boxHeight + 6)
-
-          // Report Header Box
-          doc.setFillColor(241, 245, 249) // Slate-100
-          doc.rect(14, currentY, 182, 8, 'F')
-          doc.setDrawColor(203, 213, 225)
-          doc.rect(14, currentY, 182, boxHeight, 'S')
-
-          doc.setFontSize(9)
+        for (const r of reports) {
+          const creator = r.creator as unknown as Person
+          const signer = r.signer as unknown as Person
+          const acceptor = r.acceptor as unknown as Person
+          const area = (r.project_areas as unknown as { name?: string } | null)?.name || 'General'
+          pdf.ensure(30)
+          const doc = pdf.doc
+          doc.setFillColor(241, 242, 244)
+          doc.rect(14, pdf.y - 4.5, 182, 7, 'F')
           doc.setFont('helvetica', 'bold')
-          doc.setTextColor(30, 41, 59)
-          doc.text(`[${repDate}] Área: ${rep.area_name || 'General'}`, 18, currentY + 5.5)
-
-          doc.setFont('helvetica', 'normal')
-          doc.setTextColor(100, 116, 139)
-          doc.text(`Responsable: ${rep.created_by_name || 'Residente de Obra'}`, 125, currentY + 5.5)
-
-          // Report Body Text
-          doc.setFontSize(9)
-          doc.setTextColor(51, 65, 85)
-          doc.text(splitNotes, 18, currentY + 14)
-
-          currentY += boxHeight + 6
-        })
+          doc.setFontSize(9.5)
+          doc.setTextColor(3, 16, 51)
+          doc.text(`${r.folio || 'Sin folio'}  ·  ${formatDateOnly(r.report_date, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}  ·  ${area}`, 16, pdf.y)
+          pdf.y += 7
+          const signLine =
+            r.status === 'firmada'
+              ? `Firmada por ${signer?.full_name || 'el director'}${r.signed_at ? ` el ${formatDateTime(r.signed_at)}` : ''}`
+              : r.status === 'aceptada'
+              ? `Aceptada por ${acceptor?.full_name || 'el residente'}${r.accepted_at ? ` el ${formatDateTime(r.accepted_at)}` : ''}. Pendiente de firma del director`
+              : STATUS_LABELS.pendiente
+          pdf.paragraph(
+            `Elaboró: ${[creator?.full_name, roleLabel(creator?.role)].filter(Boolean).join(', ') || 'Sin registro'}${(r.version || 1) > 1 ? `  ·  Versión ${r.version}` : ''}\n${signLine}`,
+            { size: 8, color: [90, 100, 120] }
+          )
+          pdf.paragraph(r.progress_notes || 'Sin observaciones.', { size: 9.5 })
+          pdf.y += 2
+        }
       }
 
-      // 5. Signature Footer
-      checkPageBreak(35)
-      const footerY = Math.max(currentY + 20, pageHeight - 35)
+      pdf.section('Firmas del expediente')
+      pdf.signatures([
+        { label: 'Elaboró el expediente', name: me?.full_name, role: roleLabel(me?.role), required: true },
+        { label: 'Vo. Bo. director de obra', name: director?.full_name, role: 'Director de obra', required: true },
+      ])
 
-      doc.setDrawColor(203, 213, 225)
-      doc.line(20, footerY, 85, footerY)
-      doc.setFontSize(9)
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(51, 65, 85)
-      doc.text('Firma Residente Responsable', 25, footerY + 5)
-      doc.setFont('helvetica', 'normal')
-      doc.setFontSize(8)
-      doc.setTextColor(100, 116, 139)
-      doc.text('Supervisión de Campo / Bitácora', 27, footerY + 9)
-
-      doc.setDrawColor(203, 213, 225)
-      doc.line(125, footerY, 190, footerY)
-      doc.setFontSize(9)
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(51, 65, 85)
-      doc.text('Firma Director de Obra / Vo.Bo.', 128, footerY + 5)
-      doc.setFont('helvetica', 'normal')
-      doc.setFontSize(8)
-      doc.setTextColor(100, 116, 139)
-      doc.text('Aprobación General de Proyecto', 133, footerY + 9)
-
-      // Footer
-      doc.setFontSize(8)
-      doc.setTextColor(148, 163, 184)
-      doc.text(`Generado por la Plataforma Bitacor.AI el ${new Date().toLocaleString('es-MX')}`, 14, pageHeight - 10)
-      doc.text('Documento Oficial de Control', 160, pageHeight - 10)
-
-      // Save
-      doc.save(`Expediente_Obra_${project.name.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.pdf`)
+      pdf.save(
+        `Expediente_${slug(p.name)}_${dFrom ? `${dFrom}_a_${dTo}` : `hasta_${dTo}`}.pdf`,
+        `Expediente de ${p.name} · Periodo: ${periodLabel}`
+      )
+      setOpen(false)
     } catch (err) {
-      console.error('Error generando PDF de obra:', err)
-      alert('Hubo un error al generar el archivo PDF del proyecto.')
+      console.error('Error generando expediente:', err)
+      setError(err instanceof Error ? err.message : 'No se pudo generar el expediente. Inténtalo de nuevo.')
     } finally {
       setExporting(false)
     }
   }
 
   return (
-    <Button
-      onClick={generatePDF}
-      disabled={exporting}
-      variant="default"
-      size="sm"
-      className="h-11 gap-2 px-4"
-    >
-      <FileText className="w-4 h-4 text-white" />
-      {exporting ? 'Generando PDF…' : 'Exportar Expediente Oficial (PDF)'}
-    </Button>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger
+        render={
+          <Button className="h-11 gap-2 px-4">
+            <FileText className="h-4 w-4" aria-hidden />
+            Exportar expediente
+          </Button>
+        }
+      />
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Exportar expediente</DialogTitle>
+          <DialogDescription>
+            Elige el periodo. El PDF incluye todas las bitácoras de esas fechas y el periodo queda impreso en el documento.
+          </DialogDescription>
+        </DialogHeader>
+
+        <fieldset>
+          <legend className="mb-2 text-sm font-semibold text-plano">Periodo</legend>
+          <div className="grid grid-cols-2 gap-2">
+            {PERIODS.map((opt) => (
+              <label
+                key={opt.value}
+                className={`flex min-h-11 items-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors ${
+                  period === opt.value ? 'border-obra bg-accent text-obra-strong' : 'border-border bg-white text-plano hover:bg-muted'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="periodo"
+                  value={opt.value}
+                  checked={period === opt.value}
+                  onChange={() => setPeriod(opt.value)}
+                  className="accent-[var(--obra)]"
+                />
+                {opt.label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        {period === 'rango' && (
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="exp-from">Desde</Label>
+              <Input id="exp-from" type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="exp-to">Hasta</Label>
+              <Input id="exp-to" type="date" value={to} min={from} max={today} onChange={(e) => setTo(e.target.value)} />
+            </div>
+          </div>
+        )}
+
+        {error && (
+          <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+            {error}
+          </p>
+        )}
+
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+          <Button type="button" onClick={generate} disabled={exporting} className="gap-2">
+            {exporting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+            {exporting ? 'Generando…' : 'Descargar PDF'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
-

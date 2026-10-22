@@ -1,5 +1,9 @@
 'use client'
 
+import { sanitizeDoc } from '@/lib/pdf'
+import { formatMoney } from '@/lib/finance'
+
+import { formatDateOnly, formatDateTime } from '@/lib/dates'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Download, FileText, Table as TableIcon, Receipt } from 'lucide-react'
@@ -114,7 +118,7 @@ export function ExportExpensesButton({ expenses, title = 'Control General de Gas
       const logoData = companyLogoUrl ? await loadLogo(companyLogoUrl) : null
 
       const { jsPDF } = await import('jspdf')
-      const doc = new jsPDF()
+      const doc = sanitizeDoc(new jsPDF())
       const pageHeight = doc.internal.pageSize.getHeight()
 
       let currentY = 0
@@ -186,45 +190,42 @@ export function ExportExpensesButton({ expenses, title = 'Control General de Gas
         }
       }
 
-      // 2. Report Title
-      currentY = 45
-      doc.setTextColor(30, 41, 59)
+      // 2. Título y fecha de emisión en renglones separados (antes se encimaban)
+      doc.setTextColor(3, 16, 51)
       doc.setFontSize(15)
       doc.setFont('helvetica', 'bold')
-      doc.text(title.toUpperCase(), 14, 45)
+      const titleLines: string[] = doc.splitTextToSize(title, 182)
+      doc.text(titleLines, 14, 45)
+      let y = 45 + (titleLines.length - 1) * 6.5 + 6
 
       doc.setFontSize(9)
       doc.setFont('helvetica', 'normal')
-      doc.setTextColor(100, 116, 139)
-      doc.text(`Fecha Emisión: ${new Date().toLocaleDateString('es-MX')}`, 155, 45)
+      doc.setTextColor(90, 100, 120)
+      doc.text(`Emitido: ${formatDateTime(new Date())}`, 14, y)
+      y += 4
 
-      doc.setDrawColor(226, 232, 240)
-      doc.setLineWidth(0.5)
-      doc.line(14, 48, 196, 48)
+      doc.setDrawColor(216, 220, 226)
+      doc.setLineWidth(0.4)
+      doc.line(14, y, 196, y)
+      y += 5
 
-      // 3. Summary Box
+      // 3. Resumen
       const totalAmount = expenses.reduce((sum, exp) => sum + (Number(exp.amount) || 0), 0)
-      doc.setFillColor(248, 250, 252)
-      doc.rect(14, 53, 182, 22, 'F')
-      doc.setDrawColor(203, 213, 225)
-      doc.rect(14, 53, 182, 22, 'S')
-
-      doc.setFontSize(10)
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(51, 65, 85)
-      doc.text('Total de Tickets / Gasto Registrado:', 18, 66)
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(220, 38, 38)
-      doc.setFontSize(13)
-      doc.text(`$${totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN`, 95, 66)
+      doc.setFillColor(241, 242, 244)
+      doc.rect(14, y, 182, 18, 'F')
 
       doc.setFontSize(9)
-      doc.setTextColor(100, 116, 139)
       doc.setFont('helvetica', 'normal')
-      doc.text(`Total Comprobantes: ${expenses.length}`, 155, 66)
+      doc.setTextColor(90, 100, 120)
+      doc.text('Gastos pagados en el reporte', 18, y + 7)
+      doc.text(`Comprobantes: ${expenses.length}`, 150, y + 7)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(13)
+      doc.setTextColor(3, 16, 51)
+      doc.text(formatMoney(totalAmount) + ' MXN', 18, y + 14)
 
       // 4. Table of Expenses
-      currentY = 83
+      currentY = y + 26
       drawTableHeader()
 
       if (expenses.length === 0) {
@@ -235,7 +236,7 @@ export function ExportExpensesButton({ expenses, title = 'Control General de Gas
         currentY += 15
       } else {
         expenses.forEach((exp) => {
-          const expDate = exp.expense_date ? new Date(exp.expense_date).toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: '2-digit' }) : 'N/A'
+          const expDate = exp.expense_date ? formatDateOnly(exp.expense_date, { day: '2-digit', month: '2-digit', year: '2-digit' }) : 'N/A'
           const conceptText = exp.concept || 'Sin descripción'
           const splitConcept = doc.splitTextToSize(conceptText, 72)
           const rowHeight = Math.max(8, splitConcept.length * 4 + 4)
@@ -266,7 +267,7 @@ export function ExportExpensesButton({ expenses, title = 'Control General de Gas
       // Footer
       doc.setFontSize(8)
       doc.setTextColor(148, 163, 184)
-      doc.text(`Generado por Bitacor.AI el ${new Date().toLocaleString('es-MX')} | Reporte Oficial de Auditoría`, 14, pageHeight - 10)
+      doc.text(`Generado el ${formatDateTime(new Date())} con Bitacor.AI`, 14, pageHeight - 10)
 
       doc.save(`Reporte_Gastos_${projectName ? projectName.replace(/\s+/g, '_') : 'General'}_${new Date().toISOString().slice(0, 10)}.pdf`)
     } catch (err) {

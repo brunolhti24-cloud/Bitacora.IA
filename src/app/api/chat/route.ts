@@ -1,3 +1,4 @@
+import { summarizeFinance } from '@/lib/finance'
 import { openai } from '@ai-sdk/openai'
 import { streamText, convertToModelMessages } from 'ai'
 import { z } from 'zod'
@@ -65,7 +66,7 @@ Si el usuario te pide una guía, manual o ayuda general de uso, explícale el fu
           },
         },
         getProjectFinancials: {
-          description: 'Obtiene el resumen financiero (presupuesto, gastos, ingresos) de un proyecto dado su nombre.',
+          description: 'Obtiene el resumen financiero de un proyecto: presupuesto autorizado y por ejercer, ingresos recibidos, gastos pagados y saldo de caja. Nunca sumes el presupuesto al efectivo.',
           inputSchema: z.object({
             projectName: z.string().describe('El nombre del proyecto a buscar (ej: "Torre Alta")')
           }),
@@ -82,15 +83,18 @@ Si el usuario te pide una guía, manual o ayuda general de uso, explícale el fu
             const { data: expenses } = await toolSupabase.from('expenses').select('amount').eq('project_id', project.id)
             const { data: incomes } = await toolSupabase.from('incomes').select('amount').eq('project_id', project.id)
 
-            const totalExpenses = expenses?.reduce((sum, e) => sum + e.amount, 0) || 0
-            const totalIncomes = incomes?.reduce((sum, i) => sum + i.amount, 0) || 0
-            
+            // El presupuesto autorizado no es efectivo: se reporta por separado
+            const fin = summarizeFinance(project.base_budget, incomes, expenses)
+
             return {
               proyecto: project.name,
-              presupuesto_base: project.base_budget,
-              gastos_totales: totalExpenses,
-              ingresos_totales: totalIncomes,
-              saldo_disponible: project.base_budget + totalIncomes - totalExpenses
+              presupuesto_autorizado: fin.budget,
+              ingresos_recibidos: fin.incomes,
+              gastos_pagados: fin.expenses,
+              saldo_de_caja: fin.cash,
+              presupuesto_por_ejercer: fin.budgetRemaining,
+              porcentaje_presupuesto_ejercido: fin.budgetUsedPct,
+              nota: 'El saldo de caja es ingresos recibidos menos gastos pagados. El presupuesto por ejercer es lo autorizado menos lo gastado; no es dinero disponible.'
             }
           },
         },
