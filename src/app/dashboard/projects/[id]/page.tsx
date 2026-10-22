@@ -12,6 +12,7 @@ import { UpdateProgressModal } from '@/components/update-progress-modal'
 import { SpecialRequestsList, SpecialRequest } from '@/components/special-requests-list'
 import { ExportProjectPdfButton } from '@/components/export-project-pdf-button'
 import { DeleteAreaButton } from '@/components/delete-area-button'
+import { ProgressTape } from '@/components/progress-tape'
 import { Folder, HardHat, ArrowRight, Building2, MapPin, Layers, FileText, PlusCircle, ArrowLeft, Activity, Boxes, ClipboardList, Wallet } from 'lucide-react'
 
 function getAreaImage(name: string) {
@@ -115,34 +116,24 @@ export default async function ProjectDetailsPage({ params }: { params: Promise<{
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-12">
-      {/* High-Tech Header Banner del Proyecto */}
       <div className="space-y-4">
         <Link
           href="/dashboard"
-          className="inline-flex items-center gap-1.5 text-xs font-extrabold text-blue-600 hover:text-blue-800 transition-colors"
+          className="inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-obra transition-colors hover:text-obra-strong"
         >
-          <ArrowLeft className="w-4 h-4" /> Volver a Proyectos
+          <ArrowLeft className="h-4 w-4" aria-hidden /> Obras
         </Link>
 
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-[2rem] border-2 border-slate-200 shadow-sm">
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="px-3 py-1 rounded-full bg-white text-slate-700 font-bold text-[11px] border border-slate-400 shadow-sm">
-                Obra Activa
+        <div className="flex flex-col gap-4 border-b border-border pb-5 md:flex-row md:items-end md:justify-between">
+          <div className="min-w-0 space-y-1.5">
+            <h1 className="text-3xl font-extrabold text-plano sm:text-4xl">{project.name}</h1>
+            <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+              <span className="inline-flex items-center gap-1">
+                <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                {project.location || 'Sin ubicación'}
               </span>
-              <span className="px-3 py-1 rounded-full bg-white text-slate-700 font-bold text-[11px] border border-slate-400 shadow-sm">
-                {areas?.length || 0} Áreas Registradas
-              </span>
-              <span className="px-3 py-1 rounded-full bg-white text-slate-700 font-bold text-[11px] border border-slate-400 shadow-sm">
-                {totalReportsCount} Bitácoras en total
-              </span>
-            </div>
-
-            <h1 className="text-3xl font-black text-[#031033] tracking-tight">{project.name}</h1>
-
-            <p className="text-xs font-semibold text-slate-500 flex items-center gap-1">
-              <MapPin className="w-3.5 h-3.5 text-[#144CC9]" />
-              <span>{project.location || 'Ubicación no especificada'}</span>
+              <span>{areas?.length || 0} {areas?.length === 1 ? 'área' : 'áreas'}</span>
+              <span>{totalReportsCount} {totalReportsCount === 1 ? 'bitácora' : 'bitácoras'}</span>
             </p>
           </div>
 
@@ -157,33 +148,26 @@ export default async function ProjectDetailsPage({ params }: { params: Promise<{
         </div>
       </div>
 
-      {/* Tarjeta de Avance Físico Global */}
-      <div className="p-5 sm:p-6 bg-[#031033] text-white rounded-[2rem] shadow-lg border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
-        <div className="flex items-center gap-6 flex-1">
-          <div className="relative flex items-center justify-center w-20 h-20 rounded-full bg-[#144CC9] text-white font-black text-2xl shrink-0 shadow-lg">
-            {project.physical_progress}%
-          </div>
-
-          <div className="space-y-3 flex-1 pt-1">
-            <div className="flex items-center justify-between">
-              <span className="text-[13px] font-semibold uppercase tracking-widest text-white">
-                Avance Global de la Obra
-              </span>
-            </div>
-
-            <div className="h-4 w-full bg-slate-100/20 rounded-full overflow-hidden p-0">
-              <div
-                className="h-full bg-gradient-to-r from-teal-300 to-[#A7EC80] rounded-full transition-all duration-500 shadow-sm"
-                style={{ width: `${project.physical_progress}%` }}
-              />
-            </div>
+      {/* Avance físico global */}
+      <section className="plano-grid flex flex-col gap-5 rounded-lg p-5 text-white sm:p-6 md:flex-row md:items-center">
+        <div className="flex flex-1 items-center gap-5">
+          <p className="shrink-0 text-5xl font-extrabold leading-none text-brote [font-stretch:75%]">
+            {project.physical_progress || 0}<span className="text-2xl">%</span>
+          </p>
+          <div className="flex-1 space-y-2">
+            <h2 className="text-sm font-semibold text-white/80">Avance físico de la obra</h2>
+            <ProgressTape
+              value={project.physical_progress || 0}
+              label="Avance físico de la obra"
+              className="cinta-plano"
+            />
           </div>
         </div>
 
-        <div className="mt-4 md:mt-0 flex shrink-0">
+        <div className="flex shrink-0">
           <UpdateProgressModal projectId={project.id} currentProgress={project.physical_progress || 0} />
         </div>
-      </div>
+      </section>
 
       {/* Tabs Navigation */}
       <Tabs defaultValue="areas" className="w-full">

@@ -46,9 +46,9 @@ export function UpdateProgressModal({
           <Button 
             variant="default" 
             size="sm" 
-            className="gap-1.5 text-xs font-semibold text-white bg-[#144CC9] hover:bg-blue-700 rounded-full shadow-sm transition-all h-9 px-4 shrink-0"
+            className="h-11 shrink-0 gap-1.5 rounded-md bg-white px-4 text-sm font-semibold text-plano transition-colors hover:bg-white/85"
           >
-            Editar Avance
+            Actualizar avance
           </Button>
         }
       />

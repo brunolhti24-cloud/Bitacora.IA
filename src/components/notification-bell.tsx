@@ -121,12 +121,12 @@ export function NotificationBell({ userId }: { userId: string }) {
       {/* Botón de la Campanita */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-white hover:text-white/80 transition-all focus:outline-none"
+        className="relative flex h-10 w-10 items-center justify-center rounded-md text-white transition-colors hover:bg-white/10"
         aria-label="Notificaciones"
       >
-        <Bell className="w-6 h-6" />
+        <Bell className="h-5 w-5" aria-hidden />
         {unreadCount > 0 && (
-          <span className="absolute top-2 right-2.5 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-[#031033]" />
+          <span className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-senal border-2 border-plano" />
         )}
       </button>
 
@@ -139,7 +139,7 @@ export function NotificationBell({ userId }: { userId: string }) {
             onClick={() => setIsOpen(false)}
           />
 
-          <div className="fixed inset-x-3 top-16 z-50 max-w-sm mx-auto sm:max-w-none sm:mx-0 sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96 rounded-2xl bg-white shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150 overflow-hidden">
+          <div className="fixed inset-x-3 top-14 z-50 max-w-sm mx-auto sm:max-w-none sm:mx-0 sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96 rounded-lg bg-white text-foreground shadow-xl border border-border animate-in fade-in zoom-in-95 duration-150 overflow-hidden">
             {/* Cabecera */}
             <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-200">
               <div className="flex items-center gap-2">

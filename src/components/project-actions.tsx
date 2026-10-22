@@ -9,24 +9,26 @@ export function ProjectActions({ projectId }: { projectId: string }) {
     <div className="flex items-center gap-1 z-10 relative" onClick={(e) => e.stopPropagation()}>
       <Link
         href={`/dashboard/projects/${projectId}/edit`}
-        className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
-        title="Editar proyecto"
+        className="flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-obra"
+        title="Editar obra"
+        aria-label="Editar obra"
       >
-        <Pencil className="w-4 h-4" />
+        <Pencil className="w-4 h-4" aria-hidden />
       </Link>
       <form action={deleteProject}>
         <input type="hidden" name="id" value={projectId} />
         <button
           type="submit"
-          className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
-          title="Eliminar proyecto"
+          className="flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+          title="Eliminar obra"
+          aria-label="Eliminar obra"
           onClick={(e) => {
-            if (!confirm('¿Estás seguro de eliminar este proyecto permanentemente?')) {
+            if (!confirm('¿Eliminar esta obra permanentemente? Esta acción no se puede deshacer.')) {
               e.preventDefault()
             }
           }}
         >
-          <Trash2 className="w-4 h-4" />
+          <Trash2 className="w-4 h-4" aria-hidden />
         </button>
       </form>
     </div>
