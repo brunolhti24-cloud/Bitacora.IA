@@ -1,5 +1,6 @@
 'use client'
 
+import { Plus } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
@@ -49,10 +50,10 @@ export function NewTaskModal({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button>+ Nueva Tarea</Button>} />
+      <DialogTrigger render={<Button className="h-11 gap-2 px-4"><Plus className="h-4 w-4" aria-hidden />Nueva tarea</Button>} />
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Añadir Tarea</DialogTitle>
+          <DialogTitle>Añadir tarea</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -63,7 +64,7 @@ export function NewTaskModal({
           
           <div className="space-y-2">
             <Label htmlFor="description">Descripción</Label>
-            <Textarea id="description" name="description" placeholder="Detalles de la tarea..." />
+            <Textarea id="description" name="description" placeholder="Detalles de la tarea…" />
           </div>
 
           <div className="space-y-2">
@@ -71,7 +72,7 @@ export function NewTaskModal({
             <select 
               id="assigned_to" 
               name="assigned_to" 
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="flex h-11 w-full rounded-md border border-input bg-white px-3 text-base text-plano transition-colors focus-visible:border-obra md:text-sm"
             >
               <option value="">-- Sin asignar --</option>
               {projectMembers.map((member: any) => (
@@ -85,10 +86,10 @@ export function NewTaskModal({
             </p>
           </div>
 
-          {error && <p className="text-sm text-red-500">{error}</p>}
+          {error && <p className="text-sm text-destructive">{error}</p>}
 
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Guardando...' : 'Crear Tarea'}
+            {loading ? 'Guardando…' : 'Crear Tarea'}
           </Button>
         </form>
       </DialogContent>

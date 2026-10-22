@@ -1,7 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { NewAreaForm } from '@/components/new-area-form'
 import { FinanceTab } from './finance-tab'
@@ -13,7 +11,7 @@ import { SpecialRequestsList, SpecialRequest } from '@/components/special-reques
 import { ExportProjectPdfButton } from '@/components/export-project-pdf-button'
 import { DeleteAreaButton } from '@/components/delete-area-button'
 import { ProgressTape } from '@/components/progress-tape'
-import { Folder, HardHat, ArrowRight, Building2, MapPin, Layers, FileText, PlusCircle, ArrowLeft, Activity, Boxes, ClipboardList, Wallet } from 'lucide-react'
+import { MapPin, PlusCircle, ArrowLeft } from 'lucide-react'
 
 function getAreaImage(name: string) {
   const lower = name.toLowerCase()
@@ -169,124 +167,88 @@ export default async function ProjectDetailsPage({ params }: { params: Promise<{
         </div>
       </section>
 
-      {/* Tabs Navigation */}
-      <Tabs defaultValue="areas" className="w-full">
-        <TabsList className={`w-full flex md:grid ${(!isOperador) ? 'md:grid-cols-5' : 'md:grid-cols-4'} p-1.5 bg-[#A7EC80] rounded-3xl md:rounded-full mb-8 shadow-sm h-auto md:h-12 overflow-x-auto justify-start`}>
-          <TabsTrigger
-            value="areas"
-            className="rounded-full font-semibold text-sm text-[#031033] hover:text-[#031033]/80 data-[state=active]:bg-white data-[state=active]:text-[#031033] data-[state=active]:shadow-md transition-all h-full"
-          >
-            Áreas ({areas?.length || 0})
-          </TabsTrigger>
-          <TabsTrigger
-            value="materials"
-            className="rounded-full font-semibold text-sm text-[#031033] hover:text-[#031033]/80 data-[state=active]:bg-white data-[state=active]:text-[#031033] data-[state=active]:shadow-md transition-all h-full"
-          >
-            Materiales
-          </TabsTrigger>
-          <TabsTrigger
-            value="kanban"
-            className="rounded-full font-semibold text-sm text-[#031033] hover:text-[#031033]/80 data-[state=active]:bg-white data-[state=active]:text-[#031033] data-[state=active]:shadow-md transition-all h-full"
-          >
-            Kanban
-          </TabsTrigger>
-          {!isOperador && (
-            <TabsTrigger
-              value="finances"
-              className="rounded-full font-semibold text-sm text-[#031033] hover:text-[#031033]/80 data-[state=active]:bg-white data-[state=active]:text-[#031033] data-[state=active]:shadow-md transition-all h-full"
-            >
-              {isAdmin ? 'Finanzas' : 'Gastos'}
+      {/* Pestañas de la obra: subrayado, con scroll horizontal en celular */}
+      <Tabs defaultValue="areas" className="w-full min-w-0 gap-6">
+        <div className="-mx-3 min-w-0 overflow-x-auto border-b border-border px-3 sm:mx-0 sm:px-0">
+          <TabsList variant="line" className="h-auto! gap-0 p-0">
+            <TabsTrigger value="areas" className="h-11 flex-none rounded-none px-3 text-sm font-semibold text-muted-foreground hover:text-plano data-active:text-plano group-data-horizontal/tabs:after:bottom-0 after:h-[3px]! after:bg-obra! sm:px-4">
+              Áreas <span className="ml-1 text-muted-foreground">{areas?.length || 0}</span>
             </TabsTrigger>
-          )}
-          <TabsTrigger
-            value="solicitudes"
-            className="rounded-full font-semibold text-sm text-[#031033] hover:text-[#031033]/80 data-[state=active]:bg-white data-[state=active]:text-[#031033] data-[state=active]:shadow-md transition-all h-full"
-          >
-            Solicitudes
-          </TabsTrigger>
-        </TabsList>
+            <TabsTrigger value="materials" className="h-11 flex-none rounded-none px-3 text-sm font-semibold text-muted-foreground hover:text-plano data-active:text-plano group-data-horizontal/tabs:after:bottom-0 after:h-[3px]! after:bg-obra! sm:px-4">Materiales</TabsTrigger>
+            <TabsTrigger value="kanban" className="h-11 flex-none rounded-none px-3 text-sm font-semibold text-muted-foreground hover:text-plano data-active:text-plano group-data-horizontal/tabs:after:bottom-0 after:h-[3px]! after:bg-obra! sm:px-4">Tareas</TabsTrigger>
+            {!isOperador && (
+              <TabsTrigger value="finances" className="h-11 flex-none rounded-none px-3 text-sm font-semibold text-muted-foreground hover:text-plano data-active:text-plano group-data-horizontal/tabs:after:bottom-0 after:h-[3px]! after:bg-obra! sm:px-4">{isAdmin ? 'Finanzas' : 'Gastos'}</TabsTrigger>
+            )}
+            <TabsTrigger value="solicitudes" className="h-11 flex-none rounded-none px-3 text-sm font-semibold text-muted-foreground hover:text-plano data-active:text-plano group-data-horizontal/tabs:after:bottom-0 after:h-[3px]! after:bg-obra! sm:px-4">Solicitudes</TabsTrigger>
+          </TabsList>
+        </div>
 
-        <TabsContent value="areas" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-black text-[#031033] flex items-center gap-2">
-                <Folder className="w-6 h-6 text-[#144CC9]" />
-                Áreas y frentes de trabajo
-              </h2>
-              <p className="text-xs text-slate-500 mt-1">
-                Haz clic en cualquier área para revisar bitácoras diarias o crear reportes instantáneos.
-              </p>
-            </div>
+        <TabsContent value="areas" className="space-y-5">
+          <div>
+            <h2 className="text-xl font-bold text-plano">Áreas y frentes de trabajo</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Entra a un área para ver su historial de bitácoras o registrar una nueva.
+            </p>
           </div>
-          
-          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-            {areas?.map((area) => {
-              const count = area.daily_reports[0]?.count || 0
 
-              return (
-                <Card
-                  key={area.id}
-                  className="h-full border border-slate-200 rounded-[1.5rem] bg-white shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group overflow-hidden"
-                >
-                  {/* Imagen Header */}
-                  <div className="relative h-36 w-full overflow-hidden bg-slate-100 shrink-0">
-                    <img 
-                      src={getAreaImage(area.name)} 
-                      alt={area.name} 
-                      className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" 
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-                    
-                    {/* Botones Flotantes (Badges y Delete) sobre la imagen */}
-                    <div className="absolute top-3 right-3 flex items-center gap-2">
-                      {count > 0 ? (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white border border-white/40 flex items-center gap-1.5 shadow-sm">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#A7EC80]"></span>
-                          {count} {count === 1 ? 'bitácora' : 'bitácoras'}
-                        </span>
-                      ) : (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/40 backdrop-blur-sm text-white border border-white/20 flex items-center gap-1.5 shadow-sm">
-                          <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-                          0 bitácoras
-                        </span>
+          {(areas?.length || 0) > 0 && (
+            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {areas?.map((area) => {
+                const count = area.daily_reports[0]?.count || 0
+
+                return (
+                  <li
+                    key={area.id}
+                    className="group relative flex flex-col overflow-hidden rounded-lg border border-border bg-card transition-colors duration-200 hover:border-obra/60"
+                  >
+                    <div className="relative h-32 w-full shrink-0 overflow-hidden bg-plano">
+                      <img src={getAreaImage(area.name)} alt="" loading="lazy" className="h-full w-full object-cover" />
+                      {isAdmin && (
+                        <div className="absolute right-2 top-2 z-10">
+                          <DeleteAreaButton areaId={area.id} areaName={area.name} />
+                        </div>
                       )}
-                      {isAdmin && <DeleteAreaButton areaId={area.id} areaName={area.name} />}
                     </div>
 
-                    <div className="absolute bottom-3 left-4">
-                      <h3 className="font-extrabold text-xl text-white drop-shadow-md">
-                        {area.name}
-                      </h3>
-                      <p className="text-xs text-slate-200 font-medium mt-0.5">Frente de Trabajo</p>
-                    </div>
-                  </div>
-                  
-                  {/* Body del Card */}
-                  <div className="p-4 pt-5 flex items-center justify-between gap-2 mt-auto">
-                    <Link
-                      href={`/dashboard/projects/${project.id}/areas/${area.id}/bitacoras/new`}
-                      className="px-3 py-1.5 rounded-full bg-[#144CC9] hover:bg-blue-600 text-white font-bold text-[11px] transition-colors flex items-center gap-1 shadow-sm"
-                    >
-                      + Bitácora
-                    </Link>
+                    <div className="flex flex-1 flex-col gap-3 p-4">
+                      <div className="min-w-0">
+                        <h3 className="truncate text-lg font-bold text-plano">
+                          <Link
+                            href={`/dashboard/projects/${project.id}/areas/${area.id}`}
+                            className="after:absolute after:inset-0 after:content-['']"
+                          >
+                            {area.name}
+                          </Link>
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          {count === 0 ? 'Sin bitácoras todavía' : `${count} ${count === 1 ? 'bitácora' : 'bitácoras'}`}
+                        </p>
+                      </div>
 
-                    <Link
-                      href={`/dashboard/projects/${project.id}/areas/${area.id}`}
-                      className="text-xs font-bold text-[#144CC9] hover:text-blue-800 flex items-center gap-1 transition-colors"
-                    >
-                      <span>Ver historial</span>
-                      <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
-                    </Link>
-                  </div>
-                </Card>
-              )
-            })}
-          </div>
+                      <Link
+                        href={`/dashboard/projects/${project.id}/areas/${area.id}/bitacoras/new`}
+                        className="relative z-10 mt-auto inline-flex h-10 w-fit items-center gap-1.5 rounded-md bg-obra px-3.5 text-sm font-semibold text-white transition-colors hover:bg-obra-strong"
+                      >
+                        <PlusCircle className="h-4 w-4" aria-hidden />
+                        Nueva bitácora
+                      </Link>
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+
+          {(areas?.length || 0) === 0 && !isAdmin && (
+            <p className="rounded-lg border-2 border-dashed border-junta bg-card p-6 text-sm text-muted-foreground">
+              Esta obra todavía no tiene áreas. El director de obra puede crearlas.
+            </p>
+          )}
 
           {isAdmin && (
-            <Card className="p-6 bg-white/70 backdrop-blur-md border-2 border-dashed border-slate-300 rounded-3xl hover:border-blue-400 transition-colors">
+            <div className="rounded-lg border-2 border-dashed border-junta bg-card p-5 transition-colors hover:border-obra/50">
               <NewAreaForm projectId={project.id} />
-            </Card>
+            </div>
           )}
         </TabsContent>
 
@@ -305,8 +267,8 @@ export default async function ProjectDetailsPage({ params }: { params: Promise<{
         )}
 
         <TabsContent value="solicitudes" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-slate-900">Solicitudes del Proyecto</h2>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-xl font-bold text-plano">Solicitudes de la obra</h2>
             <NewSpecialRequestModal defaultProjectId={project.id} />
           </div>
           <SpecialRequestsList requests={specialRequests} isAdmin={isAdmin} />

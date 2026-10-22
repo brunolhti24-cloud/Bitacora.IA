@@ -111,7 +111,7 @@ export function NewTicketModal({
           if (aiAmount) setAmount(String(aiAmount))
           if (aiCategory) setCategory(aiCategory)
           if (aiDate) setExpenseDate(aiDate)
-          setScanMessage('✨ ¡Datos extraídos automáticamente del ticket!')
+          setScanMessage('¡Datos extraídos automáticamente del ticket!')
         } else {
           alert(data.error || 'No se pudo leer el ticket con IA.')
         }
@@ -123,38 +123,38 @@ export function NewTicketModal({
     }
   }
 
-  const selectClasses = "flex h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm focus:bg-white focus:border-blue-500 focus:outline-none"
+  const selectClasses = "flex h-11 w-full rounded-md border border-input bg-white px-3 text-base text-plano transition-colors focus-visible:border-obra md:text-sm"
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
-          <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-sm">
-            <Receipt className="h-4 w-4" />
+          <Button className="h-11 gap-2 px-4">
+            <Receipt className="h-4 w-4" aria-hidden />
             {buttonText}
           </Button>
         }
       />
-      <DialogContent className="w-[95vw] sm:max-w-[520px] rounded-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+      <DialogContent className="sm:max-w-[520px]">
         <form action={action}>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-xl font-bold text-slate-900">
-              <Receipt className="h-5 w-5 text-emerald-600" />
-              Registrar Ticket de Gasto
+            <DialogTitle className="flex items-center gap-2 text-xl font-bold text-plano">
+              <Receipt className="h-5 w-5 text-ok" />
+              Registrar ticket de gasto
             </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">
+            <DialogDescription className="text-xs text-muted-foreground">
               Sube la foto de tu comprobante y usa IA para autollenar los campos al instante.
             </DialogDescription>
           </DialogHeader>
 
           {state?.error && (
-            <div className="mt-2 rounded-xl bg-red-50 p-3 text-xs font-medium text-red-600 border border-red-200">
+            <div className="mt-2 rounded-md bg-destructive/5 p-3 text-xs font-medium text-destructive border border-destructive/30">
               {state.error}
             </div>
           )}
 
           {scanMessage && (
-            <div className="mt-2 rounded-xl bg-blue-50 p-3 text-xs font-medium text-blue-700 border border-blue-200">
+            <div className="mt-2 rounded-md bg-accent p-3 text-xs font-medium text-obra-strong border border-obra/25">
               {scanMessage}
             </div>
           )}
@@ -163,8 +163,8 @@ export function NewTicketModal({
             {/* Selección de Proyecto si aplica */}
             {!projectId && projects.length > 0 && (
               <div className="space-y-1.5">
-                <Label htmlFor="project_id" className="text-xs font-semibold uppercase tracking-wider text-slate-700">
-                  Proyecto u Obra *
+                <Label htmlFor="project_id">
+                  Proyecto u obra *
                 </Label>
                 <select
                   id="project_id"
@@ -185,8 +185,8 @@ export function NewTicketModal({
             {/* Foto del Ticket + Botón Escanear con IA */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <Label htmlFor="receipt" className="text-xs font-semibold uppercase tracking-wider text-slate-700">
-                  Foto del Comprobante / Ticket *
+                <Label htmlFor="receipt">
+                  Foto del comprobante / ticket *
                 </Label>
                 
                 {selectedFile && (
@@ -196,16 +196,16 @@ export function NewTicketModal({
                     disabled={scanning}
                     size="sm"
                     variant="outline"
-                    className="h-7 text-xs gap-1.5 bg-blue-50 border-blue-200 text-blue-700 font-semibold"
+                    className="h-7 text-xs gap-1.5 bg-accent border-obra/25 text-obra-strong font-semibold"
                   >
                     {scanning ? (
                       <>
-                        <Loader2 className="h-3 w-3 animate-spin text-blue-600" />
-                        Leyendo ticket...
+                        <Loader2 className="h-3 w-3 animate-spin text-obra" />
+                        Leyendo ticket…
                       </>
                     ) : (
                       <>
-                        <Sparkles className="h-3 w-3 text-blue-600" />
+                        <Sparkles className="h-3 w-3 text-obra" />
                         Escanear con IA
                       </>
                     )}
@@ -213,13 +213,13 @@ export function NewTicketModal({
                 )}
               </div>
 
-              <div className="flex items-center gap-3 p-3 rounded-xl border border-dashed border-slate-300 bg-slate-50/50">
+              <div className="flex items-center gap-3 p-3 rounded-md border border-dashed border-junta bg-muted/40">
                 {imagePreview ? (
                   <div className="h-16 w-20 rounded-lg overflow-hidden border bg-white shrink-0">
                     <img src={imagePreview} alt="Ticket Preview" className="h-full w-full object-cover" />
                   </div>
                 ) : (
-                  <div className="h-14 w-14 rounded-lg bg-slate-200/70 flex items-center justify-center text-slate-400 shrink-0">
+                  <div className="h-14 w-14 rounded-lg bg-secondary/70 flex items-center justify-center text-muted-foreground shrink-0">
                     <ImageIcon className="h-6 w-6" />
                   </div>
                 )}
@@ -230,38 +230,38 @@ export function NewTicketModal({
                     type="file"
                     accept="image/*,.pdf"
                     onChange={handleImageChange}
-                    className="text-xs cursor-pointer file:mr-2 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100"
+                    className="h-auto py-2 text-sm file:mr-3 file:h-9 file:rounded-md file:bg-white file:px-3 file:text-sm file:font-semibold file:text-plano file:ring-1 file:ring-border"
                   />
-                  <p className="text-[11px] text-slate-500">Selecciona la foto y presiona 'Escanear con IA'.</p>
+                  <p className="text-xs text-muted-foreground">Selecciona la foto y presiona 'Escanear con IA'.</p>
                 </div>
               </div>
             </div>
 
             {/* Concepto del Gasto */}
             <div className="space-y-1.5">
-              <Label htmlFor="description" className="text-xs font-semibold uppercase tracking-wider text-slate-700">
-                Concepto / Descripción del Ticket *
+              <Label htmlFor="description">
+                Concepto / descripción del ticket *
               </Label>
               <input type="hidden" name="concept" value={concept} />
               <Input
                 id="description"
                 name="description"
-                placeholder="Ej. Compra de 10 bultos cemento, Diésel camioneta..."
+                placeholder="Ej. Compra de 10 bultos cemento, Diésel camioneta…"
                 value={concept}
                 onChange={(e) => setConcept(e.target.value)}
                 required
-                className="h-11 bg-slate-50/50 border-slate-200 rounded-xl"
+                className="h-11 bg-muted/40 border-border rounded-md"
               />
             </div>
 
             {/* Monto y Fecha en 2 columnas */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="amount" className="text-xs font-semibold uppercase tracking-wider text-slate-700">
+                <Label htmlFor="amount">
                   Monto ($ MXN) *
                 </Label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-muted-foreground">
                     <DollarSign className="h-4 w-4" />
                   </div>
                   <input type="hidden" name="amount" value={amount.replace(/,/g, '')} />
@@ -272,17 +272,17 @@ export function NewTicketModal({
                     value={amount}
                     onChange={handleAmountChange}
                     required
-                    className="pl-9 h-11 bg-slate-50/50 border-slate-200 rounded-xl font-semibold text-slate-900"
+                    className="pl-9"
                   />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="expense_date" className="text-xs font-semibold uppercase tracking-wider text-slate-700">
-                  Fecha del Ticket *
+                <Label htmlFor="expense_date">
+                  Fecha del ticket *
                 </Label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-muted-foreground">
                     <Calendar className="h-4 w-4" />
                   </div>
                   <Input
@@ -292,7 +292,7 @@ export function NewTicketModal({
                     value={expenseDate}
                     onChange={(e) => setExpenseDate(e.target.value)}
                     required
-                    className="pl-9 h-11 bg-slate-50/50 border-slate-200 rounded-xl text-xs"
+                    className="pl-9 h-11 bg-muted/40 border-border rounded-md text-xs"
                   />
                 </div>
               </div>
@@ -300,7 +300,7 @@ export function NewTicketModal({
 
             {/* Categoría */}
             <div className="space-y-1.5">
-              <Label htmlFor="category" className="text-xs font-semibold uppercase tracking-wider text-slate-700">
+              <Label htmlFor="category">
                 Categoría *
               </Label>
               <select 
@@ -310,22 +310,22 @@ export function NewTicketModal({
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
               >
-                <option value="Materiales">🧱 Materiales de Construcción</option>
-                <option value="Mano de Obra">👷 Mano de Obra / Salarios</option>
-                <option value="Herramientas">🛠️ Herramientas y Equipamiento</option>
-                <option value="Combustible">⛽ Combustible y Viáticos</option>
-                <option value="Varios">📦 Gastos Varios</option>
+                <option value="Materiales">Materiales de Construcción</option>
+                <option value="Mano de Obra">Mano de Obra / Salarios</option>
+                <option value="Herramientas">Herramientas y Equipamiento</option>
+                <option value="Combustible">Combustible y Viáticos</option>
+                <option value="Varios">Gastos Varios</option>
               </select>
             </div>
 
           </div>
 
           <DialogFooter className="gap-2">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)} className="rounded-xl">
+            <Button type="button" variant="outline" onClick={() => setOpen(false)} className="rounded-md">
               Cancelar
             </Button>
-            <Button type="submit" disabled={isPending} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl px-6">
-              {isPending ? 'Guardando Ticket...' : 'Registrar Ticket'}
+            <Button type="submit" disabled={isPending} className="bg-ok hover:bg-ok/90 text-white font-bold rounded-md px-6">
+              {isPending ? 'Guardando Ticket…' : 'Registrar Ticket'}
             </Button>
           </DialogFooter>
         </form>

@@ -81,8 +81,8 @@ export function SignaturePad({ name = 'signature_url' }: { name?: string }) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <label className="text-sm font-medium text-slate-700 flex items-center gap-1.5">
-          <PenTool className="w-4 h-4 text-blue-600" /> Firma Digital del Responsable *
+        <label className="text-sm font-medium text-plano/80 flex items-center gap-1.5">
+          <PenTool className="w-4 h-4 text-obra" /> Firma Digital del Responsable *
         </label>
         {hasSignature && (
           <Button
@@ -90,14 +90,14 @@ export function SignaturePad({ name = 'signature_url' }: { name?: string }) {
             variant="ghost"
             size="sm"
             onClick={clearCanvas}
-            className="h-7 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 gap-1 px-2"
+            className="h-9 text-sm text-destructive hover:text-destructive hover:bg-destructive/5 gap-1 px-2"
           >
             <Eraser className="w-3 h-3" /> Limpiar firma
           </Button>
         )}
       </div>
 
-      <div className="relative border-2 border-dashed border-slate-300 rounded-lg bg-slate-50/50 hover:bg-slate-50 transition-colors overflow-hidden">
+      <div className="relative border-2 border-dashed border-junta rounded-lg bg-muted/40 hover:bg-muted/50 transition-colors overflow-hidden">
         <canvas
           ref={canvasRef}
           onMouseDown={startDrawing}
@@ -111,12 +111,11 @@ export function SignaturePad({ name = 'signature_url' }: { name?: string }) {
         />
 
         {!hasSignature && (
-          <div className="absolute inset-0 pointer-events-none flex items-center justify-center text-xs text-slate-400 font-medium">
-            Dibuja tu firma aquí con el mouse o dedo ✍️
-          </div>
+          <div className="absolute inset-0 pointer-events-none flex items-center justify-center text-xs text-muted-foreground font-medium">
+            Dibuja tu firma aquí con el mouse o dedo           </div>
         )}
 
-        <div className="absolute bottom-2 left-4 right-4 pointer-events-none border-b border-slate-300" />
+        <div className="absolute bottom-2 left-4 right-4 pointer-events-none border-b border-junta" />
       </div>
 
       <input type="hidden" name={name} value={signatureData} />

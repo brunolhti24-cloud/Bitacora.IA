@@ -23,7 +23,7 @@ export async function KanbanTab({ projectId }: { projectId: string }) {
 
   if (error) {
     console.error('Error fetching tasks:', error)
-    return <p className="text-red-500">Error cargando las tareas</p>
+    return <p className="text-destructive">Error cargando las tareas</p>
   }
 
   // Operador solo ve tareas; Contratista, Residente y Director pueden crear tareas

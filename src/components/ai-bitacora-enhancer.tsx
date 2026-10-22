@@ -71,7 +71,7 @@ export function AiBitacoraEnhancer({
           onClick={handleEnhance}
           disabled={loading}
           size="sm"
-          className="h-8 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs gap-1.5 shadow-xs"
+          className="h-9 rounded-md bg-plano hover:bg-plano-soft text-white text-sm gap-1.5"
         >
           {loading ? (
             <>
@@ -79,11 +79,11 @@ export function AiBitacoraEnhancer({
             </>
           ) : success ? (
             <>
-              <Check className="w-3.5 h-3.5 text-emerald-400" /> ¡Reporte Pulido!
+              <Check className="w-3.5 h-3.5 text-brote" aria-hidden /> Texto mejorado
             </>
           ) : (
             <>
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" /> Mejorar con IA
+              <Sparkles className="w-3.5 h-3.5 text-brote" aria-hidden /> Mejorar con IA
             </>
           )}
         </Button>
@@ -91,41 +91,41 @@ export function AiBitacoraEnhancer({
 
       {/* Plantillas Rápidas de 1 Clic */}
       <div className="flex flex-wrap items-center gap-1.5 pt-1">
-        <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mr-1">RÁPIDOS:</span>
+        <span className="text-xs font-semibold text-muted-foreground mr-1">RÁPIDOS:</span>
         <button
           type="button"
           onClick={() => insertTemplate('Colado de estructuras y losa principal.')}
-          className="px-2 py-0.5 rounded-full bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-600 text-xs border border-slate-200 transition-colors"
+          className="min-h-9 px-3 rounded-full bg-white hover:bg-accent hover:text-obra-strong text-plano/80 text-sm border border-border transition-colors"
         >
-          🧱 Colado
+          Colado
         </button>
         <button
           type="button"
           onClick={() => insertTemplate('Recepción de material e insumos de construcción.')}
-          className="px-2 py-0.5 rounded-full bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-600 text-xs border border-slate-200 transition-colors"
+          className="min-h-9 px-3 rounded-full bg-white hover:bg-accent hover:text-obra-strong text-plano/80 text-sm border border-border transition-colors"
         >
-          📦 Materiales
+          Materiales
         </button>
         <button
           type="button"
           onClick={() => insertTemplate('Excavación y trabajos de cimentación.')}
-          className="px-2 py-0.5 rounded-full bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-600 text-xs border border-slate-200 transition-colors"
+          className="min-h-9 px-3 rounded-full bg-white hover:bg-accent hover:text-obra-strong text-plano/80 text-sm border border-border transition-colors"
         >
-          🔨 Cimentación
+          Cimentación
         </button>
         <button
           type="button"
           onClick={() => insertTemplate('Instalación eléctrica e hidráulica.')}
-          className="px-2 py-0.5 rounded-full bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-600 text-xs border border-slate-200 transition-colors"
+          className="min-h-9 px-3 rounded-full bg-white hover:bg-accent hover:text-obra-strong text-plano/80 text-sm border border-border transition-colors"
         >
-          ⚡ Instalaciones
+          Instalaciones
         </button>
         <button
           type="button"
           onClick={() => insertTemplate('Limpieza general y retiro de escombros.')}
-          className="px-2 py-0.5 rounded-full bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-600 text-xs border border-slate-200 transition-colors"
+          className="min-h-9 px-3 rounded-full bg-white hover:bg-accent hover:text-obra-strong text-plano/80 text-sm border border-border transition-colors"
         >
-          🧹 Limpieza
+          Limpieza
         </button>
       </div>
     </div>

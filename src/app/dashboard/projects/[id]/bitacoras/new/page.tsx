@@ -46,14 +46,14 @@ export default function NewBitacoraPage({ params }: { params: Promise<{ id: stri
   return (
     <div className="mx-auto max-w-lg space-y-6 pb-20 md:pb-0">
       <div className="flex items-center gap-4">
-        <Link href={`/dashboard/projects/${projectId}`} className="text-sm text-blue-600 hover:underline">
+        <Link href={`/dashboard/projects/${projectId}`} className="text-sm text-obra hover:underline">
           &larr; Volver al Proyecto
         </Link>
       </div>
 
       <Card className="border-0 shadow-none md:border md:shadow-sm">
         <CardHeader className="px-0 md:px-6">
-          <CardTitle className="text-2xl">Nueva Bitácora</CardTitle>
+          <CardTitle className="text-2xl">Nueva bitácora</CardTitle>
           <CardDescription>
             Reporte diario de actividades en obra.
           </CardDescription>
@@ -62,23 +62,23 @@ export default function NewBitacoraPage({ params }: { params: Promise<{ id: stri
           <form action={action} className="space-y-6">
             
             <div className="space-y-2">
-              <Label htmlFor="area_id">Área o Frente de Trabajo *</Label>
+              <Label htmlFor="area_id">Área o frente de trabajo *</Label>
               <select
                 id="area_id"
                 name="area_id"
                 required
                 value={selectedAreaId}
                 onChange={(e) => setSelectedAreaId(e.target.value)}
-                className="flex h-11 w-full rounded-xl border border-slate-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 font-bold"
+                className="flex h-11 w-full rounded-md border border-junta bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-obra font-bold"
               >
-                <option value="">Selecciona un área...</option>
+                <option value="">Selecciona un área…</option>
                 {areas.map(a => (
                   <option key={a.id} value={a.id}>{a.name}</option>
                 ))}
               </select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="report_date">Fecha del Reporte *</Label>
+              <Label htmlFor="report_date">Fecha del reporte *</Label>
               <Input
                 id="report_date"
                 name="report_date"
@@ -90,8 +90,8 @@ export default function NewBitacoraPage({ params }: { params: Promise<{ id: stri
             </div>
             
             <div className="space-y-3">
-              <Label htmlFor="progress_notes" className="text-xs font-semibold uppercase tracking-wider text-slate-700">
-                Avances y Actividades *
+              <Label htmlFor="progress_notes">
+                Avances y actividades *
               </Label>
               
               {/* Módulo con Dictado por Voz, Plantillas de 1 Clic y Mejora con IA */}
@@ -107,13 +107,13 @@ export default function NewBitacoraPage({ params }: { params: Promise<{ id: stri
                 rows={6}
                 value={progressNotes}
                 onChange={(e) => setProgressNotes(e.target.value)}
-                placeholder="Escribe aquí las actividades y notas del avance de la obra..."
-                className="flex w-full rounded-xl border border-slate-300 bg-background px-3 py-2.5 text-base placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                placeholder="Escribe aquí las actividades y notas del avance de la obra…"
+                className="flex w-full rounded-md border border-junta bg-background px-3 py-2.5 text-base placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-obra"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="physical_progress">Actualizar % Avance Físico Global (Opcional)</Label>
+              <Label htmlFor="physical_progress">Actualizar % avance físico global (opcional)</Label>
               <Input
                 id="physical_progress"
                 name="physical_progress"
@@ -129,12 +129,12 @@ export default function NewBitacoraPage({ params }: { params: Promise<{ id: stri
             <SignaturePad name="signature_url" />
 
             {state?.error && (
-              <p className="text-sm font-medium text-red-500">{state.error}</p>
+              <p className="text-sm font-medium text-destructive">{state.error}</p>
             )}
 
             <div className="pt-4">
               <Button type="submit" className="w-full h-12 text-lg font-semibold" disabled={isPending}>
-                {isPending ? 'Guardando Reporte...' : 'Registrar Bitácora'}
+                {isPending ? 'Guardando Reporte…' : 'Registrar Bitácora'}
               </Button>
             </div>
             

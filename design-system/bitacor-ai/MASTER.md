@@ -20,7 +20,11 @@ Definidos en `src/app/globals.css` (`:root`) y expuestos como clases de Tailwind
 | brote | `#A7EC80` | `text-brote` / `bg-brote` | Acento de marca, **solo sobre `plano`** (no tiene contraste sobre blanco) |
 | concreto | `#F1F2F4` | `bg-background` | Fondo de trabajo |
 | junta | `#D8DCE2` | `border-border` | Bordes |
-| señal | `#C2410C` | `text-senal` / `bg-senal` | Pendientes, alertas, notificaciones sin leer |
+| señal | `#C2410C` | `text-senal` / `bg-senal-soft` | Pendientes, por reabastecer, alertas, notificaciones sin leer |
+| ok | `#23803A` | `text-ok` / `bg-ok-soft` | Completado, aprobado, firmado, con existencia |
+
+Errores y acciones destructivas usan `destructive`. Los estados siempre llevan
+texto o ícono además del color.
 
 Para todo lo demás usar los tokens de shadcn (`bg-card`, `text-muted-foreground`,
 `bg-accent`, `text-destructive`…). No usar hex sueltos ni degradados azul→índigo.
@@ -63,8 +67,22 @@ Superficies oscuras pueden usar `.plano-grid` (cuadrícula de plano).
 - Textos: verbos claros ("Nueva obra", "Actualizar avance"); errores dicen qué
   pasó y qué hacer.
 
-## Pendiente
+## Componentes base (`src/components/ui`)
 
-Las pantallas internas (pestañas de proyecto, modales, equipo, perfil, manual)
-todavía usan los colores anteriores (`#144CC9`, `#031033`, `slate-*`). Al tocarlas,
-migrarlas a estos tokens.
+Los primitivos ya traen el estilo del sistema; no sobrescribirlos en cada uso.
+
+- `Button`: 40px por defecto (`sm` 36px, `lg` 44px), `rounded-md`, `font-semibold`.
+- `Input` / `Textarea`: 44px, fondo blanco, `rounded-md`. Solo añadir `pl-10` si hay ícono.
+- `Label`: `text-sm font-semibold text-plano`.
+- `Card`: borde `border-border` (sin ring), `rounded-lg`.
+- `Dialog`: título `text-xl font-bold` condensado, overlay `plano/50`, pie con `border-t`.
+- `select` nativo: `flex h-11 w-full rounded-md border border-input bg-white px-3 text-base text-plano md:text-sm`.
+- Pestañas: `TabsList variant="line"` con subrayado `obra` de 3px y scroll horizontal en celular.
+  Ojo: base-ui marca la pestaña activa con `data-active`, no con `data-[state=active]`.
+
+## Patrones
+
+- Encabezado de página: `h1` + descripción + acción, con `border-b` (ver Obras, Equipo, Perfil, Manual).
+- Métricas: tira `dl` con `gap-px` sobre `bg-border` (Materiales, Equipo), no tarjetas sueltas.
+- Vacíos: `border-2 border-dashed border-junta`, título que invita a actuar y botón.
+- Bitácoras: cada entrada muestra su número de nota (`Nota 014`), igual que una bitácora física.

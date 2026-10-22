@@ -292,14 +292,14 @@ function LoginFormContent() {
           {isLogin && (
             <form action={loginAction} className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-semibold text-plano">Correo electrónico</Label>
+                <Label htmlFor="email">Correo electrónico</Label>
                 <div className="relative">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-muted-foreground"><Mail className="h-4 w-4" aria-hidden /></div>
                   <Input id="email" name="email" type="email" autoComplete="email" placeholder="nombre@constructora.com" required className="h-12 rounded-md border-input bg-white pl-10 text-base text-plano placeholder:text-muted-foreground/70 focus-visible:border-obra" />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-semibold text-plano">Contraseña</Label>
+                <Label htmlFor="password">Contraseña</Label>
                 <div className="relative">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-muted-foreground"><Lock className="h-4 w-4" aria-hidden /></div>
                   <Input id="password" name="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" required className="h-12 rounded-md border-input bg-white pl-10 text-base text-plano placeholder:text-muted-foreground/70 focus-visible:border-obra pr-11" />
@@ -316,7 +316,7 @@ function LoginFormContent() {
           {!isLogin && (
             <form onSubmit={handleSignup} className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="fullName" className="text-sm font-semibold text-plano">Nombre completo</Label>
+                <Label htmlFor="fullName">Nombre completo</Label>
                 <div className="relative">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-muted-foreground"><User className="h-4 w-4" aria-hidden /></div>
                   <Input id="fullName" name="fullName" type="text" autoComplete="name" placeholder="Ing. Bruno García" required className="h-12 rounded-md border-input bg-white pl-10 text-base text-plano placeholder:text-muted-foreground/70 focus-visible:border-obra" />
@@ -324,18 +324,18 @@ function LoginFormContent() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="invite_code" className="text-sm font-semibold text-plano">
+                <Label htmlFor="invite_code">
                   Código de invitación <span className="font-normal text-muted-foreground">(opcional)</span>
                 </Label>
                 <div className="relative">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-muted-foreground"><Ticket className="h-4 w-4" aria-hidden /></div>
-                  <Input id="invite_code" name="invite_code" type="text" placeholder="BOGO-8492" aria-describedby="invite_code_help" value={inviteCode} onChange={(e) => setInviteCode(e.target.value.toUpperCase())} className="h-12 rounded-md border-input bg-white pl-10 text-base text-plano placeholder:text-muted-foreground/70 focus-visible:border-obra font-mono tracking-widest" />
+                  <Input id="invite_code" name="invite_code" type="text" placeholder="BOGO-8492" aria-describedby="invite_code_help" value={inviteCode} onChange={(e) => setInviteCode(e.target.value.toUpperCase())} className="h-12 rounded-md border-input bg-white pl-10 text-base text-plano placeholder:text-muted-foreground/70 focus-visible:border-obra font-mono" />
                 </div>
                 <p id="invite_code_help" className="text-xs text-muted-foreground">Si tu jefe te mandó un código o enlace, escríbelo aquí. Sin código, la cuenta se crea como director de obra.</p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="signupEmail" className="text-sm font-semibold text-plano">Correo electrónico</Label>
+                <Label htmlFor="signupEmail">Correo electrónico</Label>
                 <div className="relative">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-muted-foreground"><Mail className="h-4 w-4" aria-hidden /></div>
                   <Input id="signupEmail" name="email" type="email" autoComplete="email" placeholder="nombre@constructora.com" required className="h-12 rounded-md border-input bg-white pl-10 text-base text-plano placeholder:text-muted-foreground/70 focus-visible:border-obra" />
@@ -343,7 +343,7 @@ function LoginFormContent() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="signupPassword" className="text-sm font-semibold text-plano">Contraseña</Label>
+                <Label htmlFor="signupPassword">Contraseña</Label>
                 <div className="relative">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-muted-foreground"><Lock className="h-4 w-4" aria-hidden /></div>
                   <Input id="signupPassword" name="password" type={showPassword ? 'text' : 'password'} autoComplete="new-password" required className="h-12 rounded-md border-input bg-white pl-10 text-base text-plano placeholder:text-muted-foreground/70 focus-visible:border-obra pr-11" />

@@ -1,12 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { ExportBitacoraPdfButton } from '@/components/export-bitacora-pdf-button'
 import { AcceptBitacoraButton } from '@/components/accept-bitacora-button'
 import { SignBitacoraModal } from '@/components/sign-bitacora-modal'
 import { EditAreaModal } from '@/components/edit-area-modal'
-import { CheckCircle2, FileCheck2, AlertCircle, Clock } from 'lucide-react'
+import { CheckCircle2, FileCheck2, AlertCircle, Clock, ArrowLeft, PlusCircle } from 'lucide-react'
 
 export default async function AreaDetailsPage({ params }: { params: Promise<{ id: string, areaId: string }> }) {
   const resolvedParams = await params
@@ -60,75 +59,85 @@ export default async function AreaDetailsPage({ params }: { params: Promise<{ id
     .order('report_date', { ascending: false })
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <Link href={`/dashboard/projects/${resolvedParams.id}`} className="text-sm font-semibold text-blue-600 hover:underline">
-            &larr; Volver a {area.projects?.name}
-          </Link>
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-              {area.name}
-            </h1>
-            <EditAreaModal areaId={area.id} currentName={area.name} projectId={resolvedParams.id} />
-          </div>
-          <p className="text-gray-500 text-sm">Historial de Bitácoras del Área</p>
-        </div>
-        <Link href={`/dashboard/projects/${resolvedParams.id}/areas/${area.id}/bitacoras/new`}>
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl">
-            + Nueva Bitácora
-          </Button>
+    <div className="mx-auto max-w-4xl space-y-6 pb-12">
+      <div className="space-y-4">
+        <Link
+          href={`/dashboard/projects/${resolvedParams.id}`}
+          className="inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-obra transition-colors hover:text-obra-strong"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden /> {area.projects?.name || 'Obra'}
         </Link>
+
+        <header className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0 space-y-1">
+            <div className="flex items-center gap-2">
+              <h1 className="truncate text-3xl font-extrabold text-plano sm:text-4xl">{area.name}</h1>
+              <EditAreaModal areaId={area.id} currentName={area.name} projectId={resolvedParams.id} />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {reports?.length || 0} {(reports?.length || 0) === 1 ? 'nota' : 'notas'} de bitácora
+            </p>
+          </div>
+          <Link
+            href={`/dashboard/projects/${resolvedParams.id}/areas/${area.id}/bitacoras/new`}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-obra px-5 text-sm font-semibold text-white transition-colors hover:bg-obra-strong"
+          >
+            <PlusCircle className="h-4 w-4" aria-hidden /> Nueva bitácora
+          </Link>
+        </header>
       </div>
 
       <div>
         {reports?.length === 0 ? (
-          <Card className="p-8 text-center bg-gray-50 rounded-2xl border-dashed">
-            <CardDescription className="text-sm">No hay bitácoras registradas para esta área.</CardDescription>
-          </Card>
+          <div className="rounded-lg border-2 border-dashed border-junta bg-card p-8">
+            <h2 className="text-lg font-bold text-plano">Esta área todavía no tiene bitácoras</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Registra la primera nota del día con sus avances y fotos.</p>
+          </div>
         ) : (
           <div className="space-y-4">
-            {reports?.map(report => {
+            {reports?.map((report, idx) => {
+              const noteNumber = String((reports?.length || 0) - idx).padStart(3, '0')
               const status = report.status || 'pendiente'
               const creatorName = report.creator?.full_name || 'Personal de Obra'
               const acceptorName = report.acceptor?.full_name || 'Residente'
               const directorName = (report.signer as any)?.full_name || (report.acceptor as any)?.full_name || 'Director de Obra'
 
               return (
-                <Card key={report.id} className="hover:shadow-md transition-all border rounded-2xl overflow-hidden">
-                  <CardHeader className="py-4 bg-slate-50/50 border-b">
+                <Card key={report.id} className="gap-0 py-0">
+                  <CardHeader className="border-b border-border bg-muted/40 py-4">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div>
-                        <div className="flex items-center gap-2">
-                          <CardTitle className="text-lg font-bold text-slate-900">
-                            Reporte del {new Date(report.report_date).toLocaleDateString('es-MX', {
+                        <p className="text-sm font-semibold text-obra">Nota {noteNumber}</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <CardTitle className="text-lg font-bold text-plano">
+                            {new Date(report.report_date).toLocaleDateString('es-MX', {
                               day: 'numeric', month: 'long', year: 'numeric'
                             })}
                           </CardTitle>
                           
                           {/* Badges de Estado */}
                           {status === 'firmada' ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                              <FileCheck2 className="w-3.5 h-3.5" /> Firmada por Director
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-ok-soft text-ok border border-ok/30">
+                              <FileCheck2 className="w-3.5 h-3.5" aria-hidden /> Firmada por el director
                             </span>
                           ) : status === 'aceptada' ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-300">
-                              <CheckCircle2 className="w-3.5 h-3.5" /> Aceptada por {acceptorName}
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-accent text-obra-strong border border-obra/25">
+                              <CheckCircle2 className="w-3.5 h-3.5" aria-hidden /> Aceptada por {acceptorName}
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
-                              <Clock className="w-3.5 h-3.5" /> Pendiente de Residente
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-senal-soft text-senal border border-senal/30">
+                              <Clock className="w-3.5 h-3.5" aria-hidden /> Falta aceptación del residente
                             </span>
                           )}
                         </div>
                         
-                        <CardDescription className="text-xs text-slate-500 mt-1">
-                          Registrado por: <strong className="text-slate-700">{creatorName}</strong>
+                        <CardDescription className="mt-1 text-sm text-muted-foreground">
+                          Registró <strong className="text-plano/80">{creatorName}</strong>
                         </CardDescription>
                       </div>
 
                       {/* Botones de Acción (Aceptar / Firmar / PDF) */}
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         {(isResidente || isAdmin) && status === 'pendiente' && (
                           <AcceptBitacoraButton
                             reportId={report.id}
@@ -165,20 +174,20 @@ export default async function AreaDetailsPage({ params }: { params: Promise<{ id
                     </div>
                   </CardHeader>
                   
-                  <CardContent className="py-4 space-y-3">
-                    <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 text-sm text-slate-800 whitespace-pre-line">
-                      <strong className="block text-xs uppercase tracking-wider text-slate-500 mb-1">Avances y Actividades:</strong>
+                  <CardContent className="space-y-4 py-5">
+                    <div className="max-w-prose whitespace-pre-line text-base leading-relaxed text-plano">
+                      <h3 className="sr-only">Avances y actividades</h3>
                       {report.progress_notes}
                     </div>
 
                     {/* Alerta de Solicitud Especial para Director */}
                     {report.special_request && (
-                      <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 space-y-1">
-                        <div className="flex items-center gap-1.5 font-bold text-xs uppercase tracking-wider text-amber-800">
-                          <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-                          <span>Solicitud Especial para el Director:</span>
+                      <div className="p-3.5 rounded-md bg-senal-soft border border-senal/30 text-senal space-y-1">
+                        <div className="flex items-center gap-1.5 font-bold text-xs text-senal">
+                          <AlertCircle className="w-4 h-4 text-senal shrink-0" />
+                          <span>Solicitud para el director</span>
                         </div>
-                        <p className="text-sm font-medium pl-5 text-amber-950">
+                        <p className="text-sm font-medium pl-5 text-plano">
                           {report.special_request}
                         </p>
                       </div>
@@ -186,30 +195,30 @@ export default async function AreaDetailsPage({ params }: { params: Promise<{ id
 
                     {/* Visualización de Firmas */}
                     {(report.signature_url || report.director_signature_url) && (
-                      <div className="pt-3 border-t grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-500">
+                      <div className="pt-3 border-t grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-muted-foreground">
                         {report.signature_url && report.signature_url !== report.director_signature_url && (
-                          <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                          <div className="flex items-center justify-between p-2.5 bg-muted/50 rounded-md border border-border">
                             <div>
-                              <span className="font-bold text-slate-700 block text-xs">Firma Responsable:</span>
-                              <span className="text-[11px] text-slate-500">{creatorName}</span>
+                              <span className="font-semibold text-plano block text-xs">Firma del responsable</span>
+                              <span className="text-xs text-muted-foreground">{creatorName}</span>
                             </div>
                             <img
                               src={report.signature_url}
-                              alt="Firma Responsable"
+                              alt={`Firma de ${creatorName}`}
                               className="h-10 border rounded bg-white p-1 max-w-[130px] object-contain shadow-2xs"
                             />
                           </div>
                         )}
                         {report.director_signature_url && (
-                          <div className="flex items-center justify-between p-2.5 bg-emerald-50/70 rounded-xl border border-emerald-200">
+                          <div className="flex items-center justify-between p-2.5 bg-ok-soft rounded-md border border-ok/30">
                             <div>
-                              <span className="font-bold text-emerald-800 block text-xs">Firma Director / Vo.Bo.:</span>
-                              <span className="text-[11px] text-emerald-600 font-medium">{directorName}</span>
+                              <span className="font-semibold text-ok block text-xs">Visto bueno del director</span>
+                              <span className="text-xs text-ok font-medium">{directorName}</span>
                             </div>
                             <img
                               src={report.director_signature_url}
-                              alt="Firma Director"
-                              className="h-10 border border-emerald-300 rounded bg-white p-1 max-w-[130px] object-contain shadow-2xs"
+                              alt={`Firma de ${directorName}`}
+                              className="h-10 border border-ok/30 rounded bg-white p-1 max-w-[130px] object-contain shadow-2xs"
                             />
                           </div>
                         )}

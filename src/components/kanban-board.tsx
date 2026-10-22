@@ -79,7 +79,7 @@ export function KanbanBoard({
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold text-slate-900">Tablero de Tareas</h2>
+        <h2 className="text-xl font-bold text-plano">Tablero de tareas</h2>
         {!hideNewTask && projectId && <NewTaskModal projectId={projectId} projectMembers={projectMembers} />}
       </div>
 
@@ -88,10 +88,10 @@ export function KanbanBoard({
           {COLUMNS.map(column => {
             const columnTasks = tasks.filter(t => t.status === column.id)
             return (
-              <div key={column.id} className="bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-200/80">
-                <h3 className="font-bold mb-4 text-slate-800 dark:text-slate-200 flex justify-between items-center text-sm">
+              <div key={column.id} className="bg-muted/50 p-4 rounded-md border border-border/80">
+                <h3 className="font-bold mb-4 text-plano flex justify-between items-center text-sm">
                   <span>{column.title}</span>
-                  <span className="bg-blue-100 text-blue-700 font-extrabold px-2.5 py-0.5 rounded-full text-xs">
+                  <span className="bg-accent text-obra-strong font-extrabold px-2.5 py-0.5 rounded-full text-xs">
                     {columnTasks.length}
                   </span>
                 </h3>
@@ -111,11 +111,11 @@ export function KanbanBoard({
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
                             >
-                              <Card className="cursor-grab active:cursor-grabbing hover:border-blue-500 hover:shadow-md transition-all rounded-xl border border-slate-200 bg-white group relative">
+                              <Card className="cursor-grab active:cursor-grabbing hover:border-obra hover:shadow-md transition-all rounded-md border border-border bg-white group relative">
                                 <CardContent className="p-4">
                                   {/* Encabezado Tarea con Botón de Eliminar */}
                                   <div className="flex items-start justify-between gap-2">
-                                    <p className="font-bold text-slate-900 text-sm leading-tight flex-1">
+                                    <p className="font-bold text-plano text-sm leading-tight flex-1">
                                       {task.title}
                                     </p>
 
@@ -123,30 +123,30 @@ export function KanbanBoard({
                                       type="button"
                                       onClick={(e) => handleDeleteTask(e, task.id)}
                                       title="Eliminar tarea"
-                                      className="text-slate-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition-colors shrink-0"
+                                      className="text-muted-foreground hover:text-destructive hover:bg-destructive/5 p-1.5 rounded-lg transition-colors shrink-0"
                                     >
                                       <Trash2 className="w-4 h-4" />
                                     </button>
                                   </div>
 
                                   {task.description && (
-                                    <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                                       {task.description}
                                     </p>
                                   )}
 
                                   {task.assigned_to && (
-                                    <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
+                                    <div className="mt-3 pt-2 border-t border-border flex items-center justify-between">
                                       <div className="flex items-center gap-2">
-                                        <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold">
+                                        <div className="w-6 h-6 rounded-full bg-accent text-obra-strong flex items-center justify-center text-xs font-bold">
                                           {task.assigned_to.full_name?.charAt(0) || '@'}
                                         </div>
-                                        <span className="text-xs font-medium text-slate-600">
+                                        <span className="text-xs font-medium text-muted-foreground">
                                           {task.assigned_to.full_name || 'Trabajador'}
                                         </span>
                                       </div>
 
-                                      <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">
+                                      <span className="text-xs font-semibold text-muted-foreground">
                                         {task.assigned_to.role || 'Rol'}
                                       </span>
                                     </div>

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Plus } from 'lucide-react'
 import { createArea } from '@/app/dashboard/projects/[id]/actions'
 
 export function NewAreaForm({ projectId }: { projectId: string }) {
@@ -27,26 +28,29 @@ export function NewAreaForm({ projectId }: { projectId: string }) {
 
   if (!isAdding) {
     return (
-      <Button onClick={() => setIsAdding(true)} variant="outline" className="w-full">
-        + Agregar Nueva Área
+      <Button onClick={() => setIsAdding(true)} variant="ghost" className="h-11 w-full gap-2 text-sm font-semibold text-obra hover:bg-accent hover:text-obra-strong">
+        <Plus className="h-4 w-4" aria-hidden />
+        Agregar área
       </Button>
     )
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:flex-row">
+      <label htmlFor="new-area-name" className="sr-only">Nombre del área</label>
       <Input
+        id="new-area-name"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="Ej. Recámara Principal, Baño 1"
+        placeholder="Recámara principal, baño 1, losa nivel 2…"
         disabled={isPending}
         autoFocus
-        className="flex-1"
+        className="h-11 flex-1"
       />
-      <Button type="submit" disabled={isPending || !name.trim()}>
-        Guardar
+      <Button type="submit" disabled={isPending || !name.trim()} className="h-11 px-4">
+        {isPending ? 'Guardando…' : 'Guardar área'}
       </Button>
-      <Button type="button" variant="ghost" onClick={() => setIsAdding(false)} disabled={isPending}>
+      <Button type="button" variant="ghost" onClick={() => setIsAdding(false)} disabled={isPending} className="h-11 px-4">
         Cancelar
       </Button>
     </form>
