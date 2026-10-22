@@ -35,7 +35,7 @@ export function AcceptBitacoraButton({
 
   if (accepted) {
     return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-accent text-obra-strong border border-obra/25">
         <CheckCircle2 className="w-3.5 h-3.5" /> Aceptada por Residente
       </span>
     )
@@ -46,7 +46,7 @@ export function AcceptBitacoraButton({
       type="button"
       onClick={handleAccept}
       disabled={loading}
-      className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs h-8 rounded-lg gap-1.5 shadow-sm"
+      className="h-10 gap-1.5 px-3.5"
     >
       {loading ? (
         <>

@@ -349,10 +349,10 @@ export function ExportBitacoraPdfButton({ report }: { report: BitacoraReport }) 
       disabled={exporting}
       variant="outline"
       size="sm"
-      className="gap-1.5 text-xs font-semibold text-slate-700 hover:text-blue-600 hover:bg-blue-50 border-slate-200"
+      className="gap-1.5 text-xs font-semibold text-plano/80 hover:text-obra hover:bg-accent border-border"
     >
-      <Download className="w-3.5 h-3.5 text-blue-600" />
-      {exporting ? 'Generando PDF...' : 'Descargar PDF'}
+      <Download className="w-3.5 h-3.5 text-obra" />
+      {exporting ? 'Generando PDF…' : 'Descargar PDF'}
     </Button>
   )
 }

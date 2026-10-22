@@ -16,35 +16,31 @@ export default function GlobalError({
   }, [error])
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center p-6">
-      <div className="max-w-md w-full bg-slate-800/90 border border-slate-700/80 rounded-3xl p-8 text-center backdrop-blur-xl shadow-2xl space-y-6">
-        <div className="w-16 h-16 mx-auto rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
-          <AlertTriangle className="w-8 h-8" />
-        </div>
+    <div className="plano-grid flex min-h-screen items-center justify-center p-6 text-white">
+      <div role="alert" className="w-full max-w-md space-y-6 rounded-lg border border-white/15 bg-plano p-8">
+        <AlertTriangle className="h-8 w-8 text-senal" aria-hidden />
 
         <div className="space-y-2">
-          <h2 className="text-2xl font-black tracking-tight text-white">
-            Algo no cargó correctamente
-          </h2>
-          <p className="text-sm text-slate-400 font-medium">
-            Ocurrió un error al cargar la información. Puedes intentar recargar la página o volver al panel de control.
+          <h2 className="text-2xl font-extrabold">Esta página no cargó</h2>
+          <p className="text-sm text-white/70">
+            Hubo un error al traer la información. Vuelve a intentarlo; si sigue fallando, regresa a tus obras y entra de nuevo.
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 pt-2">
+        <div className="flex flex-col gap-3 sm:flex-row">
           <button
             onClick={() => reset()}
-            className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm transition-all shadow-md shadow-blue-600/30"
+            className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-md bg-white px-5 text-sm font-semibold text-plano transition-colors hover:bg-white/85"
           >
-            <RotateCcw className="w-4 h-4" />
-            <span>Reintentar</span>
+            <RotateCcw className="h-4 w-4" aria-hidden />
+            Reintentar
           </button>
           <Link
             href="/dashboard"
-            className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-bold text-sm transition-all"
+            className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-md border border-white/25 px-5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
           >
-            <Home className="w-4 h-4" />
-            <span>Dashboard</span>
+            <Home className="h-4 w-4" aria-hidden />
+            Ir a mis obras
           </Link>
         </div>
       </div>

@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+import { Archivo, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const plusJakarta = Plus_Jakarta_Sans({
-  variable: "--font-plus-jakarta",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+// Archivo con eje de ancho: condensada para títulos (rotulación de obra), normal para texto
+const archivo = Archivo({
+  variable: "--font-archivo",
+  subsets: ["latin", "latin-ext"],
+  axes: ["wdth"],
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -28,9 +29,9 @@ export default function RootLayout({
       lang="es"
       translate="no"
       suppressHydrationWarning
-      className={`${plusJakarta.variable} ${jetbrainsMono.variable} h-full antialiased font-sans`}
+      className={`${archivo.variable} ${jetbrainsMono.variable} h-full antialiased font-sans`}
     >
-      <body className="min-h-full flex flex-col bg-slate-100 text-slate-900 selection:bg-blue-600 selection:text-white" suppressHydrationWarning>
+      <body className="min-h-full flex flex-col bg-background text-foreground selection:bg-obra selection:text-white" suppressHydrationWarning>
         {children}
       </body>
     </html>

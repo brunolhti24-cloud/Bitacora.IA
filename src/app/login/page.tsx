@@ -7,21 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { login, validateInviteCode, incrementInviteUsage, upsertProfile } from './actions'
 import { createClient } from '@/lib/supabase/client'
-import { 
-  Building2, 
-  Mail, 
-  Lock, 
-  User, 
-  Eye, 
-  EyeOff, 
-  ShieldCheck, 
-  CheckCircle2, 
-  Sparkles,
-  ArrowRight,
-  HardHat,
-  FileSpreadsheet,
-  Ticket
-} from 'lucide-react'
+import { Mail, Lock, User, Eye, EyeOff, HardHat, Ticket, PenLine, AlertTriangle } from 'lucide-react'
 
 const initialState = {
   error: null as string | null,
@@ -194,118 +180,111 @@ function LoginFormContent() {
     }
   }
 
-  return (
-    <div className="flex min-h-screen w-full bg-white text-slate-900 font-sans overflow-hidden" translate="no">
-      {/* Columna Izquierda: Branding Hero Visual */}
-      <div className="relative hidden w-1/2 flex-col justify-between p-12 lg:flex overflow-hidden bg-[#031033]">
-        <div className="absolute inset-0 bg-[radial-gradient(#144CC9_1px,transparent_1px)] [background-size:24px_24px] opacity-15 z-0" />
-        <div className="absolute -top-24 -left-24 w-96 h-96 bg-[#144CC9]/20 rounded-full blur-3xl pointer-events-none" />
+  const tabClass = (active: boolean) =>
+    `flex-1 min-h-10 rounded-[5px] text-sm font-semibold transition-colors duration-150 ${
+      active ? 'bg-white text-plano shadow-[0_1px_2px_rgb(3_16_51/0.12)]' : 'text-muted-foreground hover:text-plano'
+    }`
 
-        <div className="relative z-10 flex items-center gap-3">
-          <div className="flex items-center justify-center">
-            <img src="/logo.png" alt="Bitacor.AI Logo" className="h-12 w-12 object-contain drop-shadow-xl" />
-          </div>
-          <div>
-            <span className="text-2xl font-black tracking-tight text-white">Bitacor.AI</span>
-          </div>
+  const passwordToggle = (
+    <button
+      type="button"
+      onClick={() => setShowPassword(!showPassword)}
+      className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-muted-foreground transition-colors hover:text-plano"
+      aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+    >
+      {showPassword ? <EyeOff className="h-4 w-4" aria-hidden /> : <Eye className="h-4 w-4" aria-hidden />}
+    </button>
+  )
+
+  const spinner = <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" aria-hidden />
+
+  return (
+    <div className="flex min-h-screen w-full bg-background text-plano" translate="no">
+      {/* Columna izquierda: plano de obra */}
+      <aside className="plano-grid relative hidden w-1/2 flex-col justify-between p-12 text-white lg:flex xl:p-16">
+        <div className="flex items-center gap-3">
+          <img src="/logo.png" alt="" className="h-11 w-11 object-contain" />
+          <span className="text-2xl font-extrabold tracking-tight [font-stretch:84%]">Bitacor.AI</span>
         </div>
 
-        <div className="relative z-10 my-auto space-y-6 max-w-lg">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1.5 text-xs font-semibold text-[#A7EC80] ring-1 ring-inset ring-white/20 backdrop-blur-md">
-            <Sparkles className="h-3.5 w-3.5 text-[#A7EC80]" />
-            <span>Sistema Integral de Gestión de Construcción</span>
-          </div>
-          
-          <h1 className="text-4xl font-extrabold tracking-tight text-white leading-tight lg:text-5xl">
-            Control total de tus obras en <span className="text-[#A7EC80]">tiempo real</span>.
+        <div className="max-w-lg space-y-8">
+          <h1 className="text-5xl font-extrabold leading-[1.02] [font-stretch:72%] xl:text-6xl">
+            La bitácora de obra, firmada desde el sitio.
           </h1>
-
-          <p className="text-base text-slate-300 leading-relaxed font-medium">
-            Administra proyectos, bitácoras de campo con firma digital, tablero Kanban de tareas, finanzas y solicitudes especiales de materiales o maquinaria.
+          <p className="max-w-md text-base leading-relaxed text-white/75">
+            Registra cada nota de bitácora con fotos y firma digital, lleva el avance por área, los gastos y los materiales, y entrega el PDF oficial sin capturar nada dos veces.
           </p>
 
-          <div className="grid grid-cols-2 gap-4 pt-4">
-            <div className="rounded-2xl bg-white/5 p-4 border border-white/10 backdrop-blur-md">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 rounded-lg bg-[#144CC9]/20 text-[#144CC9]"><HardHat className="w-5 h-5" /></div>
-                <span className="text-2xl font-black text-white">100%</span>
-              </div>
-              <p className="text-xs text-slate-300 font-medium">Digitalización de Bitácoras de Campo</p>
+          {/* Muestra de una nota de bitácora */}
+          <figure className="max-w-md rounded-md border border-white/15 bg-plano/80 p-5">
+            <div className="flex items-baseline justify-between gap-4 border-b border-white/10 pb-3">
+              <span className="text-sm font-semibold text-brote">Nota 014</span>
+              <span className="text-xs text-white/55">Losa de azotea, nivel 3</span>
             </div>
-            <div className="rounded-2xl bg-white/5 p-4 border border-white/10 backdrop-blur-md">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 rounded-lg bg-[#A7EC80]/20 text-[#A7EC80]"><FileSpreadsheet className="w-5 h-5" /></div>
-                <span className="text-2xl font-black text-white">PDFs</span>
-              </div>
-              <p className="text-xs text-slate-300 font-medium">Exportación Oficial con Firma Digital</p>
-            </div>
-          </div>
+            <blockquote className="pt-3 text-sm leading-relaxed text-white/85">
+              Se realiza el colado de losa con concreto f&apos;c=250 kg/cm². Se toman 4 muestras para prueba de cilindros.
+            </blockquote>
+            <figcaption className="mt-4 flex items-center gap-2 text-xs text-white/60">
+              <PenLine className="h-3.5 w-3.5 text-brote" aria-hidden />
+              Firmada por el residente y el director de obra
+            </figcaption>
+          </figure>
         </div>
 
-        <div className="relative z-10 flex items-center justify-between text-xs text-slate-400 border-t border-white/10 pt-6">
-          <span>© 2026 Bitacor.AI. Todos los derechos reservados.</span>
-          <span className="flex items-center gap-1 text-[#A7EC80]">
-            <ShieldCheck className="w-4 h-4 text-[#A7EC80]" /> Plataforma Segura
-          </span>
-        </div>
-      </div>
+        <p className="text-xs text-white/50">© {new Date().getFullYear()} Bitacor.AI</p>
+      </aside>
 
-      {/* Columna Derecha: Formulario */}
-      <div className="flex w-full flex-col justify-center px-6 py-12 lg:w-1/2 lg:px-16 xl:px-24 bg-white relative">
-        <div className="mx-auto w-full max-w-md space-y-8">
-          
-          <div className="flex items-center gap-3 lg:hidden mb-6">
-            <img src="/logo.png" alt="Bitacor.AI Logo" className="h-10 w-10 object-contain drop-shadow-sm" />
-            <span className="text-2xl font-black text-[#031033]">Bitacor.AI</span>
+      {/* Columna derecha: formulario */}
+      <main className="flex w-full flex-col justify-center bg-white px-5 py-10 sm:px-8 lg:w-1/2 lg:px-16 xl:px-24">
+        <div className="mx-auto w-full max-w-md space-y-7">
+          <div className="flex items-center gap-3 lg:hidden">
+            <img src="/logo.png" alt="" className="h-10 w-10 object-contain" />
+            <span className="text-2xl font-extrabold tracking-tight [font-stretch:84%]">Bitacor.AI</span>
           </div>
 
           {inviteFromUrl && (
-            <div className="p-4 rounded-xl bg-gradient-to-r from-blue-900/40 to-indigo-900/40 border border-blue-500/30 text-xs text-blue-200 space-y-1">
-              <div className="font-bold text-white flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-blue-400" /> Invitación a Integrarte al Equipo
-              </div>
+            <div className="flex gap-3 rounded-md border border-obra/25 bg-accent p-4 text-sm text-accent-foreground">
+              <Ticket className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
               <p>
-                Te han invitado a unirte como <strong className="capitalize text-white">{roleFromUrl || 'Miembro del Equipo'}</strong>. Completa tus datos abajo para acceder.
+                Te invitaron a unirte como <strong className="capitalize">{roleFromUrl || 'miembro del equipo'}</strong>. Completa tus datos para entrar.
               </p>
             </div>
           )}
 
-          <div className="flex rounded-xl bg-[#EAEBEF] p-1 border border-slate-200">
+          <div className="flex rounded-md bg-muted p-1" role="group" aria-label="Tipo de acceso">
             <button
               type="button"
+              aria-pressed={isLogin}
               onClick={() => { setIsLogin(true); setSignupError(null) }}
-              className={`flex-1 rounded-lg py-2.5 text-sm font-bold transition-all duration-200 ${
-                isLogin ? 'bg-white text-[#031033] shadow-sm' : 'text-slate-500 hover:text-[#031033]'
-              }`}
+              className={tabClass(isLogin)}
             >
-              Iniciar Sesión
+              Iniciar sesión
             </button>
             <button
               type="button"
+              aria-pressed={!isLogin}
               onClick={() => { setIsLogin(false); setSignupError(null) }}
-              className={`flex-1 rounded-lg py-2.5 text-sm font-bold transition-all duration-200 ${
-                !isLogin ? 'bg-white text-[#031033] shadow-sm' : 'text-slate-500 hover:text-[#031033]'
-              }`}
+              className={tabClass(!isLogin)}
             >
-              Crear Cuenta
+              Crear cuenta
             </button>
           </div>
 
-          <div className="space-y-2">
-            <h2 className="text-3xl font-black tracking-tight text-[#031033]">
-              {isLogin ? '¡Bienvenido de nuevo!' : 'Registra tu cuenta'}
+          <div className="space-y-1.5">
+            <h2 className="text-3xl font-extrabold">
+              {isLogin ? 'Entra a tus obras' : 'Crea tu cuenta'}
             </h2>
-            <p className="text-sm font-medium text-slate-500">
-              {isLogin 
-                ? 'Ingresa tus credenciales para gestionar tus obras' 
-                : 'Crea tu cuenta de Director de Obra o ingresa con tu código de invitación'}
+            <p className="text-sm text-muted-foreground">
+              {isLogin
+                ? 'Usa el correo y la contraseña con los que te registraste.'
+                : 'Regístrate como director de obra, o usa el código de invitación que te enviaron.'}
             </p>
           </div>
 
           {currentError && (
-            <div className="rounded-xl bg-red-500/10 p-4 text-sm text-red-400 border border-red-500/20 flex items-start gap-3">
-              <div className="p-1 rounded-full bg-red-500/20 text-red-400 shrink-0">⚠️</div>
-              <div className="flex-1 font-medium">{currentError}</div>
+            <div role="alert" className="flex items-start gap-3 rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+              <p className="flex-1">{currentError}</p>
             </div>
           )}
 
@@ -313,28 +292,22 @@ function LoginFormContent() {
           {isLogin && (
             <form action={loginAction} className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-[#031033]">Correo Electrónico *</Label>
+                <Label htmlFor="email">Correo electrónico</Label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400"><Mail className="h-4 w-4" /></div>
-                  <Input id="email" name="email" type="email" placeholder="nombre@ejemplo.com" required className="pl-10 h-12 bg-white border-slate-200 text-[#031033] font-medium placeholder:text-slate-400 focus:border-[#144CC9] rounded-xl" />
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-muted-foreground"><Mail className="h-4 w-4" aria-hidden /></div>
+                  <Input id="email" name="email" type="email" autoComplete="email" placeholder="nombre@constructora.com" required className="h-12 rounded-md border-input bg-white pl-10 text-base text-plano placeholder:text-muted-foreground/70 focus-visible:border-obra" />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-xs font-bold uppercase tracking-wider text-[#031033]">Contraseña *</Label>
+                <Label htmlFor="password">Contraseña</Label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400"><Lock className="h-4 w-4" /></div>
-                  <Input id="password" name="password" type={showPassword ? 'text' : 'password'} placeholder="••••••••••••" required className="pl-10 pr-10 h-12 bg-white border-slate-200 text-[#031033] font-medium placeholder:text-slate-400 focus:border-[#144CC9] rounded-xl" />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 hover:text-[#031033] transition-colors">
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-muted-foreground"><Lock className="h-4 w-4" aria-hidden /></div>
+                  <Input id="password" name="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" required className="h-12 rounded-md border-input bg-white pl-10 text-base text-plano placeholder:text-muted-foreground/70 focus-visible:border-obra pr-11" />
+                  {passwordToggle}
                 </div>
               </div>
-              <Button type="submit" disabled={isPending} className="w-full h-12 bg-[#144CC9] hover:bg-blue-700 text-white font-bold rounded-full shadow-lg shadow-[#144CC9]/25 text-base gap-2 transition-all">
-                {isPending ? (
-                  <span className="flex items-center gap-2"><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Procesando...</span>
-                ) : (
-                  <span className="flex items-center gap-2">Ingresar a Bitacor.AI<ArrowRight className="w-4 h-4" /></span>
-                )}
+              <Button type="submit" disabled={isPending} className="h-12 w-full gap-2 rounded-md bg-obra text-base font-semibold text-white transition-colors hover:bg-obra-strong">
+                {isPending ? <>{spinner}Entrando…</> : 'Iniciar sesión'}
               </Button>
             </form>
           )}
@@ -343,68 +316,60 @@ function LoginFormContent() {
           {!isLogin && (
             <form onSubmit={handleSignup} className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="fullName" className="text-xs font-bold uppercase tracking-wider text-[#031033]">Nombre Completo *</Label>
+                <Label htmlFor="fullName">Nombre completo</Label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400"><User className="h-4 w-4" /></div>
-                  <Input id="fullName" name="fullName" type="text" placeholder="Ing. Bruno García" required className="pl-10 h-12 bg-white border-slate-200 text-[#031033] font-medium placeholder:text-slate-400 focus:border-[#144CC9] rounded-xl" />
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-muted-foreground"><User className="h-4 w-4" aria-hidden /></div>
+                  <Input id="fullName" name="fullName" type="text" autoComplete="name" placeholder="Ing. Bruno García" required className="h-12 rounded-md border-input bg-white pl-10 text-base text-plano placeholder:text-muted-foreground/70 focus-visible:border-obra" />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="invite_code" className="text-xs font-bold uppercase tracking-wider text-[#031033]">Código de Invitación (Opcional)</Label>
+                <Label htmlFor="invite_code">
+                  Código de invitación <span className="font-normal text-muted-foreground">(opcional)</span>
+                </Label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400"><Ticket className="h-4 w-4" /></div>
-                  <Input id="invite_code" name="invite_code" type="text" placeholder="Ej. BOGO-8492" value={inviteCode} onChange={(e) => setInviteCode(e.target.value.toUpperCase())} className="pl-10 h-12 bg-white border-slate-200 text-[#031033] font-mono font-bold tracking-widest placeholder:text-slate-400 focus:border-[#144CC9] rounded-xl" />
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-muted-foreground"><Ticket className="h-4 w-4" aria-hidden /></div>
+                  <Input id="invite_code" name="invite_code" type="text" placeholder="BOGO-8492" aria-describedby="invite_code_help" value={inviteCode} onChange={(e) => setInviteCode(e.target.value.toUpperCase())} className="h-12 rounded-md border-input bg-white pl-10 text-base text-plano placeholder:text-muted-foreground/70 focus-visible:border-obra font-mono" />
                 </div>
-                <p className="text-[11px] font-medium text-slate-500">Si tu jefe te envió un código o enlace de invitación, escríbelo aquí.</p>
+                <p id="invite_code_help" className="text-xs text-muted-foreground">Si tu jefe te mandó un código o enlace, escríbelo aquí. Sin código, la cuenta se crea como director de obra.</p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="signupEmail" className="text-xs font-bold uppercase tracking-wider text-[#031033]">Correo Electrónico *</Label>
+                <Label htmlFor="signupEmail">Correo electrónico</Label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400"><Mail className="h-4 w-4" /></div>
-                  <Input id="signupEmail" name="email" type="email" placeholder="nombre@ejemplo.com" required className="pl-10 h-12 bg-white border-slate-200 text-[#031033] font-medium placeholder:text-slate-400 focus:border-[#144CC9] rounded-xl" />
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-muted-foreground"><Mail className="h-4 w-4" aria-hidden /></div>
+                  <Input id="signupEmail" name="email" type="email" autoComplete="email" placeholder="nombre@constructora.com" required className="h-12 rounded-md border-input bg-white pl-10 text-base text-plano placeholder:text-muted-foreground/70 focus-visible:border-obra" />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="signupPassword" className="text-xs font-bold uppercase tracking-wider text-[#031033]">Contraseña *</Label>
+                <Label htmlFor="signupPassword">Contraseña</Label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400"><Lock className="h-4 w-4" /></div>
-                  <Input id="signupPassword" name="password" type={showPassword ? 'text' : 'password'} placeholder="••••••••••••" required className="pl-10 pr-10 h-12 bg-white border-slate-200 text-[#031033] font-medium placeholder:text-slate-400 focus:border-[#144CC9] rounded-xl" />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 hover:text-[#031033] transition-colors">
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-muted-foreground"><Lock className="h-4 w-4" aria-hidden /></div>
+                  <Input id="signupPassword" name="password" type={showPassword ? 'text' : 'password'} autoComplete="new-password" required className="h-12 rounded-md border-input bg-white pl-10 text-base text-plano placeholder:text-muted-foreground/70 focus-visible:border-obra pr-11" />
+                  {passwordToggle}
                 </div>
               </div>
 
-              <Button type="submit" disabled={isPending} className="w-full h-12 bg-[#144CC9] hover:bg-blue-700 text-white font-bold rounded-full shadow-lg shadow-[#144CC9]/25 text-base gap-2 transition-all">
-                {isPending ? (
-                  <span className="flex items-center gap-2"><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Creando cuenta...</span>
-                ) : (
-                  <span className="flex items-center gap-2">Crear Cuenta en Bitacor.AI<ArrowRight className="w-4 h-4" /></span>
-                )}
+              <Button type="submit" disabled={isPending} className="h-12 w-full gap-2 rounded-md bg-obra text-base font-semibold text-white transition-colors hover:bg-obra-strong">
+                {isPending ? <>{spinner}Creando cuenta…</> : 'Crear cuenta'}
               </Button>
             </form>
           )}
 
-          <div className="p-4 rounded-xl bg-[#EAEBEF]/50 border border-slate-200 text-xs text-[#031033] space-y-1">
-            <div className="font-bold flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-[#144CC9]" /> Sistema Multirrol Bitacor.AI
-            </div>
-            <p className="text-slate-600 font-medium">
-              Acceso personalizado para Administrador (Director), Residente de Obra y Subcontratistas.
-            </p>
-          </div>
+          <p className="flex items-start gap-2 border-t border-border pt-5 text-sm text-muted-foreground">
+            <HardHat className="mt-0.5 h-4 w-4 shrink-0 text-obra" aria-hidden />
+            Cada persona ve lo que le toca: director de obra, residente, administración y contratistas.
+          </p>
         </div>
-      </div>
+      </main>
     </div>
   )
 }
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center text-[#031033]">Cargando...</div>}>
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-white text-plano">Cargando…</div>}>
       <LoginFormContent />
     </Suspense>
   )

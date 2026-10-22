@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Bell, CheckCircle2, AlertCircle, Info, ExternalLink, Check, Trash2 } from 'lucide-react'
+import { Bell, CheckCircle2, AlertCircle, Info, ExternalLink, Check, Trash2, X } from 'lucide-react'
 
 interface NotificationItem {
   id: string
@@ -108,11 +108,11 @@ export function NotificationBell({ userId }: { userId: string }) {
   const getIcon = (type: string) => {
     switch (type) {
       case 'alert':
-        return <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+        return <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
       case 'success':
-        return <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+        return <CheckCircle2 className="w-5 h-5 text-ok shrink-0 mt-0.5" />
       default:
-        return <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+        return <Info className="w-5 h-5 text-obra shrink-0 mt-0.5" />
     }
   }
 
@@ -121,12 +121,12 @@ export function NotificationBell({ userId }: { userId: string }) {
       {/* Botón de la Campanita */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-white hover:text-white/80 transition-all focus:outline-none"
+        className="relative flex h-10 w-10 items-center justify-center rounded-md text-white transition-colors hover:bg-white/10"
         aria-label="Notificaciones"
       >
-        <Bell className="w-6 h-6" />
+        <Bell className="h-5 w-5" aria-hidden />
         {unreadCount > 0 && (
-          <span className="absolute top-2 right-2.5 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-[#031033]" />
+          <span className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-senal border-2 border-plano" />
         )}
       </button>
 
@@ -135,17 +135,17 @@ export function NotificationBell({ userId }: { userId: string }) {
         <>
           {/* Backdrop para móvil */}
           <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-xs z-40 sm:hidden"
+            className="fixed inset-0 bg-black/50 z-40 sm:hidden"
             onClick={() => setIsOpen(false)}
           />
 
-          <div className="fixed inset-x-3 top-16 z-50 max-w-sm mx-auto sm:max-w-none sm:mx-0 sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96 rounded-2xl bg-white shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150 overflow-hidden">
+          <div className="fixed inset-x-3 top-14 z-50 max-w-sm mx-auto sm:max-w-none sm:mx-0 sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96 rounded-lg bg-white text-foreground shadow-xl border border-border animate-in fade-in zoom-in-95 duration-150 overflow-hidden">
             {/* Cabecera */}
-            <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-200">
+            <div className="flex items-center justify-between px-4 py-3 bg-muted/50 border-b border-border">
               <div className="flex items-center gap-2">
-                <span className="font-bold text-slate-900 text-sm">Notificaciones</span>
+                <span className="font-bold text-plano text-sm">Notificaciones</span>
                 {unreadCount > 0 && (
-                  <span className="bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-full">
+                  <span className="bg-accent text-obra-strong text-xs font-semibold px-2 py-0.5 rounded-full">
                     {unreadCount} nuevas
                   </span>
                 )}
@@ -154,50 +154,50 @@ export function NotificationBell({ userId }: { userId: string }) {
                 {unreadCount > 0 && (
                   <button
                     onClick={markAllAsRead}
-                    className="text-xs text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1 hover:underline"
+                    className="text-xs text-obra hover:text-obra-strong font-semibold flex items-center gap-1 hover:underline"
                   >
                     <Check className="w-3.5 h-3.5" /> Marcar leídas
                   </button>
                 )}
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="sm:hidden text-slate-400 hover:text-slate-600 p-1"
-                  aria-label="Cerrar"
+                  className="sm:hidden flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-plano"
+                  aria-label="Cerrar notificaciones"
                 >
-                  ✕
+                  <X className="h-4 w-4" aria-hidden />
                 </button>
               </div>
             </div>
 
           {/* Lista de Notificaciones */}
-          <div className="max-h-[380px] overflow-y-auto divide-y divide-slate-100">
+          <div className="max-h-[380px] overflow-y-auto divide-y divide-border">
             {loading ? (
-              <div className="p-6 text-center text-xs text-slate-400 font-medium">Cargando alertas...</div>
+              <div className="p-6 text-center text-xs text-muted-foreground font-medium">Cargando alertas…</div>
             ) : notifications.length === 0 ? (
-              <div className="p-8 text-center text-slate-400">
-                <Bell className="w-8 h-8 text-slate-300 mx-auto mb-2 opacity-50" />
-                <p className="text-xs font-medium text-slate-600">Al día con todo</p>
-                <p className="text-[11px] text-slate-400">No tienes notificaciones pendientes.</p>
+              <div className="p-8 text-center text-muted-foreground">
+                <Bell className="w-8 h-8 text-muted-foreground/50 mx-auto mb-2 opacity-50" />
+                <p className="text-xs font-medium text-muted-foreground">Al día con todo</p>
+                <p className="text-xs text-muted-foreground">No tienes notificaciones pendientes.</p>
               </div>
             ) : (
               notifications.map((notif) => (
                 <div
                   key={notif.id}
                   onClick={() => markAsRead(notif.id, notif.link)}
-                  className={`p-3.5 flex items-start gap-3 hover:bg-slate-50 transition-colors cursor-pointer relative group ${
-                    !notif.read ? 'bg-blue-50/40 font-medium' : ''
+                  className={`p-3.5 flex items-start gap-3 hover:bg-muted/50 transition-colors cursor-pointer relative group ${
+                    !notif.read ? 'bg-accent/40 font-medium' : ''
                   }`}
                 >
                   {getIcon(notif.type)}
 
                   <div className="flex-1 min-w-0 pr-6">
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-xs font-bold text-slate-800 truncate">{notif.title}</p>
-                      {!notif.read && <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0" />}
+                      <p className="text-xs font-bold text-plano truncate">{notif.title}</p>
+                      {!notif.read && <span className="w-2 h-2 rounded-full bg-obra shrink-0" />}
                     </div>
-                    <p className="text-xs text-slate-600 mt-0.5 line-clamp-2 leading-relaxed">{notif.message}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2 leading-relaxed">{notif.message}</p>
                     <div className="flex items-center justify-between mt-1.5">
-                      <span className="text-[10px] text-slate-400">
+                      <span className="text-xs text-muted-foreground">
                         {new Date(notif.created_at).toLocaleDateString('es-MX', {
                           month: 'short',
                           day: 'numeric',
@@ -206,7 +206,7 @@ export function NotificationBell({ userId }: { userId: string }) {
                         })}
                       </span>
                       {notif.link && (
-                        <span className="text-[10px] text-blue-600 font-semibold flex items-center gap-0.5 hover:underline">
+                        <span className="text-xs text-obra font-semibold flex items-center gap-0.5 hover:underline">
                           Ver detalles <ExternalLink className="w-2.5 h-2.5" />
                         </span>
                       )}
@@ -215,7 +215,7 @@ export function NotificationBell({ userId }: { userId: string }) {
 
                   <button
                     onClick={(e) => deleteNotification(e, notif.id)}
-                    className="absolute top-3 right-2 opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                    className="absolute top-3 right-2 opacity-0 group-hover:opacity-100 p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/5 rounded-lg transition-all"
                     title="Eliminar"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -225,12 +225,6 @@ export function NotificationBell({ userId }: { userId: string }) {
             )}
           </div>
 
-          {/* Pie del Desplegable */}
-          <div className="p-2.5 bg-slate-50 border-t border-slate-200 text-center">
-            <span className="text-[11px] text-slate-500 font-medium">
-              🔔 Alerta en tiempo real sobre fondos, tickets y bitácoras
-            </span>
-          </div>
         </div>
       </>
     )}

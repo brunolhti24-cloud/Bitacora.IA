@@ -304,10 +304,10 @@ export function ExportProjectPdfButton({ project, areasCount, recentReports, tot
       disabled={exporting}
       variant="default"
       size="sm"
-      className="gap-2 text-xs font-semibold bg-[#144CC9] text-white hover:bg-blue-700 rounded-full shadow-sm transition-all h-9 px-4"
+      className="h-11 gap-2 px-4"
     >
       <FileText className="w-4 h-4 text-white" />
-      {exporting ? 'Generando PDF...' : 'Exportar Expediente Oficial (PDF)'}
+      {exporting ? 'Generando PDF…' : 'Exportar Expediente Oficial (PDF)'}
     </Button>
   )
 }

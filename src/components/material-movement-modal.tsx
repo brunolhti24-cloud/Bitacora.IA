@@ -62,28 +62,28 @@ export function MaterialMovementModal({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all shadow-2xs cursor-pointer ${
+        className={`inline-flex h-9 items-center gap-1 px-2.5 rounded-md text-sm font-semibold transition-colors ${
           isEntrada
-            ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200'
-            : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200'
+            ? 'bg-ok-soft hover:bg-ok/15 text-ok border border-ok/30'
+            : 'bg-senal-soft hover:bg-senal/15 text-senal border border-senal/30'
         }`}
       >
         {isEntrada ? (
           <>
-            <PlusCircle className="w-3.5 h-3.5 text-emerald-600" /> + Entrada
+            <PlusCircle className="w-4 h-4" aria-hidden /> Entrada
           </>
         ) : (
           <>
-            <MinusCircle className="w-3.5 h-3.5 text-amber-600" /> - Salida
+            <MinusCircle className="w-4 h-4" aria-hidden /> Salida
           </>
         )}
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-xs rounded-2xl">
+      <DialogContent className="sm:max-w-xs rounded-lg">
         <DialogHeader>
-          <DialogTitle className={`flex items-center gap-2 ${isEntrada ? 'text-emerald-700' : 'text-amber-800'}`}>
+          <DialogTitle className={`flex items-center gap-2 ${isEntrada ? 'text-ok' : 'text-senal'}`}>
             {isEntrada ? <PlusCircle className="w-5 h-5" /> : <MinusCircle className="w-5 h-5" />}
-            Registrar {isEntrada ? 'Entrada' : 'Salida'} de Material
+            Registrar {isEntrada ? 'Entrada' : 'Salida'} de material
           </DialogTitle>
           <DialogDescription className="text-xs">
             {isEntrada
@@ -94,8 +94,8 @@ export function MaterialMovementModal({
 
         <form onSubmit={handleSubmit} className="space-y-4 py-2">
           <div className="space-y-1.5">
-            <Label htmlFor="quantity" className="text-xs font-semibold uppercase tracking-wider text-slate-700">
-              Cantidad a {isEntrada ? 'Ingresar' : 'Descontar'} ({unit}) *
+            <Label htmlFor="quantity">
+              Cantidad a {isEntrada ? 'ingresar' : 'descontar'} ({unit})
             </Label>
             <Input
               id="quantity"
@@ -106,19 +106,19 @@ export function MaterialMovementModal({
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
               placeholder="Ej. 15"
-              className="h-11 rounded-xl bg-slate-50/50 text-slate-900 font-bold text-lg"
+              className="h-11 rounded-md bg-muted/40 text-plano font-bold text-lg"
             />
           </div>
 
           <DialogFooter className="pt-2">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)} className="rounded-xl">
+            <Button type="button" variant="outline" onClick={() => setOpen(false)} className="rounded-md">
               Cancelar
             </Button>
             <Button
               type="submit"
               disabled={loading}
-              className={`font-bold rounded-xl px-5 text-white ${
-                isEntrada ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-amber-600 hover:bg-amber-700'
+              className={`font-bold rounded-md px-5 text-white ${
+                isEntrada ? 'bg-ok hover:bg-ok/90' : 'bg-senal hover:bg-senal/90'
               }`}
             >
               {loading ? (
@@ -126,7 +126,7 @@ export function MaterialMovementModal({
                   <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> Guardando...
                 </>
               ) : (
-                `Confirmar ${isEntrada ? 'Entrada' : 'Salida'}`
+                `Registrar ${isEntrada ? 'entrada' : 'salida'}`
               )}
             </Button>
           </DialogFooter>

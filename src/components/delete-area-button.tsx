@@ -48,21 +48,21 @@ export function DeleteAreaButton({ areaId, areaName }: { areaId: string; areaNam
     return (
       <div 
         onClick={(e) => e.stopPropagation()}
-        className="flex items-center gap-1 bg-red-50 border border-red-200 text-red-700 text-xs px-2 py-1 rounded-lg z-10"
+        className="flex items-center gap-2 rounded-md border border-destructive/30 bg-white px-3 py-2 text-sm text-destructive shadow-sm z-10"
       >
         <span>¿Eliminar?</span>
         <button
           type="button"
           onClick={handleDelete}
           disabled={isDeleting}
-          className="font-bold text-red-600 hover:text-red-800 underline ml-1"
+          className="min-h-8 px-1 font-semibold underline hover:text-destructive/80"
         >
           {isDeleting ? <Loader2 className="w-3 h-3 animate-spin inline" /> : 'Sí'}
         </button>
         <button
           type="button"
           onClick={handleCancel}
-          className="text-slate-500 hover:text-slate-700 ml-1"
+          className="min-h-8 px-1 text-muted-foreground hover:text-plano"
         >
           No
         </button>
@@ -76,10 +76,11 @@ export function DeleteAreaButton({ areaId, areaName }: { areaId: string; areaNam
       variant="ghost"
       size="sm"
       onClick={handleDelete}
-      className="h-8 w-8 p-0 text-slate-300 hover:text-red-400 hover:bg-white/10 rounded-lg transition-colors z-10"
+      className="h-10 w-10 p-0 rounded-md bg-plano/75 text-white hover:bg-destructive hover:text-white transition-colors z-10"
       title={`Eliminar área "${areaName}"`}
+      aria-label={`Eliminar área ${areaName}`}
     >
-      <Trash2 className="w-4 h-4" />
+      <Trash2 className="w-4 h-4" aria-hidden />
     </Button>
   )
 }

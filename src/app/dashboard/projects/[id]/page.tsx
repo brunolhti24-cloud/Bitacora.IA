@@ -1,7 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { NewAreaForm } from '@/components/new-area-form'
 import { FinanceTab } from './finance-tab'
@@ -12,7 +10,8 @@ import { UpdateProgressModal } from '@/components/update-progress-modal'
 import { SpecialRequestsList, SpecialRequest } from '@/components/special-requests-list'
 import { ExportProjectPdfButton } from '@/components/export-project-pdf-button'
 import { DeleteAreaButton } from '@/components/delete-area-button'
-import { Folder, HardHat, ArrowRight, Building2, MapPin, Layers, FileText, PlusCircle, ArrowLeft, Activity, Boxes, ClipboardList, Wallet } from 'lucide-react'
+import { ProgressTape } from '@/components/progress-tape'
+import { MapPin, PlusCircle, ArrowLeft } from 'lucide-react'
 
 function getAreaImage(name: string) {
   const lower = name.toLowerCase()
@@ -115,34 +114,24 @@ export default async function ProjectDetailsPage({ params }: { params: Promise<{
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-12">
-      {/* High-Tech Header Banner del Proyecto */}
       <div className="space-y-4">
         <Link
           href="/dashboard"
-          className="inline-flex items-center gap-1.5 text-xs font-extrabold text-blue-600 hover:text-blue-800 transition-colors"
+          className="inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-obra transition-colors hover:text-obra-strong"
         >
-          <ArrowLeft className="w-4 h-4" /> Volver a Proyectos
+          <ArrowLeft className="h-4 w-4" aria-hidden /> Obras
         </Link>
 
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-[2rem] border-2 border-slate-200 shadow-sm">
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="px-3 py-1 rounded-full bg-white text-slate-700 font-bold text-[11px] border border-slate-400 shadow-sm">
-                Obra Activa
+        <div className="flex flex-col gap-4 border-b border-border pb-5 md:flex-row md:items-end md:justify-between">
+          <div className="min-w-0 space-y-1.5">
+            <h1 className="text-3xl font-extrabold text-plano sm:text-4xl">{project.name}</h1>
+            <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+              <span className="inline-flex items-center gap-1">
+                <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                {project.location || 'Sin ubicación'}
               </span>
-              <span className="px-3 py-1 rounded-full bg-white text-slate-700 font-bold text-[11px] border border-slate-400 shadow-sm">
-                {areas?.length || 0} Áreas Registradas
-              </span>
-              <span className="px-3 py-1 rounded-full bg-white text-slate-700 font-bold text-[11px] border border-slate-400 shadow-sm">
-                {totalReportsCount} Bitácoras en total
-              </span>
-            </div>
-
-            <h1 className="text-3xl font-black text-[#031033] tracking-tight">{project.name}</h1>
-
-            <p className="text-xs font-semibold text-slate-500 flex items-center gap-1">
-              <MapPin className="w-3.5 h-3.5 text-[#144CC9]" />
-              <span>{project.location || 'Ubicación no especificada'}</span>
+              <span>{areas?.length || 0} {areas?.length === 1 ? 'área' : 'áreas'}</span>
+              <span>{totalReportsCount} {totalReportsCount === 1 ? 'bitácora' : 'bitácoras'}</span>
             </p>
           </div>
 
@@ -157,152 +146,109 @@ export default async function ProjectDetailsPage({ params }: { params: Promise<{
         </div>
       </div>
 
-      {/* Tarjeta de Avance Físico Global */}
-      <div className="p-5 sm:p-6 bg-[#031033] text-white rounded-[2rem] shadow-lg border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
-        <div className="flex items-center gap-6 flex-1">
-          <div className="relative flex items-center justify-center w-20 h-20 rounded-full bg-[#144CC9] text-white font-black text-2xl shrink-0 shadow-lg">
-            {project.physical_progress}%
-          </div>
-
-          <div className="space-y-3 flex-1 pt-1">
-            <div className="flex items-center justify-between">
-              <span className="text-[13px] font-semibold uppercase tracking-widest text-white">
-                Avance Global de la Obra
-              </span>
-            </div>
-
-            <div className="h-4 w-full bg-slate-100/20 rounded-full overflow-hidden p-0">
-              <div
-                className="h-full bg-gradient-to-r from-teal-300 to-[#A7EC80] rounded-full transition-all duration-500 shadow-sm"
-                style={{ width: `${project.physical_progress}%` }}
-              />
-            </div>
+      {/* Avance físico global */}
+      <section className="plano-grid flex flex-col gap-5 rounded-lg p-5 text-white sm:p-6 md:flex-row md:items-center">
+        <div className="flex flex-1 items-center gap-5">
+          <p className="shrink-0 text-5xl font-extrabold leading-none text-brote [font-stretch:75%]">
+            {project.physical_progress || 0}<span className="text-2xl">%</span>
+          </p>
+          <div className="flex-1 space-y-2">
+            <h2 className="text-sm font-semibold text-white/80">Avance físico de la obra</h2>
+            <ProgressTape
+              value={project.physical_progress || 0}
+              label="Avance físico de la obra"
+              className="cinta-plano"
+            />
           </div>
         </div>
 
-        <div className="mt-4 md:mt-0 flex shrink-0">
+        <div className="flex shrink-0">
           <UpdateProgressModal projectId={project.id} currentProgress={project.physical_progress || 0} />
         </div>
-      </div>
+      </section>
 
-      {/* Tabs Navigation */}
-      <Tabs defaultValue="areas" className="w-full">
-        <TabsList className={`w-full flex md:grid ${(!isOperador) ? 'md:grid-cols-5' : 'md:grid-cols-4'} p-1.5 bg-[#A7EC80] rounded-3xl md:rounded-full mb-8 shadow-sm h-auto md:h-12 overflow-x-auto justify-start`}>
-          <TabsTrigger
-            value="areas"
-            className="rounded-full font-semibold text-sm text-[#031033] hover:text-[#031033]/80 data-[state=active]:bg-white data-[state=active]:text-[#031033] data-[state=active]:shadow-md transition-all h-full"
-          >
-            Áreas ({areas?.length || 0})
-          </TabsTrigger>
-          <TabsTrigger
-            value="materials"
-            className="rounded-full font-semibold text-sm text-[#031033] hover:text-[#031033]/80 data-[state=active]:bg-white data-[state=active]:text-[#031033] data-[state=active]:shadow-md transition-all h-full"
-          >
-            Materiales
-          </TabsTrigger>
-          <TabsTrigger
-            value="kanban"
-            className="rounded-full font-semibold text-sm text-[#031033] hover:text-[#031033]/80 data-[state=active]:bg-white data-[state=active]:text-[#031033] data-[state=active]:shadow-md transition-all h-full"
-          >
-            Kanban
-          </TabsTrigger>
-          {!isOperador && (
-            <TabsTrigger
-              value="finances"
-              className="rounded-full font-semibold text-sm text-[#031033] hover:text-[#031033]/80 data-[state=active]:bg-white data-[state=active]:text-[#031033] data-[state=active]:shadow-md transition-all h-full"
-            >
-              {isAdmin ? 'Finanzas' : 'Gastos'}
+      {/* Pestañas de la obra: subrayado, con scroll horizontal en celular */}
+      <Tabs defaultValue="areas" className="w-full min-w-0 gap-6">
+        <div className="-mx-3 min-w-0 overflow-x-auto border-b border-border px-3 sm:mx-0 sm:px-0">
+          <TabsList variant="line" className="h-auto! gap-0 p-0">
+            <TabsTrigger value="areas" className="h-11 flex-none rounded-none px-3 text-sm font-semibold text-muted-foreground hover:text-plano data-active:text-plano group-data-horizontal/tabs:after:bottom-0 after:h-[3px]! after:bg-obra! sm:px-4">
+              Áreas <span className="ml-1 text-muted-foreground">{areas?.length || 0}</span>
             </TabsTrigger>
-          )}
-          <TabsTrigger
-            value="solicitudes"
-            className="rounded-full font-semibold text-sm text-[#031033] hover:text-[#031033]/80 data-[state=active]:bg-white data-[state=active]:text-[#031033] data-[state=active]:shadow-md transition-all h-full"
-          >
-            Solicitudes
-          </TabsTrigger>
-        </TabsList>
+            <TabsTrigger value="materials" className="h-11 flex-none rounded-none px-3 text-sm font-semibold text-muted-foreground hover:text-plano data-active:text-plano group-data-horizontal/tabs:after:bottom-0 after:h-[3px]! after:bg-obra! sm:px-4">Materiales</TabsTrigger>
+            <TabsTrigger value="kanban" className="h-11 flex-none rounded-none px-3 text-sm font-semibold text-muted-foreground hover:text-plano data-active:text-plano group-data-horizontal/tabs:after:bottom-0 after:h-[3px]! after:bg-obra! sm:px-4">Tareas</TabsTrigger>
+            {!isOperador && (
+              <TabsTrigger value="finances" className="h-11 flex-none rounded-none px-3 text-sm font-semibold text-muted-foreground hover:text-plano data-active:text-plano group-data-horizontal/tabs:after:bottom-0 after:h-[3px]! after:bg-obra! sm:px-4">{isAdmin ? 'Finanzas' : 'Gastos'}</TabsTrigger>
+            )}
+            <TabsTrigger value="solicitudes" className="h-11 flex-none rounded-none px-3 text-sm font-semibold text-muted-foreground hover:text-plano data-active:text-plano group-data-horizontal/tabs:after:bottom-0 after:h-[3px]! after:bg-obra! sm:px-4">Solicitudes</TabsTrigger>
+          </TabsList>
+        </div>
 
-        <TabsContent value="areas" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-black text-[#031033] flex items-center gap-2">
-                <Folder className="w-6 h-6 text-[#144CC9]" />
-                Áreas y frentes de trabajo
-              </h2>
-              <p className="text-xs text-slate-500 mt-1">
-                Haz clic en cualquier área para revisar bitácoras diarias o crear reportes instantáneos.
-              </p>
-            </div>
+        <TabsContent value="areas" className="space-y-5">
+          <div>
+            <h2 className="text-xl font-bold text-plano">Áreas y frentes de trabajo</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Entra a un área para ver su historial de bitácoras o registrar una nueva.
+            </p>
           </div>
-          
-          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-            {areas?.map((area) => {
-              const count = area.daily_reports[0]?.count || 0
 
-              return (
-                <Card
-                  key={area.id}
-                  className="h-full border border-slate-200 rounded-[1.5rem] bg-white shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group overflow-hidden"
-                >
-                  {/* Imagen Header */}
-                  <div className="relative h-36 w-full overflow-hidden bg-slate-100 shrink-0">
-                    <img 
-                      src={getAreaImage(area.name)} 
-                      alt={area.name} 
-                      className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" 
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-                    
-                    {/* Botones Flotantes (Badges y Delete) sobre la imagen */}
-                    <div className="absolute top-3 right-3 flex items-center gap-2">
-                      {count > 0 ? (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white border border-white/40 flex items-center gap-1.5 shadow-sm">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#A7EC80]"></span>
-                          {count} {count === 1 ? 'bitácora' : 'bitácoras'}
-                        </span>
-                      ) : (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/40 backdrop-blur-sm text-white border border-white/20 flex items-center gap-1.5 shadow-sm">
-                          <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-                          0 bitácoras
-                        </span>
+          {(areas?.length || 0) > 0 && (
+            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {areas?.map((area) => {
+                const count = area.daily_reports[0]?.count || 0
+
+                return (
+                  <li
+                    key={area.id}
+                    className="group relative flex flex-col overflow-hidden rounded-lg border border-border bg-card transition-colors duration-200 hover:border-obra/60"
+                  >
+                    <div className="relative h-32 w-full shrink-0 overflow-hidden bg-plano">
+                      <img src={getAreaImage(area.name)} alt="" loading="lazy" className="h-full w-full object-cover" />
+                      {isAdmin && (
+                        <div className="absolute right-2 top-2 z-10">
+                          <DeleteAreaButton areaId={area.id} areaName={area.name} />
+                        </div>
                       )}
-                      {isAdmin && <DeleteAreaButton areaId={area.id} areaName={area.name} />}
                     </div>
 
-                    <div className="absolute bottom-3 left-4">
-                      <h3 className="font-extrabold text-xl text-white drop-shadow-md">
-                        {area.name}
-                      </h3>
-                      <p className="text-xs text-slate-200 font-medium mt-0.5">Frente de Trabajo</p>
-                    </div>
-                  </div>
-                  
-                  {/* Body del Card */}
-                  <div className="p-4 pt-5 flex items-center justify-between gap-2 mt-auto">
-                    <Link
-                      href={`/dashboard/projects/${project.id}/areas/${area.id}/bitacoras/new`}
-                      className="px-3 py-1.5 rounded-full bg-[#144CC9] hover:bg-blue-600 text-white font-bold text-[11px] transition-colors flex items-center gap-1 shadow-sm"
-                    >
-                      + Bitácora
-                    </Link>
+                    <div className="flex flex-1 flex-col gap-3 p-4">
+                      <div className="min-w-0">
+                        <h3 className="truncate text-lg font-bold text-plano">
+                          <Link
+                            href={`/dashboard/projects/${project.id}/areas/${area.id}`}
+                            className="after:absolute after:inset-0 after:content-['']"
+                          >
+                            {area.name}
+                          </Link>
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          {count === 0 ? 'Sin bitácoras todavía' : `${count} ${count === 1 ? 'bitácora' : 'bitácoras'}`}
+                        </p>
+                      </div>
 
-                    <Link
-                      href={`/dashboard/projects/${project.id}/areas/${area.id}`}
-                      className="text-xs font-bold text-[#144CC9] hover:text-blue-800 flex items-center gap-1 transition-colors"
-                    >
-                      <span>Ver historial</span>
-                      <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
-                    </Link>
-                  </div>
-                </Card>
-              )
-            })}
-          </div>
+                      <Link
+                        href={`/dashboard/projects/${project.id}/areas/${area.id}/bitacoras/new`}
+                        className="relative z-10 mt-auto inline-flex h-10 w-fit items-center gap-1.5 rounded-md bg-obra px-3.5 text-sm font-semibold text-white transition-colors hover:bg-obra-strong"
+                      >
+                        <PlusCircle className="h-4 w-4" aria-hidden />
+                        Nueva bitácora
+                      </Link>
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+
+          {(areas?.length || 0) === 0 && !isAdmin && (
+            <p className="rounded-lg border-2 border-dashed border-junta bg-card p-6 text-sm text-muted-foreground">
+              Esta obra todavía no tiene áreas. El director de obra puede crearlas.
+            </p>
+          )}
 
           {isAdmin && (
-            <Card className="p-6 bg-white/70 backdrop-blur-md border-2 border-dashed border-slate-300 rounded-3xl hover:border-blue-400 transition-colors">
+            <div className="rounded-lg border-2 border-dashed border-junta bg-card p-5 transition-colors hover:border-obra/50">
               <NewAreaForm projectId={project.id} />
-            </Card>
+            </div>
           )}
         </TabsContent>
 
@@ -321,8 +267,8 @@ export default async function ProjectDetailsPage({ params }: { params: Promise<{
         )}
 
         <TabsContent value="solicitudes" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-slate-900">Solicitudes del Proyecto</h2>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-xl font-bold text-plano">Solicitudes de la obra</h2>
             <NewSpecialRequestModal defaultProjectId={project.id} />
           </div>
           <SpecialRequestsList requests={specialRequests} isAdmin={isAdmin} />

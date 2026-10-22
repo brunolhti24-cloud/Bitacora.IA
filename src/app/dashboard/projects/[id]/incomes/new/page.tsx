@@ -22,14 +22,14 @@ export default function NewIncomePage({ params }: { params: Promise<{ id: string
   return (
     <div className="mx-auto max-w-lg space-y-6 pb-20 md:pb-0">
       <div className="flex items-center gap-4">
-        <Link href={`/dashboard/projects/${projectId}`} className="text-sm text-blue-600 hover:underline">
+        <Link href={`/dashboard/projects/${projectId}`} className="text-sm text-obra hover:underline">
           &larr; Volver al Proyecto
         </Link>
       </div>
 
       <Card className="border-0 shadow-none md:border md:shadow-sm">
         <CardHeader className="px-0 md:px-6">
-          <CardTitle className="text-2xl">Registrar Ingreso / Anticipo</CardTitle>
+          <CardTitle className="text-2xl">Registrar ingreso / anticipo</CardTitle>
           <CardDescription>
             Registra una entrada de dinero para la obra (solo Admins).
           </CardDescription>
@@ -38,7 +38,7 @@ export default function NewIncomePage({ params }: { params: Promise<{ id: string
           <form action={action} className="space-y-6">
             
             <div className="space-y-2">
-              <Label htmlFor="income_date">Fecha del Ingreso *</Label>
+              <Label htmlFor="income_date">Fecha del ingreso *</Label>
               <Input
                 id="income_date"
                 name="income_date"
@@ -50,7 +50,7 @@ export default function NewIncomePage({ params }: { params: Promise<{ id: string
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Concepto / Descripción *</Label>
+              <Label htmlFor="description">Concepto / descripción *</Label>
               <Input
                 id="description"
                 name="description"
@@ -75,12 +75,12 @@ export default function NewIncomePage({ params }: { params: Promise<{ id: string
             </div>
 
             {state?.error && (
-              <p className="text-sm font-medium text-red-500">{state.error}</p>
+              <p className="text-sm font-medium text-destructive">{state.error}</p>
             )}
 
             <div className="pt-4">
               <Button type="submit" className="w-full h-12 text-lg font-semibold" disabled={isPending}>
-                {isPending ? 'Guardando...' : 'Guardar Ingreso'}
+                {isPending ? 'Guardando…' : 'Guardar Ingreso'}
               </Button>
             </div>
             

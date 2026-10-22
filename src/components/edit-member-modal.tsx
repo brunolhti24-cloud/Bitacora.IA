@@ -70,13 +70,13 @@ export function EditMemberModal({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-900 transition-colors cursor-pointer">
-        <Pencil className="w-3.5 h-3.5" /> Editar
+      <DialogTrigger className="inline-flex h-10 items-center gap-1.5 rounded-md px-3 text-sm font-semibold text-plano/80 transition-colors hover:bg-muted hover:text-plano">
+        <Pencil className="h-4 w-4" aria-hidden /> Editar
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md rounded-2xl">
+      <DialogContent className="sm:max-w-md rounded-lg">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-slate-900">
-            <UserCheck className="w-5 h-5 text-blue-600" /> Editar Integrante del Equipo
+          <DialogTitle className="flex items-center gap-2 text-plano">
+            <UserCheck className="w-5 h-5 text-obra" /> Editar integrante del equipo
           </DialogTitle>
           <DialogDescription>
             Modifica el nombre completo o el rol asignado dentro de tu empresa constructora.
@@ -85,8 +85,8 @@ export function EditMemberModal({
 
         <form onSubmit={handleSubmit} className="space-y-4 py-2">
           <div className="space-y-1.5">
-            <Label htmlFor="full_name" className="text-xs font-semibold uppercase tracking-wider text-slate-700">
-              Nombre Completo *
+            <Label htmlFor="full_name">
+              Nombre completo *
             </Label>
             <Input
               id="full_name"
@@ -95,34 +95,34 @@ export function EditMemberModal({
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="Ej. Ing. Carlos Mendoza"
-              className="h-11 rounded-xl bg-slate-50/50"
+              className="h-11 rounded-md bg-muted/40"
             />
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="role" className="text-xs font-semibold uppercase tracking-wider text-slate-700">
-              Rol del Trabajador *
+            <Label htmlFor="role">
+              Rol del trabajador *
             </Label>
             <select
               id="role"
               value={role}
               onChange={(e) => setRole(e.target.value)}
-              className="flex h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm font-semibold focus:bg-white focus:border-blue-500 focus:outline-none"
+              className="flex h-11 w-full rounded-md border border-border bg-muted/40 px-3 py-2 text-sm font-semibold focus:bg-white focus:border-obra focus:outline-none"
             >
-              <option value="director">👑 Director / Administrador (Acceso Total)</option>
-              <option value="residente">👷 Residente de Obra (Gestión + Aceptación Bitácoras)</option>
-              <option value="administracion">💼 Administración (Tickets y Solicitudes)</option>
-              <option value="subcontratista">🔨 Contratista / Subcontratista (Bitácoras, Tareas, Tickets)</option>
-              <option value="operador">📋 Operador (Crear Bitácoras y Ver Tareas)</option>
+              <option value="director">Director / Administrador (Acceso Total)</option>
+              <option value="residente">Residente de Obra (Gestión + Aceptación Bitácoras)</option>
+              <option value="administracion">Administración (Tickets y Solicitudes)</option>
+              <option value="subcontratista">Contratista / Subcontratista (Bitácoras, Tareas, Tickets)</option>
+              <option value="operador">Operador (Crear Bitácoras y Ver Tareas)</option>
             </select>
           </div>
 
           {adminProjects && adminProjects.length > 0 && role !== 'admin' && role !== 'director' && (
-            <div className="space-y-2 pt-2 border-t border-slate-100">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                <Building2 className="w-3.5 h-3.5" /> Obras Asignadas
+            <div className="space-y-2 pt-2 border-t border-border">
+              <Label className="gap-1.5">
+                <Building2 className="w-3.5 h-3.5" /> Obras asignadas
               </Label>
-              <p className="text-xs text-slate-500 mb-2">
+              <p className="text-xs text-muted-foreground mb-2">
                 Selecciona las obras a las que este trabajador tendrá acceso.
               </p>
               
@@ -132,17 +132,17 @@ export function EditMemberModal({
                     key={project.id} 
                     className={`flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-colors ${
                       selectedProjects.includes(project.id) 
-                        ? 'border-blue-500 bg-blue-50/50' 
-                        : 'border-slate-200 bg-white hover:bg-slate-50'
+                        ? 'border-obra bg-accent/50' 
+                        : 'border-border bg-white hover:bg-muted/50'
                     }`}
                   >
                     <input
                       type="checkbox"
                       checked={selectedProjects.includes(project.id)}
                       onChange={() => handleToggleProject(project.id)}
-                      className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+                      className="w-4 h-4 text-obra rounded border-junta focus:ring-obra"
                     />
-                    <span className="text-sm font-semibold text-slate-700">{project.name}</span>
+                    <span className="text-sm font-semibold text-plano/80">{project.name}</span>
                   </label>
                 ))}
               </div>
@@ -150,10 +150,10 @@ export function EditMemberModal({
           )}
 
           <DialogFooter className="pt-3">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)} className="rounded-xl">
+            <Button type="button" variant="outline" onClick={() => setOpen(false)} className="rounded-md">
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl px-6">
+            <Button type="submit" disabled={loading} className="bg-obra hover:bg-obra-strong text-white font-bold rounded-md px-6">
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> Guardando...
