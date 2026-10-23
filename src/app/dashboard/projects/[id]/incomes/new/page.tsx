@@ -1,5 +1,6 @@
 'use client'
 
+import { todayInObra } from '@/lib/dates'
 import { useActionState, use } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -43,7 +44,7 @@ export default function NewIncomePage({ params }: { params: Promise<{ id: string
                 id="income_date"
                 name="income_date"
                 type="date"
-                defaultValue={new Date().toISOString().split('T')[0]}
+                defaultValue={todayInObra()}
                 required
                 className="w-full text-base"
               />

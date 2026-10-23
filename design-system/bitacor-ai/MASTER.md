@@ -21,7 +21,7 @@ Definidos en `src/app/globals.css` (`:root`) y expuestos como clases de Tailwind
 | concreto | `#F1F2F4` | `bg-background` | Fondo de trabajo |
 | junta | `#D8DCE2` | `border-border` | Bordes |
 | señal | `#C2410C` | `text-senal` / `bg-senal-soft` | Pendientes, por reabastecer, alertas, notificaciones sin leer |
-| ok | `#23803A` | `text-ok` / `bg-ok-soft` | Completado, aprobado, firmado, con existencia |
+| ok | `#1E7532` | `text-ok` / `bg-ok-soft` | Completado, aprobado, firmado, con existencia |
 
 Errores y acciones destructivas usan `destructive`. Los estados siempre llevan
 texto o ícono además del color.

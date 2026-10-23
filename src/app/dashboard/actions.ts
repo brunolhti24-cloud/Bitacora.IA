@@ -120,6 +120,10 @@ export async function createTask(prevState: any, formData: FormData) {
   const title = formData.get('title') as string
   const description = formData.get('description') as string
   const assigned_to = formData.get('assigned_to') as string || null
+  const due_date = (formData.get('due_date') as string) || null
+  const area_id = (formData.get('area_id') as string) || null
+  const priorityRaw = (formData.get('priority') as string) || 'normal'
+  const priority = ['baja', 'normal', 'alta', 'urgente'].includes(priorityRaw) ? priorityRaw : 'normal'
 
   // Enviar correo de notificacion con Resend si el usuario tiene email en profile
   if (assigned_to) {
@@ -170,7 +174,7 @@ export async function createTask(prevState: any, formData: FormData) {
 
   const { error } = await supabase
     .from('tasks')
-    .insert([{ project_id, title, description, assigned_to, status: 'Pendiente' }])
+    .insert([{ project_id, title, description, assigned_to, status: 'Pendiente', due_date, area_id, priority }])
 
   if (error) return { error: error.message }
 
@@ -188,6 +192,23 @@ export async function updateTaskStatus(taskId: string, status: string, projectId
 
   if (error) throw new Error(error.message)
   revalidatePath('/dashboard/projects/' + projectId)
+}
+
+export async function setTaskBlocked(taskId: string, blocked: boolean, reason: string | null, projectId?: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autorizado' }
+  if (blocked && !reason?.trim()) return { error: 'Indica qué está bloqueando la tarea.' }
+
+  const { error } = await supabase
+    .from('tasks')
+    .update({ is_blocked: blocked, blocked_reason: blocked ? reason!.trim() : null, updated_at: new Date().toISOString() })
+    .eq('id', taskId)
+
+  if (error) return { error: error.message }
+  if (projectId) revalidatePath('/dashboard/projects/' + projectId)
+  revalidatePath('/dashboard/mis-tareas')
+  return { success: true }
 }
 
 export async function deleteTask(taskId: string, projectId?: string) {
@@ -248,12 +269,13 @@ export async function createSpecialRequest(prevState: any, formData: FormData) {
   const quantity = parseInt(formData.get('quantity') as string) || 1
   const unit = (formData.get('unit') as string) || 'pzas'
   const urgency = (formData.get('urgency') as string) || 'normal'
+  const needed_by = (formData.get('needed_by') as string) || null
 
   if (!project_id || !title || !category) {
     return { error: 'Proyecto, categoría y título son obligatorios' }
   }
 
-  const { error } = await supabase
+  const { data: created, error } = await supabase
     .from('special_requests')
     .insert([
       {
@@ -265,14 +287,34 @@ export async function createSpecialRequest(prevState: any, formData: FormData) {
         quantity,
         unit,
         urgency,
+        needed_by,
         status: 'pendiente'
       }
     ])
+    .select('id')
+    .single()
 
   if (error) return { error: error.message }
+  if (created) await logRequestEvent(supabase, created.id, project_id, 'solicitada', user.id, null)
 
   revalidatePath('/dashboard/projects/' + project_id)
   return { success: true }
+}
+
+type RequestStage = 'solicitada' | 'aprobada' | 'rechazada' | 'comprada' | 'entregada' | 'recibida'
+
+async function logRequestEvent(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  requestId: string,
+  projectId: string,
+  stage: RequestStage,
+  actor: string,
+  note: string | null
+) {
+  const { error } = await supabase
+    .from('special_request_events')
+    .insert([{ request_id: requestId, project_id: projectId, stage, actor, note: note?.trim() || null }])
+  if (error) console.error('No se registró el evento de la solicitud:', error.message)
 }
 
 export async function updateSpecialRequestStatus(requestId: string, status: 'aprobada' | 'rechazada' | 'pendiente', director_comment?: string) {
@@ -281,21 +323,68 @@ export async function updateSpecialRequestStatus(requestId: string, status: 'apr
   if (!user) return { error: 'No autorizado' }
 
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'admin') {
-    return { error: 'Solo el director / administrador puede aprobar o rechazar solicitudes.' }
+  if (profile?.role !== 'admin' && profile?.role !== 'director') {
+    return { error: 'Solo el director puede aprobar o rechazar solicitudes.' }
   }
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from('special_requests')
-    .update({ 
-      status, 
+    .update({
+      status,
+      stage: status === 'aprobada' ? 'aprobada' : null,
       director_comment: director_comment || null,
       updated_at: new Date().toISOString()
     })
     .eq('id', requestId)
+    .select('project_id')
+    .single()
 
   if (error) return { error: error.message }
 
+  if (updated && status !== 'pendiente') {
+    await logRequestEvent(supabase, requestId, updated.project_id, status, user.id, director_comment || null)
+    revalidatePath('/dashboard/projects/' + updated.project_id)
+  }
+  return { success: true }
+}
+
+// Seguimiento después de aprobar: compra, entrega en obra y recepción
+const NEXT_STAGE: Record<string, 'comprada' | 'entregada' | 'recibida'> = {
+  aprobada: 'comprada',
+  comprada: 'entregada',
+  entregada: 'recibida',
+}
+const STAGE_ROLES: Record<'comprada' | 'entregada' | 'recibida', string[]> = {
+  comprada: ['admin', 'director', 'administracion'],
+  entregada: ['admin', 'director', 'administracion', 'residente'],
+  recibida: ['admin', 'director', 'residente'],
+}
+
+export async function advanceSpecialRequest(requestId: string, stage: 'comprada' | 'entregada' | 'recibida', note?: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autorizado' }
+
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  if (!STAGE_ROLES[stage].includes(profile?.role || '')) {
+    return { error: 'Tu rol no puede registrar esta etapa.' }
+  }
+
+  const { data: req } = await supabase.from('special_requests').select('project_id, status, stage').eq('id', requestId).single()
+  if (!req) return { error: 'Solicitud no encontrada' }
+  if (req.status !== 'aprobada' || NEXT_STAGE[req.stage || 'aprobada'] !== stage) {
+    return { error: 'La solicitud no está en la etapa anterior a esta. Actualiza la página.' }
+  }
+
+  const { error } = await supabase
+    .from('special_requests')
+    .update({ stage, updated_at: new Date().toISOString() })
+    .eq('id', requestId)
+
+  if (error) return { error: error.message }
+
+  await logRequestEvent(supabase, requestId, req.project_id, stage, user.id, note || null)
+  revalidatePath('/dashboard/projects/' + req.project_id)
   return { success: true }
 }
 

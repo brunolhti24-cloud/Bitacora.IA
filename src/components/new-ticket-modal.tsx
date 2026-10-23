@@ -1,5 +1,6 @@
 'use client'
 
+import { todayInObra } from '@/lib/dates'
 import { useState, useActionState, useEffect } from 'react'
 import { createExpense } from '@/app/dashboard/projects/[id]/actions'
 import { Button } from '@/components/ui/button'
@@ -44,7 +45,7 @@ export function NewTicketModal({
   const [concept, setConcept] = useState('')
   const [amount, setAmount] = useState('')
   const [category, setCategory] = useState('Materiales')
-  const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split('T')[0])
+  const [expenseDate, setExpenseDate] = useState(todayInObra())
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [scanning, setScanning] = useState(false)

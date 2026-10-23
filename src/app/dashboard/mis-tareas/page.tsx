@@ -8,14 +8,12 @@ export default async function MisTareasPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: tasks, error } = await supabase
-    .from('tasks')
-    .select(`
-      *,
-      project:projects(name)
-    `)
-    .eq('assigned_to', user.id)
-    .order('created_at', { ascending: false })
+  const query = (fields: string) =>
+    supabase.from('tasks').select(fields).eq('assigned_to', user.id).order('created_at', { ascending: false })
+
+  // Si la migración de trazabilidad aún no se aplica, se cargan las tareas sin el área
+  let { data: tasks, error } = await query('*, project:projects(name), area:project_areas(name)')
+  if (error) ({ data: tasks, error } = await query('*, project:projects(name)'))
 
   if (error) {
     console.error('Error fetching mis tareas:', error)
@@ -23,7 +21,7 @@ export default async function MisTareasPage() {
   }
 
   // Modificar el título de la tarea para mostrar el proyecto también
-  const formattedTasks = tasks?.map(t => ({
+  const formattedTasks = (tasks as any[] | null)?.map(t => ({
     ...t,
     title: `[${t.project?.name}] ${t.title}`
   })) || []

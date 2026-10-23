@@ -1,5 +1,6 @@
 'use client'
 
+import { todayInObra } from '@/lib/dates'
 import { useState, useActionState, useEffect } from 'react'
 import { createSpecialRequest } from '@/app/dashboard/actions'
 import { Button } from '@/components/ui/button'
@@ -132,15 +133,21 @@ export function NewSpecialRequestModal({
               </div>
             </div>
 
-            {/* Urgencia */}
-            <div className="grid gap-2">
-              <Label htmlFor="urgency">Nivel de urgencia</Label>
-              <select id="urgency" name="urgency" className={selectClasses} defaultValue="normal">
-                <option value="baja">Baja (Programable a futuro)</option>
-                <option value="normal">Normal (Requerido esta semana)</option>
-                <option value="alta">Alta (Requerido en 24-48 horas)</option>
-                <option value="urgente">Urgente (Detiene la obra)</option>
-              </select>
+            {/* Urgencia y fecha requerida */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-2">
+                <Label htmlFor="urgency">Urgencia</Label>
+                <select id="urgency" name="urgency" className={selectClasses} defaultValue="normal">
+                  <option value="baja">Baja</option>
+                  <option value="normal">Normal</option>
+                  <option value="alta">Alta</option>
+                  <option value="urgente">Urgente (detiene la obra)</option>
+                </select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="needed_by">Se necesita en obra el</Label>
+                <Input id="needed_by" name="needed_by" type="date" required min={todayInObra()} />
+              </div>
             </div>
 
             {/* Descripción / Justificación */}

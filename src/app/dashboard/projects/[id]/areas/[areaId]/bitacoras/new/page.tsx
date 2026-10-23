@@ -1,5 +1,6 @@
 'use client'
 
+import { todayInObra } from '@/lib/dates'
 import { useActionState, use, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -50,7 +51,7 @@ export default function NewBitacoraAreaPage({ params }: { params: Promise<{ id: 
                 id="report_date"
                 name="report_date"
                 type="date"
-                defaultValue={new Date().toISOString().split('T')[0]}
+                defaultValue={todayInObra()}
                 required
                 className="w-full text-base"
               />

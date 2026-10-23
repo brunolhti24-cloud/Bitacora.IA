@@ -244,7 +244,8 @@ export async function signDailyReport(reportId: string, projectId: string, areaI
     .update({
       status: 'firmada',
       director_signature_url: signatureUrl,
-      signed_by: user.id
+      signed_by: user.id,
+      signed_at: new Date().toISOString()
     })
     .eq('id', reportId)
 
@@ -289,7 +290,7 @@ export async function createMaterial(projectId: string, prevState: any, formData
 
   if (!name) return { error: 'El nombre del material es obligatorio' }
 
-  const { error } = await supabase
+  const { data: created, error } = await supabase
     .from('materials')
     .insert([
       {
@@ -304,49 +305,68 @@ export async function createMaterial(projectId: string, prevState: any, formData
         recorded_by: user.id
       }
     ])
+    .select('id')
+    .single()
 
   if (error) return { error: error.message }
 
+  // La existencia inicial queda como primer movimiento del historial
+  if (created && total_received > 0) {
+    const { error: movError } = await supabase.from('material_movements').insert([{
+      material_id: created.id,
+      project_id: projectId,
+      type: 'entrada',
+      quantity: total_received,
+      reason: 'Existencia inicial',
+      notes: notes || null,
+      balance_after: total_received,
+      recorded_by: user.id,
+    }])
+    if (movError) console.error('No se registró el movimiento inicial:', movError.message)
+  }
+
   revalidatePath(`/dashboard/projects/${projectId}`)
   return { success: true }
+}
+
+export type MovementDetails = {
+  areaId?: string | null
+  receivedBy?: string | null
+  reason?: string | null
+  notes?: string | null
 }
 
 export async function recordMaterialMovement(
   materialId: string,
   type: 'entrada' | 'salida',
   quantity: number,
-  projectId: string
+  projectId: string,
+  details: MovementDetails = {}
 ) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autorizado' }
 
   if (!quantity || quantity <= 0) return { error: 'La cantidad debe ser mayor a 0' }
-
-  const { data: mat } = await supabase
-    .from('materials')
-    .select('total_received, total_used')
-    .eq('id', materialId)
-    .single()
-
-  if (!mat) return { error: 'Material no encontrado' }
-
-  let updatePayload: any = {}
-  if (type === 'entrada') {
-    updatePayload.total_received = Number(mat.total_received) + Number(quantity)
-  } else {
-    updatePayload.total_used = Number(mat.total_used) + Number(quantity)
+  if (type === 'salida' && (!details.receivedBy?.trim() || !details.reason?.trim())) {
+    return { error: 'Para una salida indica quién recibe el material y el motivo.' }
   }
 
-  const { error } = await supabase
-    .from('materials')
-    .update(updatePayload)
-    .eq('id', materialId)
+  // Existencias y registro del movimiento en una sola transacción (función en la base de datos)
+  const { data, error } = await supabase.rpc('record_material_movement', {
+    p_material_id: materialId,
+    p_type: type,
+    p_quantity: quantity,
+    p_area_id: details.areaId || null,
+    p_received_by: details.receivedBy || null,
+    p_reason: details.reason || null,
+    p_notes: details.notes || null,
+  })
 
   if (error) return { error: error.message }
 
   revalidatePath(`/dashboard/projects/${projectId}`)
-  return { success: true }
+  return { success: true, balance: Number(data?.balance_after ?? 0) }
 }
 
 export async function deleteMaterial(materialId: string, projectId: string) {

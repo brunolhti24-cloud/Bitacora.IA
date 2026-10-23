@@ -1,5 +1,6 @@
 'use client'
 
+import { formatDateTime } from '@/lib/dates'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -183,7 +184,13 @@ export function NotificationBell({ userId }: { userId: string }) {
               notifications.map((notif) => (
                 <div
                   key={notif.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => markAsRead(notif.id, notif.link)}
+                  onKeyDown={(e) => {
+                    if (e.target !== e.currentTarget) return
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); markAsRead(notif.id, notif.link) }
+                  }}
                   className={`p-3.5 flex items-start gap-3 hover:bg-muted/50 transition-colors cursor-pointer relative group ${
                     !notif.read ? 'bg-accent/40 font-medium' : ''
                   }`}
@@ -193,12 +200,12 @@ export function NotificationBell({ userId }: { userId: string }) {
                   <div className="flex-1 min-w-0 pr-6">
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-xs font-bold text-plano truncate">{notif.title}</p>
-                      {!notif.read && <span className="w-2 h-2 rounded-full bg-obra shrink-0" />}
+                      {!notif.read && <span className="w-2 h-2 rounded-full bg-obra shrink-0"><span className="sr-only">Sin leer</span></span>}
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2 leading-relaxed">{notif.message}</p>
                     <div className="flex items-center justify-between mt-1.5">
                       <span className="text-xs text-muted-foreground">
-                        {new Date(notif.created_at).toLocaleDateString('es-MX', {
+                        {formatDateTime(notif.created_at, {
                           month: 'short',
                           day: 'numeric',
                           hour: '2-digit',
@@ -207,7 +214,7 @@ export function NotificationBell({ userId }: { userId: string }) {
                       </span>
                       {notif.link && (
                         <span className="text-xs text-obra font-semibold flex items-center gap-0.5 hover:underline">
-                          Ver detalles <ExternalLink className="w-2.5 h-2.5" />
+                          Ver detalles <ExternalLink className="w-3 h-3" aria-hidden />
                         </span>
                       )}
                     </div>
@@ -215,10 +222,12 @@ export function NotificationBell({ userId }: { userId: string }) {
 
                   <button
                     onClick={(e) => deleteNotification(e, notif.id)}
-                    className="absolute top-3 right-2 opacity-0 group-hover:opacity-100 p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/5 rounded-lg transition-all"
-                    title="Eliminar"
+                    onKeyDown={(e) => e.stopPropagation()}
+                    className="absolute top-2 right-1.5 flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-opacity hover:bg-destructive/5 hover:text-destructive focus-visible:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                    title="Eliminar notificación"
+                    aria-label={`Eliminar notificación: ${notif.title}`}
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="w-4 h-4" aria-hidden />
                   </button>
                 </div>
               ))

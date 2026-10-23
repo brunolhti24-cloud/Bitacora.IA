@@ -216,11 +216,14 @@ export function ChatWidget({ isAdmin }: { isAdmin: boolean }) {
           {/* Formulario */}
           <form onSubmit={onSubmit} className="p-3 bg-white border-t">
             <div className="flex relative">
+              <label htmlFor="asistente-mensaje" className="sr-only">Mensaje para el asistente</label>
               <Input
+                id="asistente-mensaje"
+                name="mensaje"
+                autoComplete="off"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Pregunta o pide una acción…"
-                aria-label="Mensaje para el asistente"
                 className="h-11 pr-11"
                 disabled={isLoading}
               />

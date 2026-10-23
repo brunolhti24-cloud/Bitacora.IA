@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NewMaterialModal } from '@/components/new-material-modal'
 import { MaterialMovementModal } from '@/components/material-movement-modal'
+import { MaterialHistoryModal } from '@/components/material-history-modal'
 import { deleteMaterial } from './actions'
 import { Boxes, PackageCheck, AlertTriangle, XCircle, Trash2, ArrowUpRight, ArrowDownLeft } from 'lucide-react'
 
@@ -14,6 +15,12 @@ export async function MaterialsTab({ projectId }: { projectId: string }) {
     .order('name', { ascending: true })
 
   const materials = rawMaterials || []
+
+  const { data: areas } = await supabase
+    .from('project_areas')
+    .select('id, name')
+    .eq('project_id', projectId)
+    .order('name', { ascending: true })
 
   // Calcular métricas
   const totalItems = materials.length
@@ -155,6 +162,8 @@ export async function MaterialsTab({ projectId }: { projectId: string }) {
                               unit={item.unit}
                               type="entrada"
                               projectId={projectId}
+                              stock={stock}
+                              areas={areas || []}
                             />
                             <MaterialMovementModal
                               materialId={item.id}
@@ -162,7 +171,10 @@ export async function MaterialsTab({ projectId }: { projectId: string }) {
                               unit={item.unit}
                               type="salida"
                               projectId={projectId}
+                              stock={stock}
+                              areas={areas || []}
                             />
+                            <MaterialHistoryModal materialId={item.id} materialName={item.name} unit={item.unit} />
                             <form action={async () => {
                               'use server'
                               await deleteMaterial(item.id, projectId)

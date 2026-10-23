@@ -76,9 +76,9 @@ export async function POST(req: Request) {
           content: `Genera un Diagnóstico y Resumen Ejecutivo de Inteligencia para el Director de Obra con estos datos:
 Proyecto: ${project.name}
 Ubicación: ${project.location || 'N/A'}
-Presupuesto Base: $${project.base_budget || 0}
+Presupuesto autorizado (no es efectivo disponible): $${project.base_budget || 0}
 Avance Físico Actual: ${project.physical_progress || 0}%
-Gastos Totales Registrados: $${totalExpenses}
+Gastos pagados: $${totalExpenses}
 Solicitudes Pendientes: ${pendingRequests.length} solicitudes por aprobar
 Últimas bitácoras: ${JSON.stringify(dailyReports.slice(0, 3))}
 Últimos gastos: ${JSON.stringify((expenses || []).slice(0, 3))}`
