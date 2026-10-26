@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import Link from 'next/link'
 import { createDailyReport } from '../../actions'
 import { SignaturePad } from '@/components/signature-pad'
+import { ReportPhotosInput } from '@/components/report-photos-input'
 import { AiBitacoraEnhancer } from '@/components/ai-bitacora-enhancer'
 import { createClient } from '@/lib/supabase/client'
 
@@ -22,6 +23,7 @@ export default function NewBitacoraPage({ params }: { params: Promise<{ id: stri
   const projectId = resolvedParams.id
   
   const [progressNotes, setProgressNotes] = useState('')
+  const [uploadingPhotos, setUploadingPhotos] = useState(false)
   const [areas, setAreas] = useState<{ id: string; name: string }[]>([])
   const [selectedAreaId, setSelectedAreaId] = useState('')
 
@@ -127,6 +129,8 @@ export default function NewBitacoraPage({ params }: { params: Promise<{ id: stri
               />
             </div>
 
+            <ReportPhotosInput projectId={projectId} onUploadingChange={setUploadingPhotos} />
+
             <SignaturePad name="signature_url" />
 
             {state?.error && (
@@ -134,8 +138,8 @@ export default function NewBitacoraPage({ params }: { params: Promise<{ id: stri
             )}
 
             <div className="pt-4">
-              <Button type="submit" className="w-full h-12 text-lg font-semibold" disabled={isPending}>
-                {isPending ? 'Guardando Reporte...' : 'Registrar Bitácora'}
+              <Button type="submit" className="w-full h-12 text-lg font-semibold" disabled={isPending || uploadingPhotos}>
+                {isPending ? 'Guardando Reporte...' : uploadingPhotos ? 'Subiendo fotos...' : 'Registrar Bitácora'}
               </Button>
             </div>
             

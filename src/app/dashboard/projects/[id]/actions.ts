@@ -48,29 +48,18 @@ export async function createDailyReport(projectId: string, prevState: any, formD
 
   if (reportError) return { error: reportError.message, success: false }
 
-  // 2. Subir las fotos (si hay)
-  const photos = formData.getAll('photos') as File[]
-  
-  if (photos && photos.length > 0) {
-    for (const photo of photos) {
-      if (photo.size > 0) {
-        const fileExt = photo.name.split('.').pop()
-        const fileName = `${Math.random()}.${fileExt}`
-        const { error: uploadError } = await supabase.storage
-          .from('report_photos')
-          .upload(fileName, photo)
-        
-        if (!uploadError) {
-          const { data: { publicUrl } } = supabase.storage.from('report_photos').getPublicUrl(fileName)
-          await supabase.from('report_photos').insert([
-            {
-              daily_report_id: report.id,
-              photo_url: publicUrl
-            }
-          ])
-        }
-      }
-    }
+  // 2. Fotos de evidencia: el navegador ya las subió a Storage; aquí solo se
+  // registran, aceptando únicamente URLs del bucket de fotos de esta obra
+  const { data: { publicUrl: photosBase } } = supabase.storage.from('report_photos').getPublicUrl(`${projectId}/`)
+  const photoUrls = (formData.getAll('photo_urls') as string[])
+    .filter((url) => typeof url === 'string' && url.startsWith(photosBase))
+    .slice(0, 8)
+
+  if (photoUrls.length > 0) {
+    const { error: photosError } = await supabase
+      .from('report_photos')
+      .insert(photoUrls.map((photo_url) => ({ daily_report_id: report.id, photo_url })))
+    if (photosError) console.error('No se registraron las fotos de la bitácora:', photosError.message)
   }
 
   // 3. Actualizar el avance físico del proyecto si se proporcionó uno válido

@@ -56,7 +56,7 @@ export default async function AreaDetailsPage({ params }: { params: Promise<{ id
   // Obtener las bitácoras del área
   const { data: reports } = await supabase
     .from('daily_reports')
-    .select('*, creator:profiles!daily_reports_created_by_fkey(full_name), acceptor:profiles!daily_reports_accepted_by_fkey(full_name), signer:profiles!daily_reports_signed_by_fkey(full_name)')
+    .select('*, creator:profiles!daily_reports_created_by_fkey(full_name), acceptor:profiles!daily_reports_accepted_by_fkey(full_name), signer:profiles!daily_reports_signed_by_fkey(full_name), report_photos(id, photo_url)')
     .eq('area_id', resolvedParams.areaId)
     .order('report_date', { ascending: false })
 
@@ -177,6 +177,30 @@ export default async function AreaDetailsPage({ params }: { params: Promise<{ id
                       <strong className="block text-xs uppercase tracking-wider text-slate-500 mb-1">Avances y Actividades:</strong>
                       {report.progress_notes}
                     </div>
+
+                    {/* Evidencia fotográfica */}
+                    {(report.report_photos || []).length > 0 && (
+                      <div className="space-y-1.5">
+                        <strong className="block text-xs uppercase tracking-wider text-slate-500">
+                          Fotos del Área ({report.report_photos.length})
+                        </strong>
+                        <ul className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                          {report.report_photos.map((ph: { id: string; photo_url: string }, i: number) => (
+                            <li key={ph.id}>
+                              <a
+                                href={ph.photo_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                aria-label={`Ver foto ${i + 1} de la bitácora en tamaño completo`}
+                                className="block aspect-square overflow-hidden rounded-lg border border-slate-200 bg-slate-100 hover:opacity-90 transition-opacity"
+                              >
+                                <img src={ph.photo_url} alt="" loading="lazy" className="h-full w-full object-cover" />
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
 
                     {/* Alerta de Solicitud Especial para Director */}
                     {report.special_request && (
