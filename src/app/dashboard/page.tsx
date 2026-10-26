@@ -1,9 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ProjectActions } from '@/components/project-actions'
+import { DashboardSummary } from '@/components/dashboard-summary'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { FolderKanban, Building2, MapPin, ArrowRight, PlusCircle, Layers, Activity, ShieldAlert, Sparkles } from 'lucide-react'
+import { Building2, MapPin, ArrowRight, PlusCircle, Layers } from 'lucide-react'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -47,56 +48,32 @@ export default async function DashboardPage() {
 
   const { data: projects, error } = await projectsQuery.order('created_at', { ascending: false })
 
-  const totalProjects = (projects || []).length
+  const list = projects || []
+  const totalProjects = list.length
+  const inProgress = list.filter((p) => (p.physical_progress || 0) < 100).length
   const avgProgress = totalProjects > 0
-    ? Math.round((projects || []).reduce((acc, p) => acc + (p.physical_progress || 0), 0) / totalProjects)
+    ? Math.round(list.reduce((acc, p) => acc + (p.physical_progress || 0), 0) / totalProjects)
     : 0
+
+  // Pendientes que requieren acción del director
+  const projectIds = list.map((p) => p.id)
+  const [{ count: unsignedReports }, { count: pendingRequests }] = projectIds.length
+    ? await Promise.all([
+        supabase.from('daily_reports').select('id', { count: 'exact', head: true }).in('project_id', projectIds).neq('status', 'firmada'),
+        supabase.from('special_requests').select('id', { count: 'exact', head: true }).in('project_id', projectIds).eq('status', 'pendiente'),
+      ])
+    : [{ count: 0 }, { count: 0 }]
+
+  const metrics = [
+    { label: 'En ejecución', value: `${inProgress}`, hint: `de ${totalProjects} registradas` },
+    { label: 'Avance promedio', value: `${avgProgress}%`, bar: avgProgress },
+    { label: 'Por firmar', value: `${unsignedReports ?? 0}`, hint: (unsignedReports ?? 0) > 0 ? 'Bitácoras sin firma del director' : 'Todas las bitácoras firmadas', alert: (unsignedReports ?? 0) > 0 },
+    { label: 'Solicitudes', value: `${pendingRequests ?? 0}`, hint: (pendingRequests ?? 0) > 0 ? 'Esperan tu respuesta' : 'Sin solicitudes pendientes', alert: (pendingRequests ?? 0) > 0 },
+  ]
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-12">
-      {/* Premium Light Glassmorphism Banner Header */}
-      <div className="relative overflow-hidden rounded-3xl bg-white/95 backdrop-blur-md p-4 sm:p-6 md:p-8 text-slate-800 shadow-md border border-slate-200/90">
-        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/3 -mb-10 w-48 h-48 bg-indigo-500/5 rounded-full blur-2xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
-          <div className="space-y-1.5 sm:space-y-2 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-[11px] sm:text-xs font-extrabold uppercase tracking-widest">
-              <Activity className="w-3.5 h-3.5 text-emerald-600 animate-pulse" /> Command Center de Obras
-            </div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-slate-900">
-              Obras en Ejecución
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-medium">
-              Supervisión en tiempo real de avance físico, bitácoras firmadas, tickets financieros e inventario de materiales.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            {isAdmin && (
-              <Link
-                href="/dashboard/projects/new"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 px-5 py-3 text-sm font-black text-white shadow-md shadow-blue-600/20 hover:scale-[1.02] transition-all transform border border-blue-500/30"
-              >
-                <PlusCircle className="w-4 h-4" />
-                <span>Nuevo Proyecto / Obra</span>
-              </Link>
-            )}
-          </div>
-        </div>
-
-        {/* Mini Métricas del Dashboard */}
-        <div className="grid grid-cols-2 gap-2 sm:gap-3 pt-4 sm:pt-6 mt-4 sm:mt-6 border-t border-slate-100">
-          <div className="bg-slate-50/80 backdrop-blur-sm rounded-2xl p-2.5 sm:p-3.5 border border-slate-200/60">
-            <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-slate-500 block truncate">Total Proyectos</span>
-            <p className="text-xl sm:text-2xl font-black text-slate-950 mt-0.5 sm:mt-1">{totalProjects}</p>
-          </div>
-          <div className="bg-slate-50/80 backdrop-blur-sm rounded-2xl p-2.5 sm:p-3.5 border border-slate-200/60">
-            <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-slate-500 block truncate">Avance Físico Promedio</span>
-            <p className="text-xl sm:text-2xl font-black text-emerald-600 mt-0.5 sm:mt-1">{avgProgress}%</p>
-          </div>
-        </div>
-      </div>
+      <DashboardSummary metrics={metrics} canCreate={isAdmin} />
 
       {error ? (
         <div className="rounded-2xl bg-red-50 p-6 text-red-700 border border-red-200 font-medium">
