@@ -17,24 +17,24 @@ export default async function MisTareasPage() {
 
   if (error) {
     console.error('Error fetching mis tareas:', error)
-    return <div className="text-destructive">Error cargando tus tareas.</div>
+    return <div className="text-red-500">Error cargando tus tareas.</div>
   }
 
   // Modificar el título de la tarea para mostrar el proyecto también
-  const formattedTasks = (tasks as any[] | null)?.map(t => ({
+  const formattedTasks = ((tasks || []) as unknown as { title: string; project?: { name?: string } }[]).map(t => ({
     ...t,
     title: `[${t.project?.name}] ${t.title}`
   })) || []
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between border-b border-border/80 pb-4">
+      <div className="flex items-center justify-between border-b border-slate-200/80 pb-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-plano flex items-center gap-2.5">
-            <CheckSquare className="h-8 w-8 text-ok" />
-            Mis tareas asignadas
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 flex items-center gap-2.5">
+            <CheckSquare className="h-8 w-8 text-emerald-600" />
+            Mis Tareas Asignadas
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-slate-500 mt-1">
             Arrastra las tarjetas de una columna a otra para notificar tu avance de obra en tiempo real.
           </p>
         </div>

@@ -188,15 +188,19 @@ export function ExportProjectPdfButton({ project }: ProjectPdfProps) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
-          <Button className="h-11 gap-2 px-4">
-            <FileText className="h-4 w-4" aria-hidden />
-            Exportar expediente
+          <Button
+            variant="default"
+            size="sm"
+            className="gap-2 text-xs font-semibold bg-[#144CC9] text-white hover:bg-blue-700 rounded-full shadow-sm transition-all h-9 px-4"
+          >
+            <FileText className="w-4 h-4 text-white" aria-hidden />
+            Exportar Expediente Oficial (PDF)
           </Button>
         }
       />
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md rounded-2xl">
         <DialogHeader>
-          <DialogTitle>Exportar expediente</DialogTitle>
+          <DialogTitle>Exportar Expediente Oficial</DialogTitle>
           <DialogDescription>
             Elige el periodo. El PDF incluye todas las bitácoras de esas fechas y el periodo queda impreso en el documento.
           </DialogDescription>

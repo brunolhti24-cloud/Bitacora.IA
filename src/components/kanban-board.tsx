@@ -28,9 +28,9 @@ type Task = {
 }
 
 const COLUMNS: { id: Task['status']; title: string }[] = [
-  { id: 'Pendiente', title: 'Por hacer' },
-  { id: 'En Proceso', title: 'En proceso' },
-  { id: 'Terminada', title: 'Terminadas' },
+  { id: 'Pendiente', title: 'Por Hacer' },
+  { id: 'En Proceso', title: 'En Progreso' },
+  { id: 'Terminada', title: 'Completado' },
 ]
 
 const PRIORITY: Record<Priority, { label: string; className: string; rank: number }> = {
@@ -178,7 +178,7 @@ export function KanbanBoard({
     <div>
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-plano">Tablero de tareas</h2>
+          <h2 className="text-xl font-bold text-slate-900">Tablero de Tareas</h2>
           {(overdueCount > 0 || blockedCount > 0) && (
             <p className="mt-1 text-sm text-muted-foreground">
               {overdueCount > 0 && <span className="font-semibold text-destructive">{overdueCount} {overdueCount === 1 ? 'vencida' : 'vencidas'}</span>}
@@ -191,14 +191,14 @@ export function KanbanBoard({
       </div>
 
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {COLUMNS.map(column => {
             const columnTasks = sortTasks(tasks.filter(t => t.status === column.id), today)
             return (
-              <div key={column.id} className="rounded-lg border border-border bg-muted/50 p-3">
-                <h3 className="mb-3 flex items-center justify-between px-1 text-sm font-bold text-plano">
+              <div key={column.id} className="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+                <h3 className="font-bold mb-4 text-slate-800 flex justify-between items-center text-sm">
                   <span>{column.title}</span>
-                  <span className="rounded-full bg-white px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
+                  <span className="bg-blue-100 text-blue-700 font-extrabold px-2.5 py-0.5 rounded-full text-xs">
                     {columnTasks.length}
                   </span>
                 </h3>
@@ -208,7 +208,7 @@ export function KanbanBoard({
                     <div
                       {...provided.droppableProps}
                       ref={provided.innerRef}
-                      className="min-h-[200px] space-y-2.5"
+                      className="min-h-[200px] space-y-3"
                     >
                       {columnTasks.map((task, index) => {
                         const overdue = isOverdue(task, today)
@@ -218,8 +218,8 @@ export function KanbanBoard({
                             {(provided) => (
                               <div ref={provided.innerRef} {...provided.draggableProps}>
                                 <article
-                                  className={`relative rounded-md border bg-white p-3.5 transition-colors ${
-                                    task.is_blocked ? 'border-senal/50' : overdue ? 'border-destructive/50' : 'border-border hover:border-obra/60'
+                                  className={`relative rounded-xl border bg-white p-4 transition-all hover:shadow-md ${
+                                    task.is_blocked ? 'border-senal/50' : overdue ? 'border-destructive/50' : 'border-slate-200 hover:border-blue-500'
                                   } ${task.is_blocked || overdue ? 'border-l-4' : ''}`}
                                 >
                                   <button
@@ -237,10 +237,10 @@ export function KanbanBoard({
                                     aria-label={`${task.title}. Arrastra para cambiar de columna`}
                                     className="cursor-grab rounded-sm pr-8 active:cursor-grabbing"
                                   >
-                                  <p className="text-sm font-bold leading-tight text-plano">{task.title}</p>
+                                  <p className="font-bold text-slate-900 text-sm leading-tight">{task.title}</p>
 
                                   {task.description && (
-                                    <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{task.description}</p>
+                                    <p className="text-xs text-slate-500 mt-1 line-clamp-2">{task.description}</p>
                                   )}
 
                                   <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-xs">
@@ -270,7 +270,7 @@ export function KanbanBoard({
                                     </p>
                                   )}
 
-                                  <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-border pt-2">
+                                  <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
                                     <span className="min-w-0 truncate text-xs text-muted-foreground">
                                       {task.assigned_to?.full_name
                                         ? `${task.assigned_to.full_name}${roleLabel(task.assigned_to.role) ? `, ${roleLabel(task.assigned_to.role)}` : ''}`

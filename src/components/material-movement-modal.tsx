@@ -16,7 +16,7 @@ import {
 import { recordMaterialMovement } from '@/app/dashboard/projects/[id]/actions'
 import { PlusCircle, MinusCircle, Loader2 } from 'lucide-react'
 
-const selectClass = 'flex h-11 w-full rounded-md border border-input bg-white px-3 text-base text-plano transition-colors focus-visible:border-obra md:text-sm'
+const selectClass = 'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
 
 export function MaterialMovementModal({
   materialId,
@@ -83,21 +83,28 @@ export function MaterialMovementModal({
     <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setError(null) }}>
       <DialogTrigger
         aria-label={`Registrar ${type} de ${materialName}`}
-        className={`inline-flex h-9 items-center gap-1 px-2.5 rounded-md text-sm font-semibold transition-colors ${
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all shadow-2xs cursor-pointer ${
           isEntrada
-            ? 'bg-ok-soft hover:bg-ok/15 text-ok border border-ok/30'
-            : 'bg-senal-soft hover:bg-senal/15 text-senal border border-senal/30'
+            ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200'
+            : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200'
         }`}
       >
-        {isEntrada ? <PlusCircle className="w-4 h-4" aria-hidden /> : <MinusCircle className="w-4 h-4" aria-hidden />}
-        {isEntrada ? 'Entrada' : 'Salida'}
+        {isEntrada ? (
+          <>
+            <PlusCircle className="w-3.5 h-3.5 text-emerald-600" aria-hidden /> + Entrada
+          </>
+        ) : (
+          <>
+            <MinusCircle className="w-3.5 h-3.5 text-amber-600" aria-hidden /> - Salida
+          </>
+        )}
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md rounded-2xl">
         <DialogHeader>
-          <DialogTitle>{isEntrada ? 'Registrar entrada' : 'Registrar salida'}: {materialName}</DialogTitle>
+          <DialogTitle>Registrar {isEntrada ? 'Entrada' : 'Salida'} de Material</DialogTitle>
           <DialogDescription>
-            Existencia actual: <strong className="text-plano">{stock} {unit}</strong>. La fecha, tu usuario y el saldo se guardan automáticamente.
+            {materialName}. Existencia actual: <strong>{stock} {unit}</strong>. La fecha, tu usuario y el saldo se guardan automáticamente.
           </DialogDescription>
         </DialogHeader>
 
@@ -159,10 +166,10 @@ export function MaterialMovementModal({
             <Button
               type="submit"
               disabled={loading}
-              className={`gap-1.5 text-white ${isEntrada ? 'bg-ok hover:bg-ok/90' : 'bg-senal hover:bg-senal/90'}`}
+              className={`gap-1.5 font-bold rounded-xl px-5 text-white ${isEntrada ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-amber-600 hover:bg-amber-700'}`}
             >
               {loading && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-              {loading ? 'Guardando…' : isEntrada ? 'Registrar entrada' : 'Registrar salida'}
+              {loading ? 'Guardando...' : `Confirmar ${isEntrada ? 'Entrada' : 'Salida'}`}
             </Button>
           </DialogFooter>
         </form>

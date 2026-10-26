@@ -106,7 +106,7 @@ export function ChatWidget({ isAdmin }: { isAdmin: boolean }) {
           href={match[2]}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-obra hover:text-obra-strong underline font-extrabold transition-colors"
+          className="text-blue-600 hover:text-blue-800 underline font-extrabold transition-colors"
         >
           {match[1]}
         </a>
@@ -126,33 +126,33 @@ export function ChatWidget({ isAdmin }: { isAdmin: boolean }) {
       {/* Botón flotante */}
       <Button
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-4 right-4 sm:bottom-6 sm:right-6 h-12 w-12 sm:h-14 sm:w-14 rounded-full shadow-lg transition-transform z-50 bg-obra hover:bg-obra-strong text-white ${isOpen ? 'scale-0' : 'scale-100'}`}
+        className={`fixed bottom-4 right-4 sm:bottom-6 sm:right-6 h-12 w-12 sm:h-14 sm:w-14 rounded-full shadow-xl transition-transform hover:scale-110 z-50 bg-blue-600 hover:bg-blue-700 text-white ${isOpen ? 'scale-0' : 'scale-100'}`}
         aria-label="Abrir asistente IA"
       >
-        <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden />
+        <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6" />
       </Button>
 
       {/* Ventana de Chat */}
       <Card 
-        className={`fixed inset-x-3 bottom-3 sm:inset-auto sm:bottom-6 sm:right-6 sm:w-[400px] h-[480px] sm:h-[520px] max-h-[85vh] shadow-2xl flex flex-col z-50 transition-all duration-300 ease-in-out origin-bottom-right rounded-lg overflow-hidden border border-border ${
+        className={`fixed inset-x-3 bottom-3 sm:inset-auto sm:bottom-6 sm:right-6 sm:w-[400px] h-[480px] sm:h-[520px] max-h-[85vh] shadow-2xl flex flex-col z-50 transition-all duration-300 ease-in-out origin-bottom-right rounded-2xl overflow-hidden border border-slate-700/60 ${
           isOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none'
         }`}
       >
-        <CardHeader className="p-4 border-b plano-grid text-white flex flex-row justify-between items-center space-y-0">
+        <CardHeader className="p-4 border-b bg-gray-900 text-white rounded-t-xl flex flex-row justify-between items-center space-y-0">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
             <MessageSquare className="h-4 w-4" />
             Asistente Bitacor.AI
           </CardTitle>
-          <Button variant="ghost" size="sm" onClick={() => setIsOpen(false)} aria-label="Cerrar asistente" className="h-10 w-10 p-0 text-white/80 hover:bg-white/10 hover:text-white">
-            <X className="h-4 w-4" aria-hidden />
+          <Button variant="ghost" size="sm" onClick={() => setIsOpen(false)} aria-label="Cerrar asistente" className="text-gray-300 hover:text-white hover:bg-gray-800 h-8 w-8 p-0">
+            <X className="h-4 w-4" />
           </Button>
         </CardHeader>
         
         <CardContent className="flex-1 p-0 flex flex-col overflow-hidden">
           {/* Mensajes */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/50">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
             {visibleMessages.length === 0 && !isLoading && (
-              <div className="text-center text-sm text-muted-foreground mt-10">
+              <div className="text-center text-sm text-gray-500 mt-10">
                 <p>¡Hola! Soy el asistente IA de la constructora.</p>
                 <p className="mt-2">Puedes preguntarme cosas como:</p>
                 <ul className="mt-2 space-y-1 italic text-xs">
@@ -170,9 +170,9 @@ export function ChatWidget({ isAdmin }: { isAdmin: boolean }) {
               if (showToolIndicator) {
                 return (
                   <div key={m.id} className="flex flex-col items-start">
-                    <div className="max-w-[85%] rounded-lg px-4 py-2 text-sm bg-white border text-muted-foreground rounded-bl-none shadow-sm flex items-center gap-2 animate-pulse">
-                      <Loader2 className="h-3 w-3 animate-spin text-obra" />
-                      Ejecutando la acción…
+                    <div className="max-w-[85%] rounded-2xl px-4 py-2 text-sm bg-white border text-gray-500 rounded-bl-none shadow-sm flex items-center gap-2 animate-pulse">
+                      <Loader2 className="h-3 w-3 animate-spin text-blue-600" />
+                      Ejecutando acción en la base de datos...
                     </div>
                   </div>
                 )
@@ -185,15 +185,15 @@ export function ChatWidget({ isAdmin }: { isAdmin: boolean }) {
               return (
                 <div key={m.id} className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
                   <div 
-                    className={`max-w-[85%] rounded-lg px-4 py-2 text-sm whitespace-pre-wrap ${
+                    className={`max-w-[85%] rounded-2xl px-4 py-2 text-sm whitespace-pre-wrap ${
                       isUser 
-                        ? 'bg-obra text-white rounded-br-none' 
-                        : 'bg-white border text-plano rounded-bl-none shadow-sm'
+                        ? 'bg-blue-600 text-white rounded-br-none' 
+                        : 'bg-white border text-gray-800 rounded-bl-none shadow-sm'
                     }`}
                   >
                     {isUser ? text : renderMessageText(text)}
                     {m.role === 'assistant' && hasCompletedToolCalls(m) && (
-                      <div className="mt-1.5 flex items-center gap-1 text-ok text-xs font-medium border-t border-border pt-1">
+                      <div className="mt-1.5 flex items-center gap-1 text-emerald-600 text-xs font-medium border-t border-slate-100 pt-1">
                         <CheckCircle2 className="h-3.5 w-3.5" />
                         Acción ejecutada correctamente
                       </div>
@@ -204,9 +204,9 @@ export function ChatWidget({ isAdmin }: { isAdmin: boolean }) {
             })}
             {isLoading && !messages.some(m => m.role === 'assistant' && hasActiveToolCalls(m)) && (
               <div className="flex items-start">
-                <div className="bg-white border text-muted-foreground rounded-lg rounded-bl-none shadow-sm px-4 py-2 text-sm animate-pulse flex items-center gap-2">
-                  <Loader2 className="h-3 w-3 animate-spin text-obra" />
-                  Pensando…
+                <div className="bg-white border text-gray-400 rounded-2xl rounded-bl-none shadow-sm px-4 py-2 text-sm animate-pulse flex items-center gap-2">
+                  <Loader2 className="h-3 w-3 animate-spin text-blue-600" />
+                  Pensando...
                 </div>
               </div>
             )}
@@ -223,11 +223,11 @@ export function ChatWidget({ isAdmin }: { isAdmin: boolean }) {
                 autoComplete="off"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Pregunta o pide una acción…"
-                className="h-11 pr-11"
+                placeholder="Pregunta o pide una acción..."
+                className="pr-10"
                 disabled={isLoading}
               />
-              <Button type="submit" size="sm" variant="ghost" disabled={isLoading || !input.trim()} aria-label="Enviar mensaje" className="absolute right-0 top-0 h-full w-11 text-obra hover:text-obra-strong hover:bg-transparent disabled:opacity-40">
+              <Button type="submit" size="sm" variant="ghost" aria-label="Enviar mensaje" disabled={isLoading || !input.trim()} className="absolute right-0 top-0 h-full text-blue-600 hover:text-blue-700 hover:bg-transparent disabled:opacity-40">
                 <Send className="h-4 w-4" />
               </Button>
             </div>

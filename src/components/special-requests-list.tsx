@@ -35,9 +35,9 @@ const TRACK: { stage: string; label: string }[] = [
   { stage: 'recibida', label: 'Recibida' },
 ]
 const NEXT: Record<string, { stage: 'comprada' | 'entregada' | 'recibida'; action: string; roles: string[] }> = {
-  aprobada: { stage: 'comprada', action: 'Registrar compra', roles: ['admin', 'director', 'administracion'] },
-  comprada: { stage: 'entregada', action: 'Registrar entrega en obra', roles: ['admin', 'director', 'administracion', 'residente'] },
-  entregada: { stage: 'recibida', action: 'Confirmar recepción', roles: ['admin', 'director', 'residente'] },
+  aprobada: { stage: 'comprada', action: 'Registrar Compra', roles: ['admin', 'director', 'administracion'] },
+  comprada: { stage: 'entregada', action: 'Registrar Entrega en Obra', roles: ['admin', 'director', 'administracion', 'residente'] },
+  entregada: { stage: 'recibida', action: 'Confirmar Recepción', roles: ['admin', 'director', 'residente'] },
 }
 
 function daysUntil(date: string, today: string) {
@@ -71,26 +71,26 @@ export function SpecialRequestsList({
     switch (cat) {
       case 'materiales':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-accent text-obra-strong">
-            <Package className="w-3.5 h-3.5" aria-hidden /> Materiales
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+            <Package className="w-3.5 h-3.5" /> Materiales
           </span>
         )
       case 'maquinaria':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-senal-soft text-senal">
-            <Truck className="w-3.5 h-3.5" aria-hidden /> Maquinaria
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+            <Truck className="w-3.5 h-3.5" /> Maquinaria
           </span>
         )
       case 'herramientas':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-ok-soft text-ok">
-            <Wrench className="w-3.5 h-3.5" aria-hidden /> Herramientas
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
+            <Wrench className="w-3.5 h-3.5" /> Herramientas
           </span>
         )
       case 'equipo_pesado':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted text-plano">
-            <HardHat className="w-3.5 h-3.5" aria-hidden /> Equipo pesado
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
+            <HardHat className="w-3.5 h-3.5" /> Equipo Pesado
           </span>
         )
       default:
@@ -101,13 +101,13 @@ export function SpecialRequestsList({
   const getUrgencyBadge = (urgency: string) => {
     switch (urgency) {
       case 'urgente':
-        return <span className="px-2 py-0.5 rounded text-xs font-bold bg-destructive text-white">Urgente</span>
+        return <span className="px-2 py-0.5 rounded text-xs font-bold bg-red-600 text-white animate-pulse">🚨 Urgente</span>
       case 'alta':
-        return <span className="px-2 py-0.5 rounded text-xs font-semibold bg-senal text-white">Alta</span>
+        return <span className="px-2 py-0.5 rounded text-xs font-semibold bg-orange-500 text-white">Alta</span>
       case 'normal':
-        return <span className="px-2 py-0.5 rounded text-xs font-medium border border-junta text-plano/80">Normal</span>
+        return <span className="px-2 py-0.5 rounded text-xs font-medium border border-slate-300 text-slate-700">Normal</span>
       case 'baja':
-        return <span className="px-2 py-0.5 rounded text-xs font-medium border border-border text-muted-foreground">Baja</span>
+        return <span className="px-2 py-0.5 rounded text-xs font-medium border border-slate-200 text-slate-500">Baja</span>
       default:
         return null
     }
@@ -117,20 +117,20 @@ export function SpecialRequestsList({
     switch (status) {
       case 'pendiente':
         return (
-          <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-md bg-senal-soft text-senal border border-senal/30">
-            <Clock className="w-3.5 h-3.5 text-senal" aria-hidden /> En revisión del director
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-md bg-amber-50 text-amber-800 border border-amber-200">
+            <Clock className="w-3.5 h-3.5 text-amber-600" /> En revisión por Director
           </span>
         )
       case 'aprobada':
         return (
-          <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-md bg-ok-soft text-ok border border-ok/30">
-            <CheckCircle2 className="w-3.5 h-3.5 text-ok" aria-hidden /> Aprobada
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Aprobada
           </span>
         )
       case 'rechazada':
         return (
-          <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-md bg-destructive/5 text-destructive border border-destructive/30">
-            <XCircle className="w-3.5 h-3.5 text-destructive" aria-hidden /> Rechazada
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-md bg-red-50 text-red-800 border border-red-200">
+            <XCircle className="w-3.5 h-3.5 text-red-600" /> Rechazada
           </span>
         )
       default:
@@ -158,24 +158,23 @@ export function SpecialRequestsList({
   return (
     <div className="space-y-6">
       {/* Filtros */}
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-border bg-white p-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-white rounded-xl border shadow-sm">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-semibold text-muted-foreground mr-2">Categoría:</span>
+          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider mr-2">Categoría:</span>
           {[
             { id: 'all', label: 'Todas' },
             { id: 'materiales', label: 'Materiales' },
             { id: 'maquinaria', label: 'Maquinaria' },
             { id: 'herramientas', label: 'Herramientas' },
-            { id: 'equipo_pesado', label: 'Equipo pesado' },
+            { id: 'equipo_pesado', label: 'Equipo Pesado' },
           ].map(cat => (
             <button
               key={cat.id}
               onClick={() => setFilterCategory(cat.id)}
-              aria-pressed={filterCategory === cat.id}
-              className={`min-h-9 px-3 rounded-md text-sm font-medium transition-colors ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                 filterCategory === cat.id
-                  ? 'bg-plano text-white shadow-sm'
-                  : 'bg-muted text-muted-foreground hover:bg-secondary'
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
               {cat.label}
@@ -183,8 +182,8 @@ export function SpecialRequestsList({
           ))}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-semibold text-muted-foreground mr-2">Estado:</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider mr-2">Estado:</span>
           {[
             { id: 'all', label: 'Todos' },
             { id: 'pendiente', label: 'Pendientes' },
@@ -194,11 +193,10 @@ export function SpecialRequestsList({
             <button
               key={st.id}
               onClick={() => setFilterStatus(st.id)}
-              aria-pressed={filterStatus === st.id}
-              className={`min-h-9 px-3 rounded-md text-sm font-medium transition-colors ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                 filterStatus === st.id
-                  ? 'bg-senal text-white shadow-sm'
-                  : 'bg-muted text-muted-foreground hover:bg-secondary'
+                  ? 'bg-amber-600 text-white shadow-sm'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
               {st.label}
@@ -210,19 +208,19 @@ export function SpecialRequestsList({
       {/* Lista de solicitudes */}
       {filteredRequests.length === 0 ? (
         <Card className="p-12 text-center">
-          <AlertCircle className="w-12 h-12 text-muted-foreground/50 mx-auto mb-3" aria-hidden />
-          <CardTitle className="text-lg text-plano/80">No hay solicitudes registradas</CardTitle>
+          <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+          <CardTitle className="text-lg text-slate-700">No hay solicitudes registradas</CardTitle>
           <CardDescription className="mt-1">
-            Usa “Nueva solicitud” para pedir materiales, maquinaria o equipo con la fecha en que se necesitan.
+            Usa el botón "Nueva Solicitud Especial" para solicitar materiales o equipos.
           </CardDescription>
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredRequests.map(req => (
-            <Card key={req.id} className="relative flex flex-col justify-between overflow-hidden bg-white pt-0">
+            <Card key={req.id} className="flex flex-col justify-between border hover:shadow-md transition-shadow relative overflow-hidden bg-white">
               <div className={`h-1.5 w-full ${
-                req.status === 'aprobada' ? 'bg-ok' :
-                req.status === 'rechazada' ? 'bg-destructive' : 'bg-senal'
+                req.status === 'aprobada' ? 'bg-emerald-500' :
+                req.status === 'rechazada' ? 'bg-red-500' : 'bg-amber-500'
               }`} />
               
               <CardHeader className="pb-3">
@@ -230,30 +228,30 @@ export function SpecialRequestsList({
                   {getCategoryBadge(req.category)}
                   {getUrgencyBadge(req.urgency)}
                 </div>
-                <CardTitle className="text-lg font-bold text-plano leading-snug">
+                <CardTitle className="text-lg font-bold text-slate-900 leading-snug">
                   {req.title}
                 </CardTitle>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1 bg-muted/50 px-2 py-1 rounded w-fit border border-border">
-                  <span className="font-semibold text-plano/80">Cantidad:</span> {req.quantity} {req.unit}
+                <div className="flex items-center gap-2 text-xs text-slate-600 mt-1 bg-slate-50 px-2 py-1 rounded w-fit border border-slate-100">
+                  <span className="font-semibold text-slate-700">Cantidad:</span> {req.quantity} {req.unit}
                 </div>
               </CardHeader>
 
               <CardContent className="space-y-4 pt-0 flex-1 flex flex-col justify-between">
                 <div className="space-y-3">
                   {req.description && (
-                    <p className="text-xs text-muted-foreground bg-muted/50 p-2.5 rounded-md border border-border italic">
-                      “{req.description}”
+                    <p className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-md border border-slate-100 italic">
+                      "{req.description}"
                     </p>
                   )}
 
-                  <div className="space-y-1 text-xs text-muted-foreground pt-2 border-t">
+                  <div className="space-y-1 text-xs text-slate-500 pt-2 border-t">
                     {req.projects?.name && (
-                      <p><strong className="text-plano/80">Proyecto:</strong> {req.projects.name}</p>
+                      <p><strong className="text-slate-700">Proyecto:</strong> {req.projects.name}</p>
                     )}
                     {req.profiles?.full_name && (
-                      <p><strong className="text-plano/80">Solicitado por:</strong> {req.profiles.full_name}</p>
+                      <p><strong className="text-slate-700">Solicitado por:</strong> {req.profiles.full_name}</p>
                     )}
-                    <p><strong className="text-plano/80">Solicitada:</strong> {formatDateTime(req.created_at)}</p>
+                    <p><strong className="text-slate-700">Fecha:</strong> {formatDateTime(req.created_at)}</p>
                   </div>
 
                   {req.needed_by && (() => {
@@ -261,8 +259,8 @@ export function SpecialRequestsList({
                     const done = req.stage === 'recibida' || req.status === 'rechazada'
                     const late = !done && d < 0
                     return (
-                      <p className={`rounded-md px-2.5 py-1.5 text-sm ${late ? 'bg-destructive/10 font-semibold text-destructive' : !done && d <= 2 ? 'bg-senal-soft text-senal' : 'bg-muted text-plano'}`}>
-                        Se necesita el {formatDateOnly(req.needed_by, { day: 'numeric', month: 'short', year: 'numeric' })}
+                      <p className={`text-xs px-2.5 py-1.5 rounded-md border ${late ? 'bg-red-50 border-red-200 text-red-700 font-bold' : !done && d <= 2 ? 'bg-amber-50 border-amber-200 text-amber-800 font-semibold' : 'bg-slate-50 border-slate-100 text-slate-700'}`}>
+                        <strong>Se necesita:</strong> {formatDateOnly(req.needed_by, { day: 'numeric', month: 'short', year: 'numeric' })}
                         {!done && (late ? ` · atrasada ${-d} ${-d === 1 ? 'día' : 'días'}` : d === 0 ? ' · hoy' : ` · faltan ${d} ${d === 1 ? 'día' : 'días'}`)}
                       </p>
                     )
@@ -276,17 +274,17 @@ export function SpecialRequestsList({
 
                   {/* Seguimiento: cada etapa con quién y cuándo */}
                   {req.status !== 'rechazada' && (
-                    <ol className="space-y-1.5" aria-label="Seguimiento de la solicitud">
+                    <ol className="space-y-1" aria-label="Seguimiento de la solicitud">
                       {TRACK.map((step) => {
                         const ev = [...(req.events || [])].reverse().find((e) => e.stage === step.stage)
-                        const reached = !!ev || (step.stage === 'solicitada') || (step.stage === 'aprobada' && req.status === 'aprobada')
+                        const reached = !!ev || step.stage === 'solicitada' || (step.stage === 'aprobada' && req.status === 'aprobada')
                         return (
-                          <li key={step.stage} className="flex items-start gap-2 text-xs">
-                            <span className={`mt-1 h-2 w-2 shrink-0 rounded-full ${reached ? 'bg-ok' : 'bg-junta'}`} aria-hidden />
-                            <span className={reached ? 'text-plano' : 'text-muted-foreground'}>
+                          <li key={step.stage} className="flex items-start gap-2 text-[11px]">
+                            <span className={`mt-1 h-2 w-2 shrink-0 rounded-full ${reached ? 'bg-emerald-500' : 'bg-slate-300'}`} aria-hidden />
+                            <span className={reached ? 'text-slate-700' : 'text-slate-400'}>
                               <strong className="font-semibold">{step.label}</strong>
                               {ev ? ` · ${ev.actor?.full_name || 'Sin nombre'}, ${formatDateTime(ev.created_at)}` : reached ? '' : ' · pendiente'}
-                              {ev?.note && step.stage !== 'aprobada' && <span className="block text-muted-foreground">{ev.note}</span>}
+                              {ev?.note && step.stage !== 'aprobada' && <span className="block text-slate-500">{ev.note}</span>}
                             </span>
                           </li>
                         )
@@ -296,24 +294,25 @@ export function SpecialRequestsList({
 
                   {req.status === 'aprobada' && NEXT[req.stage || 'aprobada'] && NEXT[req.stage || 'aprobada'].roles.includes(userRole) && (
                     <Button
+                      size="sm"
                       variant="outline"
                       disabled={isPending}
                       onClick={() => handleAdvance(req.id, NEXT[req.stage || 'aprobada'].stage)}
-                      className="w-full"
+                      className="w-full text-xs h-8 border-slate-200 hover:bg-slate-50 text-slate-700 font-medium"
                     >
                       {NEXT[req.stage || 'aprobada'].action}
                     </Button>
                   )}
 
                   {stageError?.id === req.id && (
-                    <p role="alert" className="text-sm text-destructive">{stageError.message}</p>
+                    <p role="alert" className="text-xs text-red-600">{stageError.message}</p>
                   )}
 
                   {/* Comentario del Director */}
                   {req.director_comment && (
-                    <div className="text-xs p-2.5 rounded-lg bg-accent text-obra-strong border border-obra/25">
-                      <div className="font-bold flex items-center gap-1 text-obra-strong mb-1">
-                        <MessageSquare className="w-3.5 h-3.5" aria-hidden /> Nota del director
+                    <div className="text-xs p-2.5 rounded-lg bg-blue-50 text-blue-900 border border-blue-200">
+                      <div className="font-bold flex items-center gap-1 text-blue-700 mb-1">
+                        <MessageSquare className="w-3.5 h-3.5" /> Nota del Director:
                       </div>
                       {req.director_comment}
                     </div>
@@ -323,13 +322,12 @@ export function SpecialRequestsList({
                   {isAdmin && req.status === 'pendiente' && (
                     <div className="pt-2 border-t space-y-2">
                       {commentingId === req.id ? (
-                        <div className="space-y-2 bg-muted/50 p-3 rounded-lg border">
-                          <label htmlFor={`comment-${req.id}`} className="text-sm font-semibold text-plano block">
-                            Comentario para quien solicita <span className="font-normal text-muted-foreground">(opcional)</span>
+                        <div className="space-y-2 bg-slate-50 p-3 rounded-lg border">
+                          <label className="text-xs font-semibold text-slate-700 block">
+                            Comentario para el solicitante (opcional):
                           </label>
                           <Input
-                            id={`comment-${req.id}`}
-                            placeholder="Aprobado, se entrega el viernes"
+                            placeholder="Ej: Aprobado para entrega el viernes..."
                             value={directorComment}
                             onChange={(e) => setDirectorComment(e.target.value)}
                             className="text-xs bg-white"
@@ -339,7 +337,7 @@ export function SpecialRequestsList({
                               size="sm"
                               variant="outline"
                               onClick={() => { setCommentingId(null); setDirectorComment(''); }}
-                              className="h-10 text-sm"
+                              className="text-xs h-8"
                             >
                               Cancelar
                             </Button>
@@ -347,7 +345,7 @@ export function SpecialRequestsList({
                               size="sm"
                               disabled={isPending}
                               onClick={() => handleStatusUpdate(req.id, 'rechazada')}
-                              className="bg-destructive hover:bg-destructive/90 text-white h-10 text-sm"
+                              className="bg-red-600 hover:bg-red-700 text-white text-xs h-8"
                             >
                               Rechazar
                             </Button>
@@ -355,7 +353,7 @@ export function SpecialRequestsList({
                               size="sm"
                               disabled={isPending}
                               onClick={() => handleStatusUpdate(req.id, 'aprobada')}
-                              className="bg-ok hover:bg-ok/90 text-white h-10 text-sm"
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8"
                             >
                               Aprobar
                             </Button>
@@ -366,9 +364,9 @@ export function SpecialRequestsList({
                           size="sm"
                           variant="outline"
                           onClick={() => setCommentingId(req.id)}
-                          className="w-full h-10 text-sm border-border hover:bg-muted/50 text-plano/80 font-medium"
+                          className="w-full text-xs h-8 border-slate-200 hover:bg-slate-50 text-slate-700 font-medium"
                         >
-                          <CheckCircle2 className="w-3.5 h-3.5 mr-1.5 text-ok" aria-hidden /> Responder solicitud
+                          <CheckCircle2 className="w-3.5 h-3.5 mr-1.5 text-emerald-600" /> Responder Solicitud
                         </Button>
                       )}
                     </div>

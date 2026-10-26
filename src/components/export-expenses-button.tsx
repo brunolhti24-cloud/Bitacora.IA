@@ -285,20 +285,20 @@ export function ExportExpensesButton({ expenses, title = 'Control General de Gas
         disabled={exportingCsv || exportingPdf || expenses.length === 0}
         variant="outline"
         size="sm"
-        className="gap-1.5 text-xs font-semibold bg-white text-ok hover:text-ok hover:bg-ok-soft border-ok/30 shadow-sm transition-all"
+        className="gap-1.5 text-xs font-semibold bg-white text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 border-emerald-300 shadow-sm transition-all"
       >
-        <TableIcon className="w-3.5 h-3.5 text-ok" />
-        {exportingCsv ? 'Exportando…' : 'Exportar Excel'}
+        <TableIcon className="w-3.5 h-3.5 text-emerald-600" />
+        {exportingCsv ? 'Exportando...' : 'Exportar Excel'}
       </Button>
       <Button
         onClick={generatePDF}
         disabled={exportingPdf || exportingCsv || expenses.length === 0}
         variant="outline"
         size="sm"
-        className="gap-1.5 text-xs font-semibold bg-white text-plano/80 hover:text-obra hover:bg-accent border-junta shadow-sm transition-all"
+        className="gap-1.5 text-xs font-semibold bg-white text-slate-700 hover:text-blue-600 hover:bg-blue-50 border-slate-300 shadow-sm transition-all"
       >
-        <FileText className="w-3.5 h-3.5 text-obra" />
-        {exportingPdf ? 'Generando PDF…' : 'Exportar PDF'}
+        <FileText className="w-3.5 h-3.5 text-blue-600" />
+        {exportingPdf ? 'Generando PDF...' : 'Exportar PDF'}
       </Button>
     </div>
   )

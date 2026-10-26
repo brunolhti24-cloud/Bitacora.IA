@@ -1,7 +1,6 @@
+import { createClient } from '@/lib/supabase/server'
 import { formatDateOnly } from '@/lib/dates'
 import { summarizeFinance, formatMoney } from '@/lib/finance'
-import { ProgressTape } from '@/components/progress-tape'
-import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { NewTicketModal } from '@/components/new-ticket-modal'
@@ -38,123 +37,134 @@ export async function FinanceTab({ projectId, baseBudget, isAdmin }: { projectId
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 lg:grid-cols-2">
-        {/* Presupuesto: cuánto se autorizó y cuánto falta por ejercer */}
-        <section aria-labelledby="fin-presupuesto" className="rounded-lg border border-border bg-card p-5">
-          <h3 id="fin-presupuesto" className="text-base font-bold text-plano">Presupuesto de la obra</h3>
-          <dl className="mt-3 grid grid-cols-3 gap-3">
-            <div>
-              <dt className="text-sm text-muted-foreground">Autorizado</dt>
-              <dd className="text-xl font-bold text-plano">{formatMoney(fin.budget)}</dd>
-            </div>
-            <div>
-              <dt className="text-sm text-muted-foreground">Ejercido</dt>
-              <dd className="text-xl font-bold text-plano">{formatMoney(fin.expenses)}</dd>
-            </div>
-            <div>
-              <dt className="text-sm text-muted-foreground">Por ejercer</dt>
-              <dd className={`text-xl font-bold ${fin.budgetRemaining < 0 ? 'text-destructive' : 'text-plano'}`}>{formatMoney(fin.budgetRemaining)}</dd>
-            </div>
-          </dl>
-          {fin.budgetUsedPct !== null ? (
-            <div className="mt-4 space-y-1.5">
-              <ProgressTape value={fin.budgetUsedPct} label="Presupuesto ejercido" />
-              <p className="text-sm text-muted-foreground">
-                {fin.budgetUsedPct > 100
-                  ? `Se rebasó el presupuesto: se ha gastado el ${fin.budgetUsedPct}% de lo autorizado.`
-                  : `Se ha ejercido el ${fin.budgetUsedPct}% del presupuesto.`}
-              </p>
-            </div>
-          ) : (
-            <p className="mt-4 text-sm text-muted-foreground">Esta obra no tiene presupuesto autorizado. Agrégalo al editar la obra.</p>
-          )}
-        </section>
-
-        {/* Caja: dinero que realmente entró y salió */}
-        <section aria-labelledby="fin-caja" className="rounded-lg border border-border bg-card p-5">
-          <h3 id="fin-caja" className="text-base font-bold text-plano">Flujo de efectivo</h3>
-          {isAdmin ? (
-            <>
-              <dl className="mt-3 grid grid-cols-3 gap-3">
-                <div>
-                  <dt className="text-sm text-muted-foreground">Ingresos recibidos</dt>
-                  <dd className="text-xl font-bold text-ok">{formatMoney(fin.incomes)}</dd>
-                </div>
-                <div>
-                  <dt className="text-sm text-muted-foreground">Gastos pagados</dt>
-                  <dd className="text-xl font-bold text-plano">{formatMoney(fin.expenses)}</dd>
-                </div>
-                <div>
-                  <dt className="text-sm text-muted-foreground">Saldo de caja</dt>
-                  <dd className={`text-xl font-bold ${fin.cash < 0 ? 'text-destructive' : 'text-plano'}`}>{formatMoney(fin.cash)}</dd>
-                </div>
-              </dl>
-              <p className="mt-4 text-sm text-muted-foreground">
-                {fin.cash < 0
-                  ? 'Se ha pagado más de lo que el cliente ha depositado. Registra los anticipos pendientes o revisa los gastos.'
-                  : 'Saldo de caja = ingresos recibidos menos gastos pagados. No incluye el presupuesto autorizado.'}
-              </p>
-            </>
-          ) : (
-            <p className="mt-3 text-sm text-muted-foreground">Los ingresos y el saldo de caja solo los ve el director de obra.</p>
-          )}
-        </section>
+      {/* Presupuesto: lo autorizado y lo que falta por ejercer */}
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+        <Card className="border border-slate-200 shadow-sm rounded-2xl bg-white">
+          <CardHeader className="p-4 pb-2">
+            <CardDescription className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+              Presupuesto Autorizado
+            </CardDescription>
+            <CardTitle className={`text-2xl font-bold ${'text-slate-900'}`}>
+              {formatMoney(fin.budget)}
+            </CardTitle>
+          </CardHeader>
+        </Card>
+        <Card className="border border-slate-200 shadow-sm rounded-2xl bg-white">
+          <CardHeader className="p-4 pb-2">
+            <CardDescription className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+              Gastos Pagados (Tickets)
+            </CardDescription>
+            <CardTitle className={`text-2xl font-bold ${'text-red-600'}`}>
+              {formatMoney(fin.expenses)}
+            </CardTitle>
+          </CardHeader>
+        </Card>
+        <Card className="border border-slate-200 shadow-sm rounded-2xl bg-white">
+          <CardHeader className="p-4 pb-2">
+            <CardDescription className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+              Presupuesto por Ejercer
+            </CardDescription>
+            <CardTitle className={`text-2xl font-bold ${fin.budgetRemaining < 0 ? 'text-red-600' : 'text-blue-600'}`}>
+              {formatMoney(fin.budgetRemaining)}
+            </CardTitle>
+            {fin.budgetUsedPct !== null && (
+              <p className="text-xs text-slate-500 mt-1">Ejercido: {fin.budgetUsedPct}% del presupuesto</p>
+            )}
+          </CardHeader>
+        </Card>
       </div>
+
+      {/* Flujo de efectivo: dinero que realmente entró y salió (solo director) */}
+      {isAdmin && (
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+          <Card className="border border-slate-200 shadow-sm rounded-2xl bg-white">
+            <CardHeader className="p-4 pb-2">
+              <CardDescription className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                Ingresos Recibidos
+              </CardDescription>
+              <CardTitle className={`text-2xl font-bold ${'text-emerald-600'}`}>
+                {formatMoney(fin.incomes)}
+              </CardTitle>
+            </CardHeader>
+          </Card>
+          <Card className="border border-slate-200 shadow-sm rounded-2xl bg-white">
+            <CardHeader className="p-4 pb-2">
+              <CardDescription className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                Gastos Pagados
+              </CardDescription>
+              <CardTitle className={`text-2xl font-bold ${'text-red-600'}`}>
+                {formatMoney(fin.expenses)}
+              </CardTitle>
+            </CardHeader>
+          </Card>
+          <Card className="border border-slate-200 shadow-sm rounded-2xl bg-white">
+            <CardHeader className="p-4 pb-2">
+              <CardDescription className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                Saldo de Caja
+              </CardDescription>
+              <CardTitle className={`text-2xl font-bold ${fin.cash < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                {formatMoney(fin.cash)}
+              </CardTitle>
+              <p className="text-xs text-slate-500 mt-1">Ingresos recibidos menos gastos pagados. No incluye el presupuesto.</p>
+            </CardHeader>
+          </Card>
+        </div>
+      )}
 
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
         {/* Sección de Gastos y Tickets */}
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3">
             <div>
-              <h3 className="text-lg font-bold text-plano flex items-center gap-2">
-                <Receipt className="h-5 w-5 text-ok" />
-                Tickets y comprobantes de gastos
+              <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <Receipt className="h-5 w-5 text-emerald-600" />
+                Tickets y Comprobantes de Gastos
               </h3>
-              <p className="text-xs text-muted-foreground">Registrados por residentes, administradores y subcontratistas</p>
+              <p className="text-xs text-slate-500">Registrados por residentes, administradores y subcontratistas</p>
             </div>
             
             {/* Modal para Subir Ticket desde Usuario y Admin */}
             <div className="flex flex-wrap items-center gap-2">
               <ExportExpensesButton expenses={exportItems} title="Reporte de Contabilidad y Tickets de la Obra" />
-              <NewTicketModal projectId={projectId} buttonText="Subir ticket" />
+              <NewTicketModal projectId={projectId} buttonText="+ Subir Ticket" />
             </div>
           </div>
           
           {expenses?.length === 0 ? (
-            <div className="p-8 text-center bg-muted/50 rounded-lg border border-dashed border-border">
-              <Receipt className="h-10 w-10 text-muted-foreground/50 mx-auto mb-2" />
-              <p className="text-sm font-medium text-muted-foreground">No hay tickets de gastos registrados.</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Utiliza el botón superior para subir el primer comprobante.</p>
+            <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+              <Receipt className="h-10 w-10 text-slate-300 mx-auto mb-2" />
+              <p className="text-sm font-medium text-slate-600">No hay tickets de gastos registrados.</p>
+              <p className="text-xs text-slate-400 mt-0.5">Utiliza el botón superior para subir el primer comprobante.</p>
             </div>
           ) : (
             <div className="space-y-3">
               {expenses?.map((exp) => (
-                <Card key={exp.id} className="p-4 border border-border/80 shadow-sm hover:shadow-md transition-all rounded-md bg-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <Card key={exp.id} className="p-4 border border-slate-200/80 shadow-sm hover:shadow-md transition-all rounded-xl bg-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <div className="flex items-start gap-3">
                     {exp.receipt_url ? (
-                      <a href={exp.receipt_url} target="_blank" rel="noreferrer" aria-label={`Abrir comprobante de ${exp.description || exp.concept}`} className="h-12 w-12 rounded-lg border overflow-hidden shrink-0 bg-muted group relative block">
-                        <img src={exp.receipt_url} alt="" className="h-full w-full object-cover group-hover:scale-105 transition-transform" />
+                      <a href={exp.receipt_url} target="_blank" rel="noreferrer" aria-label={`Abrir comprobante de ${exp.description || exp.concept}`} className="h-12 w-12 rounded-lg border overflow-hidden shrink-0 bg-slate-100 group relative block">
+                        <img src={exp.receipt_url} alt="Comprobante" className="h-full w-full object-cover group-hover:scale-105 transition-transform" />
                       </a>
                     ) : (
-                      <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center text-muted-foreground shrink-0">
+                      <div className="h-12 w-12 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 shrink-0">
                         <Receipt className="h-6 w-6" />
                       </div>
                     )}
 
                     <div>
-                      <h4 className="font-bold text-plano text-sm leading-tight">
+                      <h4 className="font-bold text-slate-900 text-sm leading-tight">
                         {exp.description || exp.concept}
                       </h4>
                       
-                      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-1">
-                        <span className="inline-flex items-center gap-1 font-medium text-plano/80 bg-muted px-2 py-0.5 rounded-md text-xs">
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 mt-1">
+                        <span className="inline-flex items-center gap-1 font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md text-[11px]">
                           {exp.category || 'Gasto'}
                         </span>
                         <span className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
                           {exp.expense_date ? formatDateOnly(exp.expense_date, { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'Sin fecha'}
                         </span>
-                        <span className="flex items-center gap-1 text-muted-foreground">
+                        <span className="flex items-center gap-1 text-slate-400">
                           <User className="h-3 w-3" />
                           {exp.profiles?.full_name || 'Usuario'}
                         </span>
@@ -163,7 +173,7 @@ export async function FinanceTab({ projectId, baseBudget, isAdmin }: { projectId
                   </div>
 
                   <div className="text-right w-full sm:w-auto flex sm:flex-col justify-between sm:justify-center items-center sm:items-end border-t sm:border-t-0 pt-2 sm:pt-0">
-                    <p className="font-extrabold text-destructive text-base">
+                    <p className="font-extrabold text-red-600 text-base">
                       -${(Number(exp.amount) || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                     </p>
 
@@ -172,7 +182,7 @@ export async function FinanceTab({ projectId, baseBudget, isAdmin }: { projectId
                         href={exp.receipt_url} 
                         target="_blank" 
                         rel="noreferrer" 
-                        className="inline-flex items-center gap-1 text-xs text-obra font-semibold hover:underline mt-0.5"
+                        className="inline-flex items-center gap-1 text-xs text-blue-600 font-semibold hover:underline mt-0.5"
                       >
                         Ver comprobante <ExternalLink className="h-3 w-3" />
                       </a>
@@ -187,40 +197,40 @@ export async function FinanceTab({ projectId, baseBudget, isAdmin }: { projectId
         {/* Ingresos / Anticipos (Solo Admin) */}
         {isAdmin && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-border pb-3">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <div>
-                <h3 className="text-lg font-bold text-plano flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-ok" />
-                  Ingresos y anticipos de cliente
+                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-emerald-600" />
+                  Ingresos y Anticipos de Cliente
                 </h3>
-                <p className="text-xs text-muted-foreground">Manejo de flujo de caja y aportaciones</p>
+                <p className="text-xs text-slate-500">Manejo de flujo de caja y aportaciones</p>
               </div>
 
               <Link href={`/dashboard/projects/${projectId}/incomes/new`}>
-                <Button size="sm" variant="outline" className="rounded-md border-junta">
+                <Button size="sm" variant="outline" className="rounded-xl border-slate-300">
                   + Registrar Ingreso
                 </Button>
               </Link>
             </div>
             
             {incomes?.length === 0 ? (
-              <div className="p-8 text-center bg-muted/50 rounded-lg border border-dashed border-border">
-                <DollarSign className="h-10 w-10 text-muted-foreground/50 mx-auto mb-2" />
-                <p className="text-sm font-medium text-muted-foreground">No hay ingresos o anticipos registrados.</p>
+              <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                <DollarSign className="h-10 w-10 text-slate-300 mx-auto mb-2" />
+                <p className="text-sm font-medium text-slate-600">No hay ingresos o anticipos registrados.</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {incomes?.map((inc) => (
-                  <Card key={inc.id} className="p-4 border border-border/80 shadow-sm rounded-md bg-white flex items-center justify-between">
+                  <Card key={inc.id} className="p-4 border border-slate-200/80 shadow-sm rounded-xl bg-white flex items-center justify-between">
                     <div>
-                      <p className="font-bold text-plano text-sm">{inc.description}</p>
-                      <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                      <p className="font-bold text-slate-900 text-sm">{inc.description}</p>
+                      <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
                         {formatDateOnly(inc.income_date, { day: '2-digit', month: '2-digit', year: 'numeric' })}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-extrabold text-ok text-base">
+                      <p className="font-extrabold text-emerald-600 text-base">
                         +${(Number(inc.amount) || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                       </p>
                     </div>

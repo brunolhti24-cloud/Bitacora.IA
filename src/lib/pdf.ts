@@ -70,7 +70,8 @@ export async function loadImage(url: string | null | undefined): Promise<LoadedI
 
 // --- Maquetación --------------------------------------------------------------
 export const PAGE = { left: 14, right: 196, width: 182, top: 44, bottom: 272 }
-const PLANO: [number, number, number] = [3, 16, 51]
+const HEADER: [number, number, number] = [26, 26, 46] // azul marino original de los reportes
+const PLANO: [number, number, number] = [30, 41, 59]
 const TEXT: [number, number, number] = [30, 41, 59]
 const MUTED: [number, number, number] = [90, 100, 120]
 const RULE: [number, number, number] = [216, 220, 226]
@@ -112,13 +113,13 @@ export async function createPdf(opts: {
   const pageHeight = doc.internal.pageSize.getHeight()
 
   const header = (first: boolean) => {
-    doc.setFillColor(...PLANO)
+    doc.setFillColor(...HEADER)
     doc.rect(0, 0, 210, first ? 32 : 18, 'F')
-    doc.setTextColor(167, 236, 128)
+    doc.setTextColor(148, 163, 184)
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(8)
     doc.text('BITACOR.AI', PAGE.left, 10)
-    doc.setTextColor(210, 216, 228)
+    doc.setTextColor(203, 213, 225)
     doc.setFont('helvetica', 'normal')
     doc.text(opts.docLabel, PAGE.left + 22, 10)
     if (first && opts.companyName?.trim()) {
