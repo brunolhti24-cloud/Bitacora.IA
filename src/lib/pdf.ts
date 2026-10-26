@@ -88,6 +88,8 @@ export type PdfDoc = {
   fields: (pairs: [string, string][]) => void
   paragraph: (text: string, opts?: { size?: number; color?: [number, number, number]; indent?: number }) => void
   signatures: (sigs: SignatureSpec[]) => void
+  /** Fotos en cuadrícula de 2 columnas, conservando su proporción. */
+  photos: (images: LoadedImage[]) => void
   /** Dibuja pies de página en todas las páginas y guarda el archivo. */
   save: (filename: string, footerNote: string) => void
 }
@@ -234,6 +236,34 @@ export async function createPdf(opts: {
         api.y += lineH
       }
       api.y += 3
+    },
+    photos(images) {
+      const gap = 4
+      const colW = (PAGE.width - gap) / 2
+      const maxH = 68
+      for (let i = 0; i < images.length; i += 2) {
+        const row = images.slice(i, i + 2).map((img) => {
+          const ratio = Math.min(colW / img.width, maxH / img.height)
+          return { img, w: img.width * ratio, h: img.height * ratio }
+        })
+        const rowH = Math.max(...row.map((r) => r.h))
+        api.ensure(rowH + 8)
+        row.forEach((r, j) => {
+          const x = PAGE.left + j * (colW + gap) + (colW - r.w) / 2
+          try {
+            doc.addImage(r.img.base64, r.img.format, x, api.y, r.w, r.h, undefined, 'FAST')
+            doc.setDrawColor(...RULE)
+            doc.rect(x, api.y, r.w, r.h, 'S')
+          } catch {
+            // imagen ilegible: se omite
+          }
+          doc.setFont('helvetica', 'normal')
+          doc.setFontSize(7.5)
+          doc.setTextColor(...MUTED)
+          doc.text(`Foto ${i + j + 1}`, PAGE.left + j * (colW + gap), api.y + rowH + 4)
+        })
+        api.y += rowH + 11
+      }
     },
     signatures(sigs) {
       const colW = PAGE.width / Math.min(sigs.length, 3)

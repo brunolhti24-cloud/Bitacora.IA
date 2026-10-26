@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Download } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatDateOnly, formatDateTime } from '@/lib/dates'
-import { createPdf, roleLabel, slug, STATUS_LABELS } from '@/lib/pdf'
+import { createPdf, loadImage, roleLabel, slug, STATUS_LABELS } from '@/lib/pdf'
 
 interface BitacoraReport {
   id: string
@@ -37,7 +37,7 @@ export function ExportBitacoraPdfButton({ report }: { report: BitacoraReport }) 
       // Datos completos y actuales: el PDF no depende de lo que la página tenga cargado
       const { data: rep } = await supabase
         .from('daily_reports')
-        .select('*, creator:profiles!daily_reports_created_by_fkey(full_name, role), acceptor:profiles!daily_reports_accepted_by_fkey(full_name, role), signer:profiles!daily_reports_signed_by_fkey(full_name, role), project_areas(name), projects(name)')
+        .select('*, creator:profiles!daily_reports_created_by_fkey(full_name, role), acceptor:profiles!daily_reports_accepted_by_fkey(full_name, role), signer:profiles!daily_reports_signed_by_fkey(full_name, role), project_areas(name), projects(name), report_photos(photo_url, created_at)')
         .eq('id', report.id)
         .maybeSingle()
 
@@ -83,6 +83,21 @@ export function ExportBitacoraPdfButton({ report }: { report: BitacoraReport }) 
       if (rep?.special_request) {
         pdf.section('Solicitud para el director')
         pdf.paragraph(rep.special_request)
+      }
+
+      // Evidencia fotográfica (máximo 8 fotos por bitácora)
+      const photoRows = ((rep?.report_photos as { photo_url: string; created_at?: string }[] | null) || [])
+        .sort((x, y) => (x.created_at || '').localeCompare(y.created_at || ''))
+        .slice(0, 8)
+      if (photoRows.length > 0) {
+        const images = (await Promise.all(photoRows.map((ph) => loadImage(ph.photo_url)))).filter(
+          (img): img is NonNullable<typeof img> => !!img
+        )
+        pdf.section(`Evidencia fotográfica (${photoRows.length})`)
+        if (images.length > 0) pdf.photos(images)
+        if (images.length < photoRows.length) {
+          pdf.paragraph(`${photoRows.length - images.length} foto(s) no se pudieron incluir; se pueden ver en la plataforma.`, { size: 8, color: [90, 100, 120] })
+        }
       }
 
       pdf.section('Firmas')
