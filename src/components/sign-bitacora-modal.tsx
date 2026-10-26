@@ -57,21 +57,21 @@ export function SignBitacoraModal({
 
   if (signed) {
     return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-ok-soft text-ok border border-ok/30">
-        <FileCheck2 className="w-3.5 h-3.5 text-ok" /> Firmada por Director
+      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+        <FileCheck2 className="w-3.5 h-3.5 text-emerald-600" /> Firmada por Director
       </span>
     )
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md bg-ok px-3.5 text-sm font-semibold text-white transition-colors hover:bg-ok/90">
-        <FileCheck2 className="h-4 w-4" aria-hidden /> Firmar y aprobar
+      <DialogTrigger className="inline-flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-8 px-3 rounded-lg gap-1.5 shadow-sm transition-colors cursor-pointer">
+        <FileCheck2 className="w-3.5 h-3.5" /> Firmar y Aprobar (Director)
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md rounded-lg">
+      <DialogContent className="sm:max-w-md rounded-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-ok">
-            <Sparkles className="w-5 h-5 text-ok" /> Firma oficial de director
+          <DialogTitle className="flex items-center gap-2 text-emerald-700">
+            <Sparkles className="w-5 h-5 text-emerald-600" /> Firma Oficial de Director
           </DialogTitle>
           <DialogDescription>
             Como Director, estampa tu firma digital para validar y cerrar oficialmente esta bitácora de obra.
@@ -82,10 +82,10 @@ export function SignBitacoraModal({
           <SignaturePad name="signature_url" />
 
           <DialogFooter className="pt-2">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)} className="rounded-md">
+            <Button type="button" variant="outline" onClick={() => setOpen(false)} className="rounded-xl">
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading} className="bg-ok hover:bg-ok/90 text-white font-bold rounded-md px-6">
+            <Button type="submit" disabled={loading} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl px-6">
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> Firmando...

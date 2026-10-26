@@ -29,14 +29,14 @@ export default function NewBitacoraAreaPage({ params }: { params: Promise<{ id: 
   return (
     <div className="mx-auto max-w-lg space-y-6 pb-20 md:pb-0">
       <div className="flex items-center gap-4">
-        <Link href={`/dashboard/projects/${projectId}/areas/${areaId}`} className="text-sm text-obra hover:underline">
+        <Link href={`/dashboard/projects/${projectId}/areas/${areaId}`} className="text-sm text-blue-600 hover:underline">
           &larr; Volver al Área
         </Link>
       </div>
 
       <Card className="border-0 shadow-none md:border md:shadow-sm">
         <CardHeader className="px-0 md:px-6">
-          <CardTitle className="text-2xl">Nueva bitácora del área</CardTitle>
+          <CardTitle className="text-2xl">Nueva Bitácora del Área</CardTitle>
           <CardDescription>
             Reporte diario de actividades específicas de esta área.
           </CardDescription>
@@ -46,7 +46,7 @@ export default function NewBitacoraAreaPage({ params }: { params: Promise<{ id: 
             <input type="hidden" name="area_id" value={areaId} />
             
             <div className="space-y-2">
-              <Label htmlFor="report_date">Fecha del reporte *</Label>
+              <Label htmlFor="report_date">Fecha del Reporte *</Label>
               <Input
                 id="report_date"
                 name="report_date"
@@ -59,7 +59,7 @@ export default function NewBitacoraAreaPage({ params }: { params: Promise<{ id: 
             
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="progress_notes">Avances y actividades *</Label>
+                <Label htmlFor="progress_notes">Avances y Actividades *</Label>
                 <AiBitacoraEnhancer 
                   getDraftNotes={() => progressNotes} 
                   setNotes={(enhanced) => setProgressNotes(enhanced)} 
@@ -72,13 +72,13 @@ export default function NewBitacoraAreaPage({ params }: { params: Promise<{ id: 
                 rows={6}
                 value={progressNotes}
                 onChange={(e) => setProgressNotes(e.target.value)}
-                placeholder="Escribe aquí las actividades y notas detalladas del avance de la obra…"
+                placeholder="Escribe aquí las actividades y notas detalladas del avance de la obra..."
                 className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="physical_progress">Actualizar % avance físico global (opcional)</Label>
+              <Label htmlFor="physical_progress">Actualizar % Avance Físico Global (Opcional)</Label>
               <Input
                 id="physical_progress"
                 name="physical_progress"
@@ -94,12 +94,12 @@ export default function NewBitacoraAreaPage({ params }: { params: Promise<{ id: 
             <SignaturePad name="signature_url" />
 
             {state?.error && (
-              <p className="text-sm font-medium text-destructive">{state.error}</p>
+              <p className="text-sm font-medium text-red-500">{state.error}</p>
             )}
 
             <div className="pt-4">
               <Button type="submit" className="w-full h-12 text-lg font-semibold" disabled={isPending}>
-                {isPending ? 'Guardando Reporte…' : 'Registrar Bitácora'}
+                {isPending ? 'Guardando Reporte...' : 'Registrar Bitácora'}
               </Button>
             </div>
             

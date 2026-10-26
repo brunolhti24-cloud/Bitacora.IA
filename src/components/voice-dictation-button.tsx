@@ -138,10 +138,10 @@ export function VoiceDictationButton({
       onClick={toggleListening}
       variant={isListening ? "destructive" : "outline"}
       size="sm"
-      className={`h-10 rounded-md text-sm gap-1.5 transition-colors ${
+      className={`h-8 rounded-full font-bold text-xs gap-1.5 transition-all shadow-xs ${
         isListening
-          ? 'bg-destructive hover:bg-destructive/90 text-white animate-pulse'
-          : 'bg-white hover:bg-accent text-plano/80 border-border hover:text-obra'
+          ? 'bg-red-600 hover:bg-red-700 text-white animate-pulse border-red-700'
+          : 'bg-white hover:bg-blue-50 text-slate-700 border-slate-200 hover:text-blue-600'
       } ${className}`}
     >
       {isListening ? (
@@ -154,7 +154,7 @@ export function VoiceDictationButton({
         </>
       ) : (
         <>
-          <Mic className="w-3.5 h-3.5 text-obra" /> {label}
+          <Mic className="w-3.5 h-3.5 text-blue-600" /> {label}
         </>
       )}
     </Button>

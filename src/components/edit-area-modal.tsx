@@ -53,13 +53,13 @@ export function EditAreaModal({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger className="inline-flex h-10 items-center gap-1.5 rounded-md px-3 text-sm font-semibold text-plano/80 transition-colors hover:bg-muted hover:text-plano">
-        <Pencil className="h-4 w-4" aria-hidden /> Renombrar
+      <DialogTrigger className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 hover:text-slate-900 border border-slate-200/80 transition-colors cursor-pointer shadow-2xs">
+        <Pencil className="w-3.5 h-3.5 text-blue-600" /> Editar Nombre
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md rounded-lg">
+      <DialogContent className="sm:max-w-md rounded-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-plano">
-            <Layers className="w-5 h-5 text-obra" /> Editar nombre del área
+          <DialogTitle className="flex items-center gap-2 text-slate-900">
+            <Layers className="w-5 h-5 text-blue-600" /> Editar Nombre del Área
           </DialogTitle>
           <DialogDescription>
             Cambia el nombre del área o espacio de la obra (ej. Recámara 3, Cocina, Fachada).
@@ -68,8 +68,8 @@ export function EditAreaModal({
 
         <form onSubmit={handleSubmit} className="space-y-4 py-2">
           <div className="space-y-1.5">
-            <Label htmlFor="area_name">
-              Nombre del área *
+            <Label htmlFor="area_name" className="text-xs font-semibold uppercase tracking-wider text-slate-700">
+              Nombre del Área *
             </Label>
             <Input
               id="area_name"
@@ -77,19 +77,19 @@ export function EditAreaModal({
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Ej. Recámara Principal, Cocina, Baño…"
-              className="h-11 rounded-md bg-muted/40 text-plano font-semibold"
+              placeholder="Ej. Recámara Principal, Cocina, Baño..."
+              className="h-11 rounded-xl bg-slate-50/50 text-slate-900 font-semibold"
             />
           </div>
 
           <DialogFooter className="pt-3">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)} className="rounded-md">
+            <Button type="button" variant="outline" onClick={() => setOpen(false)} className="rounded-xl">
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading} className="bg-obra hover:bg-obra-strong text-white font-bold rounded-md px-6">
+            <Button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl px-6">
               {loading ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> Guardando…
+                  <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> Guardando...
                 </>
               ) : (
                 'Guardar Nombre'

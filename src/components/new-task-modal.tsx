@@ -1,6 +1,5 @@
 'use client'
 
-import { Plus } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
@@ -17,7 +16,7 @@ import { createTask } from '@/app/dashboard/actions'
 import { todayInObra } from '@/lib/dates'
 import { roleLabel } from '@/lib/roles'
 
-const selectClass = 'flex h-11 w-full rounded-md border border-input bg-white px-3 text-base text-plano transition-colors focus-visible:border-obra md:text-sm'
+const selectClass = 'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
 
 export function NewTaskModal({
   projectId,
@@ -56,21 +55,21 @@ export function NewTaskModal({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button className="h-11 gap-2 px-4"><Plus className="h-4 w-4" aria-hidden />Nueva tarea</Button>} />
+      <DialogTrigger render={<Button>+ Nueva Tarea</Button>} />
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Añadir tarea</DialogTitle>
+          <DialogTitle>Añadir Tarea</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="title">Título</Label>
-            <Input id="title" name="title" required placeholder="Pintar fachada norte" />
+            <Input id="title" name="title" required placeholder="Ej: Pintar fachada" />
           </div>
           
           <div className="space-y-2">
             <Label htmlFor="description">Descripción</Label>
-            <Textarea id="description" name="description" placeholder="Detalles de la tarea…" />
+            <Textarea id="description" name="description" placeholder="Detalles de la tarea..." />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -102,7 +101,7 @@ export function NewTaskModal({
           <div className="space-y-2">
             <Label htmlFor="assigned_to">Asignar a</Label>
             <select id="assigned_to" name="assigned_to" className={selectClass}>
-              <option value="">Sin asignar</option>
+              <option value="">-- Sin asignar --</option>
               {projectMembers.map((member: any) => (
                 <option key={member.id} value={member.id}>
                   {member.full_name || 'Sin nombre'}{roleLabel(member.role) ? ` (${roleLabel(member.role)})` : ''}
@@ -114,10 +113,10 @@ export function NewTaskModal({
             </p>
           </div>
 
-          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+          {error && <p role="alert" className="text-sm text-red-500">{error}</p>}
 
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Guardando…' : 'Crear tarea'}
+            {loading ? 'Guardando...' : 'Crear Tarea'}
           </Button>
         </form>
       </DialogContent>

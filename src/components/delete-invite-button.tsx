@@ -48,21 +48,21 @@ export function DeleteInviteButton({ inviteId, inviteCode }: { inviteId: string;
     return (
       <div 
         onClick={(e) => e.stopPropagation()}
-        className="flex items-center gap-1 bg-destructive/5 border border-destructive/30 text-destructive text-xs px-2 py-0.5 rounded-lg"
+        className="flex items-center gap-1 bg-red-50 border border-red-200 text-red-700 text-[11px] px-2 py-0.5 rounded-lg"
       >
         <span>¿Eliminar?</span>
         <button
           type="button"
           onClick={handleDelete}
           disabled={isDeleting}
-          className="font-bold text-destructive hover:text-destructive underline ml-1"
+          className="font-bold text-red-600 hover:text-red-800 underline ml-1"
         >
           {isDeleting ? <Loader2 className="w-3 h-3 animate-spin inline" /> : 'Sí'}
         </button>
         <button
           type="button"
           onClick={handleCancel}
-          className="text-muted-foreground hover:text-plano/80 ml-1"
+          className="text-slate-500 hover:text-slate-700 ml-1"
         >
           No
         </button>
@@ -75,10 +75,9 @@ export function DeleteInviteButton({ inviteId, inviteCode }: { inviteId: string;
       type="button"
       variant="ghost"
       size="sm"
-      onClick={handleDelete}
-      className="h-10 w-10 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/5 rounded-md transition-colors"
+      onClick={handleDelete} aria-label={`Eliminar código de invitación ${inviteCode}`}
+      className="h-7 w-7 p-0 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
       title={`Eliminar código de invitación ${inviteCode}`}
-      aria-label={`Eliminar código de invitación ${inviteCode}`}
     >
       <Trash2 className="w-3.5 h-3.5" />
     </Button>

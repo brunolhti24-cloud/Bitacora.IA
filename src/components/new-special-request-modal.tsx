@@ -39,15 +39,15 @@ export function NewSpecialRequestModal({
     }
   }, [state])
 
-  const selectClasses = "flex h-11 w-full rounded-md border border-input bg-white px-3 text-base text-plano transition-colors focus-visible:border-obra md:text-sm"
+  const selectClasses = "flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
-          <Button className="h-11 gap-2 px-4">
-            <PlusCircle className="h-4 w-4" aria-hidden />
-            Nueva solicitud
+          <Button className="gap-2 bg-amber-600 hover:bg-amber-700 text-white font-medium">
+            <PlusCircle className="h-4 w-4" />
+            Nueva Solicitud Especial
           </Button>
         }
       />
@@ -55,8 +55,8 @@ export function NewSpecialRequestModal({
         <form action={formAction}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl">
-              <Package className="h-5 w-5 text-senal" />
-              Solicitud especial
+              <Package className="h-5 w-5 text-amber-600" />
+              Solicitud Especial
             </DialogTitle>
             <DialogDescription>
               Solicita materiales, maquinaria, herramientas o equipo pesado. La solicitud le llegará al director para su aprobación.
@@ -64,7 +64,7 @@ export function NewSpecialRequestModal({
           </DialogHeader>
 
           {state?.error && (
-            <div className="mt-2 rounded-md bg-destructive/5 p-3 text-sm text-destructive border border-destructive/30">
+            <div className="mt-2 rounded-md bg-red-50 p-3 text-sm text-red-600 border border-red-200">
               {state.error}
             </div>
           )}
@@ -88,18 +88,18 @@ export function NewSpecialRequestModal({
 
             {/* Categoría */}
             <div className="grid gap-2">
-              <Label htmlFor="category">Categoría del recurso *</Label>
+              <Label htmlFor="category">Categoría del Recurso *</Label>
               <select id="category" name="category" className={selectClasses} required defaultValue="materiales">
-                <option value="materiales">Materiales (Cemento, varilla, arena...)</option>
-                <option value="maquinaria">Maquinaria (Retroexcavadora, bailarina...)</option>
-                <option value="herramientas">Herramientas (Rotomartillo, niveles...)</option>
-                <option value="equipo_pesado">Equipo Pesado (Grúas, camiones volteo...)</option>
+                <option value="materiales">📦 Materiales (Cemento, varilla, arena...)</option>
+                <option value="maquinaria">🚜 Maquinaria (Retroexcavadora, bailarina...)</option>
+                <option value="herramientas">🛠️ Herramientas (Rotomartillo, niveles...)</option>
+                <option value="equipo_pesado">🏗️ Equipo Pesado (Grúas, camiones volteo...)</option>
               </select>
             </div>
 
             {/* Título / Nombre */}
             <div className="grid gap-2">
-              <Label htmlFor="title">Elemento / nombre solicitado *</Label>
+              <Label htmlFor="title">Elemento / Nombre solicitado *</Label>
               <Input
                 id="title"
                 name="title"
@@ -126,7 +126,7 @@ export function NewSpecialRequestModal({
                 <Input
                   id="unit"
                   name="unit"
-                  placeholder="Piezas, M3, Ton, Horas, Días…"
+                  placeholder="Piezas, M3, Ton, Horas, Días..."
                   defaultValue="pzas"
                   required
                 />
@@ -134,29 +134,29 @@ export function NewSpecialRequestModal({
             </div>
 
             {/* Urgencia y fecha requerida */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="grid gap-2">
-                <Label htmlFor="urgency">Urgencia</Label>
+                <Label htmlFor="urgency">Nivel de Urgencia</Label>
                 <select id="urgency" name="urgency" className={selectClasses} defaultValue="normal">
-                  <option value="baja">Baja</option>
-                  <option value="normal">Normal</option>
-                  <option value="alta">Alta</option>
-                  <option value="urgente">Urgente (detiene la obra)</option>
+                  <option value="baja">Baja (Programable a futuro)</option>
+                  <option value="normal">Normal (Requerido esta semana)</option>
+                  <option value="alta">Alta (Requerido en 24-48 horas)</option>
+                  <option value="urgente">🚨 Urgente (Detiene la obra)</option>
                 </select>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="needed_by">Se necesita en obra el</Label>
+                <Label htmlFor="needed_by">Fecha en que se necesita en obra</Label>
                 <Input id="needed_by" name="needed_by" type="date" required min={todayInObra()} />
               </div>
             </div>
 
             {/* Descripción / Justificación */}
             <div className="grid gap-2">
-              <Label htmlFor="description">Justificación / detalles técnicos</Label>
+              <Label htmlFor="description">Justificación / Detalles técnicos</Label>
               <Textarea
                 id="description"
                 name="description"
-                placeholder="Especifica el motivo, área de la obra donde se utilizará o especificaciones técnicas…"
+                placeholder="Especifica el motivo, área de la obra donde se utilizará o especificaciones técnicas..."
                 rows={3}
               />
             </div>
@@ -166,8 +166,8 @@ export function NewSpecialRequestModal({
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isPending} className="bg-senal hover:bg-senal/90 text-white font-medium">
-              {isPending ? 'Enviando…' : 'Enviar Solicitud al Director'}
+            <Button type="submit" disabled={isPending} className="bg-amber-600 hover:bg-amber-700 text-white font-medium">
+              {isPending ? 'Enviando...' : 'Enviar Solicitud al Director'}
             </Button>
           </DialogFooter>
         </form>
