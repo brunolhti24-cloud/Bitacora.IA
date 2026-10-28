@@ -1,263 +1,198 @@
 import { summarizeFinance } from '@/lib/finance'
+import { isDirectorRole } from '@/lib/roles'
 import { openai } from '@ai-sdk/openai'
 import { streamText, convertToModelMessages } from 'ai'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
-import { createClient as createSupabaseClient } from '@supabase/supabase-js'
-import { getSupabaseConfig } from '@/lib/supabase/config'
 
 export const maxDuration = 30
 
+type Project = { id: string; name: string; base_budget?: number | null; location?: string | null; client_name?: string | null }
+type ToolFailure = { ok: false; error: string }
+
+const normalize = (text: string) =>
+  text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
+
+const HELP = `SOPORTE Y MANUAL DE USUARIO:
+También actúas como agente de soporte sobre cómo usar Bitacor.AI. Si el usuario pregunta cómo realizar una tarea, explícale los pasos:
+1. Obras y Frentes: se configuran en el listado del panel y se dividen en áreas/frentes de trabajo.
+2. Bitácoras: se llenan dentro del área/frente; requieren fecha, notas (con voz e IA), fotos del área y firma digital.
+3. Materiales: pestaña 'Materiales' de la obra. Entradas, salidas (con destino, quién recibe y motivo) e historial.
+4. Gastos: pestaña 'Finanzas' de la obra. Monto, concepto, categoría y foto del comprobante.
+5. Solicitudes: pestaña 'Solicitudes' de la obra, con fecha en que se necesita y seguimiento.
+6. Perfil y Empresa: 'Mi Perfil y Empresa'. Nombre, constructora y logotipo para los PDF.
+Si pide una guía o manual, da este enlace: [Manual de Usuario](/dashboard/manual).`
+
 export async function POST(req: Request) {
   try {
-    const { messages } = await req.json()
-    console.log('Received messages at /api/chat:', JSON.stringify(messages, null, 2))
+    const { messages, projectId: currentProjectId } = await req.json()
 
+    // Las herramientas usan la sesión del usuario: aplican los mismos permisos (RLS) que la app.
+    // Antes usaban una llave de servicio que saltaba los permisos y apuntaba a otro proyecto.
     const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return new Response('Unauthorized', { status: 401 })
 
-    // Verificar que el usuario esté autenticado
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.user) {
-      console.log('Unauthorized access attempt to /api/chat')
-      return new Response('Unauthorized', { status: 401 })
+    const { data: profile } = await supabase.from('profiles').select('role, invited_by').eq('id', user.id).maybeSingle()
+    const isDirector = isDirectorRole(profile?.role)
+
+    // Obras de la empresa del usuario (misma regla que el dashboard)
+    const owner = profile?.invited_by || user.id
+    const { data: projectRows, error: projectsError } = await supabase
+      .from('projects')
+      .select('id, name, base_budget, location, client_name')
+      .eq('created_by', owner)
+      .order('created_at', { ascending: false })
+    const projects: Project[] = projectRows || []
+    const currentProject = projects.find((p) => p.id === currentProjectId) || null
+
+    // Busca la obra por nombre sin importar mayúsculas ni acentos; sin nombre, usa la obra abierta
+    const resolveProject = (name?: string): { project: Project } | ToolFailure => {
+      if (projectsError) return { ok: false, error: `No se pudieron leer las obras: ${projectsError.message}` }
+      if (!name?.trim()) {
+        if (currentProject) return { project: currentProject }
+        return { ok: false, error: 'No se indicó la obra y no hay una obra abierta. Pregunta al usuario de qué obra se trata.' }
+      }
+      const wanted = normalize(name)
+      const exact = projects.filter((p) => normalize(p.name) === wanted)
+      const matches = exact.length
+        ? exact
+        : projects.filter((p) => normalize(p.name).includes(wanted) || wanted.includes(normalize(p.name)))
+      if (matches.length === 1) return { project: matches[0] }
+      if (matches.length > 1) {
+        return { ok: false, error: `Varias obras coinciden con "${name}": ${matches.map((p) => `"${p.name}"`).join(', ')}. Pregunta cuál.` }
+      }
+      const available = projects.map((p) => `"${p.name}"`).join(', ') || 'ninguna'
+      return { ok: false, error: `No encontré la obra "${name}" entre las obras del usuario. Obras disponibles: ${available}.` }
     }
 
-    const { url } = getSupabaseConfig()
-    // IMPORTANTE: Creamos un cliente con Service Role Key para las herramientas
-    const toolSupabase = createSupabaseClient(
-      url,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5d3B6ZmJvc3NnamVtdnNwbmxsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDgyNjk1MiwiZXhwIjoyMTAwNDAyOTUyfQ.rXc5t-zZIGeyt_-UL5zqBnvK1TSa60Q-pYPz3bKmIGE'
-    )
+    const context = currentProject
+      ? `OBRA ABIERTA: el usuario está viendo la obra "${currentProject.name}". Si no menciona otra obra, se refiere a esta: deja projectName vacío.`
+      : 'El usuario no tiene una obra abierta.'
 
     const modelMessages = await convertToModelMessages(messages)
-    console.log('Converted model messages:', JSON.stringify(modelMessages, null, 2))
-    // Ejecutamos el streaming de AI
     const result = streamText({
       model: openai('gpt-4o-mini'),
       messages: modelMessages,
-      system: `Eres un asistente experto para la constructora Bitacor.AI.
-Tienes acceso directo a la base de datos mediante tus herramientas (tools).
-SIEMPRE debes ejecutar las herramientas (tools) correspondientes antes de responder al usuario si la consulta involucra datos de base de datos.
-NUNCA digas que no tienes acceso a la información sin haber ejecutado primero las herramientas disponibles.
-Si el usuario pide crear un área, ejecuta de inmediato 'createProjectArea'.
-REGLA CRÍTICA 1: Una vez ejecutada cualquier herramienta, SIEMPRE debes escribir una respuesta final en texto confirmando el resultado o explicando lo que hiciste.
-REGLA CRÍTICA 2: Si una herramienta devuelve un error (ej. "no se encontró el proyecto"), NO intentes ejecutar la herramienta nuevamente. Responde al usuario de forma clara y concisa explicando el problema.
+      system: `Eres el asistente de Bitacor.AI, plataforma de control de obra.
+Usa SIEMPRE las herramientas antes de responder sobre datos de obras; nunca inventes datos.
+Cada herramienta devuelve ok: true o ok: false.
+- Si ok es false, explica el problema con sus palabras y NO digas que la acción se realizó. No reintentes la misma herramienta.
+- Después de usar una herramienta, escribe siempre una respuesta final en texto.
+${context}
+Obras del usuario: ${projects.map((p) => p.name).join(', ') || 'ninguna'}.
 
-SOPORTE Y MANUAL DE USUARIO:
-También actúas como agente de soporte y ayuda técnica sobre cómo usar la aplicación Bitacor.AI 2.0. Si el usuario te pregunta cómo realizar alguna tarea (como registrar gastos, subir bitácoras, controlar materiales, configurar el logo de su empresa, etc.), explícale detalladamente los pasos a seguir de acuerdo con las siguientes pautas:
-1. Obras y Frentes: Se configuran en el listado del panel y se dividen en áreas/frentes de trabajo.
-2. Bitácoras: Se llenan dentro del área/frente de trabajo, requieren fecha, clima, personal activo, notas (con soporte de voz e IA), fotos de la obra y firma digital en el pad.
-3. Materiales: Pestaña 'Materiales' dentro del proyecto. Permite registrar entradas, salidas e inventario de insumos.
-4. Gastos: Sección 'Gastos' del menú lateral. Requiere monto, concepto, categoría y subir foto clara del comprobante (ticket/factura).
-5. Solicitudes Especiales: Sección 'Solicitudes' del menú lateral. Para requerir herramientas, personal o recursos extraordinarios.
-6. Perfil y Empresa: Pestaña 'Mi Perfil y Empresa'. Permite cambiar el nombre completo, el nombre de la constructora y subir el logotipo que personalizará la cabecera del sistema.
-Si el usuario te pide una guía, manual o ayuda general de uso, explícale el funcionamiento y proporciona obligatoriamente este enlace: [Manual de Usuario](/dashboard/manual) para que pueda consultarlo interactivamente.`,
-      temperature: 0.5,
+${HELP}`,
+      temperature: 0.3,
       tools: {
         getProjectsList: {
-          description: 'Obtiene la lista de todos los proyectos activos en la constructora',
+          description: 'Lista las obras del usuario.',
           inputSchema: z.object({}),
           execute: async () => {
-            const { data } = await toolSupabase
-              .from('projects')
-              .select('id, name, location, client_name, status')
-              .eq('created_by', session.user.id)
-            return data || []
+            if (projectsError) return { ok: false, error: projectsError.message }
+            return { ok: true, obras: projects.map((p) => ({ nombre: p.name, ubicacion: p.location, cliente: p.client_name })) }
           },
         },
         getProjectFinancials: {
-          description: 'Obtiene el resumen financiero de un proyecto: presupuesto autorizado y por ejercer, ingresos recibidos, gastos pagados y saldo de caja. Nunca sumes el presupuesto al efectivo.',
+          description:
+            'Resumen financiero de una obra: presupuesto autorizado y por ejercer, ingresos recibidos, gastos pagados y saldo de caja. Nunca sumes el presupuesto al efectivo. Deja projectName vacío para la obra abierta.',
           inputSchema: z.object({
-            projectName: z.string().describe('El nombre del proyecto a buscar (ej: "Torre Alta")')
+            projectName: z.string().optional().describe('Nombre de la obra. Vacío = obra abierta.'),
           }),
-          execute: async ({ projectName }: { projectName: string }) => {
-            // Buscar el ID del proyecto
-            const { data: project } = await toolSupabase
-              .from('projects')
-              .select('id, name, base_budget')
-              .ilike('name', `%${projectName}%`)
-              .single()
+          execute: async ({ projectName }: { projectName?: string }) => {
+            const found = resolveProject(projectName)
+            if (!('project' in found)) return found
+            const { project } = found
 
-            if (!project) return { error: `No se encontró el proyecto ${projectName}` }
+            const [expensesRes, incomesRes] = await Promise.all([
+              supabase.from('expenses').select('amount').eq('project_id', project.id),
+              supabase.from('incomes').select('amount').eq('project_id', project.id),
+            ])
+            if (expensesRes.error) return { ok: false, error: `No se pudieron leer los gastos: ${expensesRes.error.message}` }
 
-            const { data: expenses } = await toolSupabase.from('expenses').select('amount').eq('project_id', project.id)
-            const { data: incomes } = await toolSupabase.from('incomes').select('amount').eq('project_id', project.id)
-
-            // El presupuesto autorizado no es efectivo: se reporta por separado
-            const fin = summarizeFinance(project.base_budget, incomes, expenses)
+            // Los ingresos solo los ve el director (igual que en pantalla)
+            const incomesVisible = isDirector && !incomesRes.error
+            const fin = summarizeFinance(project.base_budget, incomesVisible ? incomesRes.data : [], expensesRes.data)
 
             return {
-              proyecto: project.name,
+              ok: true,
+              obra: project.name,
               presupuesto_autorizado: fin.budget,
-              ingresos_recibidos: fin.incomes,
               gastos_pagados: fin.expenses,
-              saldo_de_caja: fin.cash,
               presupuesto_por_ejercer: fin.budgetRemaining,
               porcentaje_presupuesto_ejercido: fin.budgetUsedPct,
-              nota: 'El saldo de caja es ingresos recibidos menos gastos pagados. El presupuesto por ejercer es lo autorizado menos lo gastado; no es dinero disponible.'
+              ingresos_recibidos: incomesVisible ? fin.incomes : 'no disponible para este rol',
+              saldo_de_caja: incomesVisible ? fin.cash : 'no disponible para este rol',
+              nota: 'Saldo de caja = ingresos recibidos menos gastos pagados. El presupuesto por ejercer no es dinero disponible.',
             }
           },
         },
         getRecentBitacoras: {
-          description: 'Obtiene los últimos reportes diarios (bitácoras) de un proyecto.',
+          description: 'Últimas 5 bitácoras de una obra. Deja projectName vacío para la obra abierta.',
           inputSchema: z.object({
-            projectName: z.string().describe('El nombre del proyecto')
+            projectName: z.string().optional().describe('Nombre de la obra. Vacío = obra abierta.'),
           }),
-          execute: async ({ projectName }: { projectName: string }) => {
-            const { data: project } = await toolSupabase
-              .from('projects')
-              .select('id, name')
-              .ilike('name', `%${projectName}%`)
-              .single()
-
-            if (!project) return { error: `No se encontró el proyecto ${projectName}` }
-
-            const { data: areas } = await toolSupabase.from('project_areas').select('id').eq('project_id', project.id)
-            if (!areas || areas.length === 0) return { error: 'No hay áreas registradas' }
-
-            const areaIds = areas.map(a => a.id)
-
-            const { data: bitacoras } = await toolSupabase
+          execute: async ({ projectName }: { projectName?: string }) => {
+            const found = resolveProject(projectName)
+            if (!('project' in found)) return found
+            const { data, error } = await supabase
               .from('daily_reports')
-              .select('report_date, weather, progress_notes, workers_count, project_areas(name)')
-              .in('area_id', areaIds)
+              .select('folio, report_date, status, progress_notes, project_areas(name)')
+              .eq('project_id', found.project.id)
               .order('report_date', { ascending: false })
               .limit(5)
-
-            return bitacoras || []
-          }
+            if (error) return { ok: false, error: `No se pudieron leer las bitácoras: ${error.message}` }
+            return { ok: true, obra: found.project.name, bitacoras: data || [] }
+          },
         },
         createProjectArea: {
-          description: 'Crea una nueva área o frente de trabajo en un proyecto específico. Útil cuando el usuario te pide crear un área, recámara, nivel, etc.',
+          description: 'Crea un área o frente de trabajo en una obra. Deja projectName vacío para la obra abierta.',
           inputSchema: z.object({
-            projectName: z.string().describe('El nombre del proyecto donde se creará el área'),
-            areaName: z.string().describe('El nombre del área a crear (ej: "Recámara 1", "Planta Baja", etc.)')
+            projectName: z.string().optional().describe('Nombre de la obra. Vacío = obra abierta.'),
+            areaName: z.string().describe('Nombre del área a crear (ej: "Recámara 1")'),
           }),
-          execute: async (args: { projectName: string; areaName: string }) => {
-            console.log('--- INTENTANDO CREAR ÁREA ---');
-            console.log('RAW ARGS FROM AI:', JSON.stringify(args, null, 2));
-            const projectName = args?.projectName;
-            const areaName = args?.areaName;
-            console.log('Extracted Project Name:', projectName);
-            console.log('Extracted Area Name:', areaName);
-            try {
-              if (!projectName || !areaName) {
-                return { error: 'No se recibieron el nombre del proyecto o del área correctamente.' };
-              }
-
-              // Limpiar y normalizar el nombre
-              const normalizedName = projectName.trim().toLowerCase();
-
-              // Obtener TODOS los proyectos primero para no lidiar con problemas de ILIKE
-              const { data: allProjects, error: dbError } = await toolSupabase.from('projects').select('id, name')
-              
-              console.log('Proyectos en DB:', allProjects);
-
-              if (dbError) {
-                console.error('Error DB:', dbError);
-                return { error: `Error de base de datos: ${dbError.message}` };
-              }
-
-              if (!allProjects || allProjects.length === 0) {
-                return { error: 'No hay proyectos registrados en la base de datos a los que tengas acceso.' }
-              }
-              
-              // Búsqueda más flexible
-              let project = allProjects.find(p => {
-                const pName = p.name.toLowerCase();
-                // Verificar si coinciden total o parcialmente
-                return pName === normalizedName || 
-                       pName.includes(normalizedName) || 
-                       normalizedName.includes(pName) ||
-                       pName.replace(/\s+/g, '') === normalizedName.replace(/\s+/g, '');
-              });
-              
-              if (!project) {
-                const projectNames = allProjects.map(p => `"${p.name}"`).join(', ');
-                console.log('Proyecto no encontrado. Disponibles:', projectNames);
-                return { 
-                  error: `No se encontró un proyecto llamado "${projectName}". Proyectos disponibles: ${projectNames}. Pide al usuario que confirme el nombre.` 
-                }
-              }
-
-              console.log('Proyecto encontrado:', project.name, 'ID:', project.id);
-
-              const { data, error } = await toolSupabase
-                .from('project_areas')
-                .insert({
-                  project_id: project.id,
-                  name: areaName
-                })
-                .select()
-                .single()
-
-              if (error) {
-                console.error('Error al insertar área:', error);
-                return { error: `Error al crear el área: ${error.message}` }
-              }
-              
-              console.log('Área creada exitosamente:', data);
-              
-              return { 
-                success: true, 
-                message: `El área "${areaName}" fue creada exitosamente en el proyecto "${project.name}"`, 
-                area: data 
-              }
-            } catch (err: any) {
-              return { error: `Excepción al crear área: ${err.message || err}` }
-            }
-          }
+          execute: async ({ projectName, areaName }: { projectName?: string; areaName: string }) => {
+            if (!isDirector) return { ok: false, error: 'Solo el director de obra puede crear áreas.' }
+            if (!areaName?.trim()) return { ok: false, error: 'Falta el nombre del área.' }
+            const found = resolveProject(projectName)
+            if (!('project' in found)) return found
+            const { error } = await supabase
+              .from('project_areas')
+              .insert({ project_id: found.project.id, name: areaName.trim(), created_by: user.id })
+            if (error) return { ok: false, error: `No se pudo crear el área: ${error.message}` }
+            return { ok: true, message: `Se creó el área "${areaName.trim()}" en la obra "${found.project.name}".` }
+          },
         },
         deleteProjectArea: {
-          description: 'Elimina un área o frente de trabajo existente de un proyecto.',
+          description: 'Elimina un área de una obra. Deja projectName vacío para la obra abierta.',
           inputSchema: z.object({
-            projectName: z.string().describe('El nombre del proyecto'),
-            areaName: z.string().describe('El nombre del área a eliminar')
+            projectName: z.string().optional().describe('Nombre de la obra. Vacío = obra abierta.'),
+            areaName: z.string().describe('Nombre del área a eliminar'),
           }),
-          execute: async (args: { projectName: string; areaName: string }) => {
-            const projectName = args?.projectName;
-            const areaName = args?.areaName;
-            try {
-              if (!projectName || !areaName) {
-                return { error: 'No se recibieron el nombre del proyecto o del área a eliminar.' };
-              }
-
-              const { data: allProjects } = await toolSupabase.from('projects').select('id, name')
-              if (!allProjects) return { error: 'No se encontraron proyectos.' }
-
-              const normalizedName = projectName.trim().toLowerCase();
-              const project = allProjects.find(p => p.name.toLowerCase().includes(normalizedName) || normalizedName.includes(p.name.toLowerCase()));
-              if (!project) return { error: `No se encontró el proyecto "${projectName}"` };
-
-              // Buscar área
-              const { data: areas } = await toolSupabase.from('project_areas').select('id, name').eq('project_id', project.id);
-              if (!areas) return { error: 'No hay áreas registradas en este proyecto.' };
-
-              const targetArea = areas.find(a => a.name.toLowerCase().includes(areaName.trim().toLowerCase()));
-              if (!targetArea) return { error: `No se encontró el área "${areaName}" en el proyecto ${project.name}` };
-
-              const { error: delError } = await toolSupabase.from('project_areas').delete().eq('id', targetArea.id);
-              if (delError) return { error: `Error al eliminar área: ${delError.message}` };
-
-              return {
-                success: true,
-                message: `El área "${targetArea.name}" fue eliminada exitosamente del proyecto "${project.name}".`
-              };
-            } catch (err: any) {
-              return { error: `Excepción al eliminar área: ${err.message}` };
-            }
-          }
-        }
-      }
+          execute: async ({ projectName, areaName }: { projectName?: string; areaName: string }) => {
+            if (!isDirector) return { ok: false, error: 'Solo el director de obra puede eliminar áreas.' }
+            const found = resolveProject(projectName)
+            if (!('project' in found)) return found
+            const { data: areas, error } = await supabase.from('project_areas').select('id, name').eq('project_id', found.project.id)
+            if (error) return { ok: false, error: `No se pudieron leer las áreas: ${error.message}` }
+            const wanted = normalize(areaName || '')
+            const target =
+              (areas || []).find((a) => normalize(a.name) === wanted) || (areas || []).find((a) => normalize(a.name).includes(wanted))
+            if (!target) return { ok: false, error: `No encontré el área "${areaName}" en "${found.project.name}".` }
+            const { error: delError } = await supabase.from('project_areas').delete().eq('id', target.id)
+            if (delError) return { ok: false, error: `No se pudo eliminar el área: ${delError.message}` }
+            return { ok: true, message: `Se eliminó el área "${target.name}" de la obra "${found.project.name}".` }
+          },
+        },
+      },
     })
 
     return result.toUIMessageStreamResponse()
-  } catch (err: any) {
+  } catch (err) {
     console.error('Error in /api/chat route:', err)
-    return new Response(JSON.stringify({ error: err.message || String(err) }), {
+    return new Response(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
     })
   }
 }
-

@@ -73,32 +73,57 @@ export async function validateInviteCode(code: string) {
 }
 
 // incrementInviteUsage: Incrementa el contador de usos de un código
-export async function incrementInviteUsage(inviteId: string, currentCount: number) {
-  const supabase = await createClient()
-  await supabase
-    .from('company_invites')
-    .update({ used_count: currentCount + 1 })
-    .eq('id', inviteId)
-}
 
 // upsertProfile: Crea o actualiza el perfil del usuario
-export async function upsertProfile(userId: string, fullName: string, role: string, companyName?: string, invitedBy?: string) {
+// Completa el perfil después de crear la cuenta. El rol y el equipo se deciden aquí,
+// en el servidor: el navegador solo envía el nombre y el código de invitación.
+export async function completeSignup(fullName: string, inviteCode?: string) {
   const supabase = await createClient()
-  const payload: any = {
-    id: userId,
-    full_name: fullName,
-    role,
-    company_name: companyName || null
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No hay sesión activa.' }
+
+  const { data: existing } = await supabase
+    .from('profiles')
+    .select('role, invited_by, company_name')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  const code = (inviteCode || '').trim().toUpperCase()
+  const payload: Record<string, unknown> = { id: user.id, full_name: fullName.trim() }
+  let consumedInvite: { id: string; used_count: number | null } | null = null
+
+  if (code) {
+    const { data: invite } = await supabase
+      .from('company_invites')
+      .select('id, role, company_name, created_by, used_count')
+      .eq('code', code)
+      .maybeSingle()
+    if (!invite) return { error: 'El código de invitación no es válido.' }
+
+    // Solo se une a un equipo quien aún no pertenece a otro (o ya es de este mismo)
+    if (!existing?.invited_by || existing.invited_by === invite.created_by) {
+      payload.role = invite.role === 'admin' ? 'residente' : invite.role
+      payload.invited_by = invite.created_by
+      payload.company_name = invite.company_name || null
+      if (!existing?.invited_by) consumedInvite = invite
+    }
+  } else if (!existing) {
+    // Cuenta nueva sin invitación: director de su propia constructora
+    payload.role = 'admin'
   }
-  if (invitedBy) {
-    payload.invited_by = invitedBy
-  }
+  // Un perfil existente sin código conserva su rol
 
   const { error } = await supabase.from('profiles').upsert(payload)
-  if (error && error.message.includes('invited_by')) {
-    delete payload.invited_by
-    await supabase.from('profiles').upsert(payload)
+  if (error) return { error: error.message }
+
+  if (consumedInvite) {
+    await supabase
+      .from('company_invites')
+      .update({ used_count: (consumedInvite.used_count || 0) + 1 })
+      .eq('id', consumedInvite.id)
   }
+
+  return { success: true, role: (payload.role as string) || existing?.role || 'admin' }
 }
 
 export async function logout() {

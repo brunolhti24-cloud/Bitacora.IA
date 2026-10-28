@@ -1,6 +1,5 @@
 'use client'
 
-import { todayInObra } from '@/lib/dates'
 import { useActionState, use, useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -9,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import Link from 'next/link'
 import { createDailyReport } from '../../actions'
 import { SignaturePad } from '@/components/signature-pad'
+import { ReportDateField } from '@/components/report-date-field'
 import { ReportPhotosInput } from '@/components/report-photos-input'
 import { AiBitacoraEnhancer } from '@/components/ai-bitacora-enhancer'
 import { createClient } from '@/lib/supabase/client'
@@ -80,17 +80,7 @@ export default function NewBitacoraPage({ params }: { params: Promise<{ id: stri
                 ))}
               </select>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="report_date">Fecha del Reporte *</Label>
-              <Input
-                id="report_date"
-                name="report_date"
-                type="date"
-                defaultValue={todayInObra()}
-                required
-                className="w-full text-base"
-              />
-            </div>
+            <ReportDateField projectId={projectId} />
             
             <div className="space-y-3">
               <Label htmlFor="progress_notes" className="text-xs font-semibold uppercase tracking-wider text-slate-700">

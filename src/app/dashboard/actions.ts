@@ -3,6 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { isDirectorRole } from '@/lib/roles'
+import { getProjectAccess, projectIdOf } from '@/lib/permissions'
 
 export async function createProject(prevState: any, formData: FormData) {
   const supabase = await createClient()
@@ -11,7 +13,7 @@ export async function createProject(prevState: any, formData: FormData) {
   if (!user) return { error: 'No autorizado' }
 
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'admin') return { error: 'Solo los administradores pueden crear proyectos' }
+  if (!isDirectorRole(profile?.role)) return { error: 'Solo el director de obra puede crear proyectos' }
 
   const name = formData.get('name') as string
   const client_name = formData.get('client_name') as string
@@ -54,9 +56,11 @@ export async function updateProject(prevState: any, formData: FormData) {
   if (!user) return { error: 'No autorizado' }
 
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'admin') return { error: 'Solo los administradores pueden editar proyectos' }
+  if (!isDirectorRole(profile?.role)) return { error: 'Solo el director de obra puede editar proyectos' }
 
   const id = formData.get('id') as string
+  const access = await getProjectAccess(supabase, id, ['director'])
+  if (!access.ok) return { error: access.error }
   const name = formData.get('name') as string
   const client_name = formData.get('client_name') as string
   const location = formData.get('location') as string
@@ -95,9 +99,13 @@ export async function updateProject(prevState: any, formData: FormData) {
 export async function deleteProject(formData: FormData) {
   const supabase = await createClient()
   const id = formData.get('id') as string
-  
+
   if (!id) return
-  
+
+  // Solo el director de la obra puede eliminarla
+  const access = await getProjectAccess(supabase, id, ['director'])
+  if (!access.ok) return
+
   await supabase.from('projects').delete().eq('id', id)
   revalidatePath('/dashboard')
 }
@@ -105,11 +113,18 @@ export async function deleteProject(formData: FormData) {
 import { createClient as createSupabaseAdmin } from '@supabase/supabase-js'
 import { getSupabaseConfig } from '@/lib/supabase/config'
 
-export async function createAdminClient() {
+// Cliente con llave de servicio (salta RLS). Solo para operaciones que ya se
+// autorizaron en el servidor. No se exporta: los archivos 'use server' exponen
+// sus exports como acciones invocables desde el navegador.
+function createAdminClient() {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!key) return null
   const { url } = getSupabaseConfig()
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5d3B6ZmJvc3NnamVtdnNwbmxsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDgyNjk1MiwiZXhwIjoyMTAwNDAyOTUyfQ.rXc5t-zZIGeyt_-UL5zqBnvK1TSa60Q-pYPz3bKmIGE'
   return createSupabaseAdmin(url, key)
 }
+
+// Roles que el director puede asignar a su equipo (nunca 'admin')
+const ASSIGNABLE_ROLES = ['director', 'residente', 'administracion', 'subcontratista', 'operador']
 
 export async function createTask(prevState: any, formData: FormData) {
   const supabase = await createClient()
@@ -117,6 +132,8 @@ export async function createTask(prevState: any, formData: FormData) {
   if (!user) return { error: 'No autorizado' }
 
   const project_id = formData.get('project_id') as string
+  const access = await getProjectAccess(supabase, project_id, ['director', 'residente', 'subcontratista'])
+  if (!access.ok) return { error: access.error }
   const title = formData.get('title') as string
   const description = formData.get('description') as string
   const assigned_to = formData.get('assigned_to') as string || null
@@ -185,6 +202,8 @@ export async function createTask(prevState: any, formData: FormData) {
 
 export async function updateTaskStatus(taskId: string, status: string, projectId: string) {
   const supabase = await createClient()
+  const access = await getProjectAccess(supabase, await projectIdOf(supabase, 'tasks', taskId))
+  if (!access.ok) throw new Error(access.error)
   const { error } = await supabase
     .from('tasks')
     .update({ status })
@@ -198,6 +217,8 @@ export async function setTaskBlocked(taskId: string, blocked: boolean, reason: s
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autorizado' }
+  const access = await getProjectAccess(supabase, await projectIdOf(supabase, 'tasks', taskId))
+  if (!access.ok) return { error: access.error }
   if (blocked && !reason?.trim()) return { error: 'Indica qué está bloqueando la tarea.' }
 
   const { error } = await supabase
@@ -213,6 +234,8 @@ export async function setTaskBlocked(taskId: string, blocked: boolean, reason: s
 
 export async function deleteTask(taskId: string, projectId?: string) {
   const supabase = await createClient()
+  const access = await getProjectAccess(supabase, await projectIdOf(supabase, 'tasks', taskId), ['director', 'residente', 'subcontratista'])
+  if (!access.ok) throw new Error(access.error)
   const { error } = await supabase
     .from('tasks')
     .delete()
@@ -231,8 +254,8 @@ export async function createCompanyInvite(prevState: any, formData: FormData) {
   if (!user) return { error: 'No autorizado' }
 
   const { data: profile } = await supabase.from('profiles').select('company_name, role').eq('id', user.id).single()
-  if (profile?.role !== 'admin') {
-    return { error: 'Solo el director o administrador puede crear enlaces de invitación para su equipo.' }
+  if (!isDirectorRole(profile?.role)) {
+    return { error: 'Solo el director de obra puede crear enlaces de invitación para su equipo.' }
   }
 
   const role = (formData.get('role') as string) || 'residente'
@@ -263,6 +286,8 @@ export async function createSpecialRequest(prevState: any, formData: FormData) {
   if (!user) return { error: 'No autorizado' }
 
   const project_id = formData.get('project_id') as string
+  const access = await getProjectAccess(supabase, project_id)
+  if (!access.ok) return { error: access.error }
   const category = formData.get('category') as string
   const title = formData.get('title') as string
   const description = formData.get('description') as string
@@ -321,6 +346,8 @@ export async function updateSpecialRequestStatus(requestId: string, status: 'apr
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autorizado' }
+  const access = await getProjectAccess(supabase, await projectIdOf(supabase, 'special_requests', requestId), ['director'])
+  if (!access.ok) return { error: access.error }
 
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
   if (profile?.role !== 'admin' && profile?.role !== 'director') {
@@ -364,6 +391,8 @@ export async function advanceSpecialRequest(requestId: string, stage: 'comprada'
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autorizado' }
+  const access = await getProjectAccess(supabase, await projectIdOf(supabase, 'special_requests', requestId))
+  if (!access.ok) return { error: access.error }
 
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
   if (!STAGE_ROLES[stage].includes(profile?.role || '')) {
@@ -442,27 +471,34 @@ export async function updateTeamMember(memberId: string, fullName: string, role:
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autorizado' }
+  if (!fullName?.trim()) return { error: 'El nombre es obligatorio.' }
 
-  const { data: adminProfile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  const currentRole = adminProfile?.role || ''
-  if (currentRole !== 'admin' && currentRole !== 'director' && memberId !== user.id) {
-    return { error: 'Solo el Director o Administrador puede editar la información del equipo.' }
+  const { data: me } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+
+  // Cualquier usuario puede corregir su propio nombre, pero no cambiarse el rol
+  if (memberId === user.id) {
+    const { error } = await supabase.from('profiles').update({ full_name: fullName.trim() }).eq('id', user.id)
+    if (error) return { error: error.message }
+    revalidatePath('/dashboard', 'layout')
+    return { success: true }
   }
 
-  const adminClient = await createAdminClient()
-  if (adminClient) {
-    const { error } = await adminClient
-      .from('profiles')
-      .update({ full_name: fullName, role })
-      .eq('id', memberId)
-    if (error) return { error: error.message }
-  } else {
-    const { error } = await supabase
-      .from('profiles')
-      .update({ full_name: fullName, role })
-      .eq('id', memberId)
-    if (error) return { error: error.message }
+  if (!isDirectorRole(me?.role)) {
+    return { error: 'Solo el director de obra puede editar la información del equipo.' }
   }
+  if (!ASSIGNABLE_ROLES.includes(role)) {
+    return { error: 'Rol no válido.' }
+  }
+
+  // Solo miembros que el director invitó a su equipo
+  const { data: member } = await supabase.from('profiles').select('id, invited_by').eq('id', memberId).maybeSingle()
+  if (!member || member.invited_by !== user.id) {
+    return { error: 'Ese usuario no pertenece a tu equipo.' }
+  }
+
+  const client = createAdminClient() || supabase
+  const { error } = await client.from('profiles').update({ full_name: fullName.trim(), role }).eq('id', memberId)
+  if (error) return { error: error.message }
 
   revalidatePath('/dashboard/equipo')
   revalidatePath('/dashboard', 'layout')
@@ -485,6 +521,10 @@ export async function getAdminProjects() {
 
 export async function getMemberProjects(memberId: string) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+  const { data: member } = await supabase.from('profiles').select('invited_by').eq('id', memberId).maybeSingle()
+  if (member?.invited_by !== user.id) return []
   const { data: projectMembers } = await supabase
     .from('project_members')
     .select('project_id')
@@ -498,35 +538,38 @@ export async function updateMemberProjects(memberId: string, projectIds: string[
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autorizado' }
 
-  // Solo admin puede modificar
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'admin' && profile?.role !== 'director') {
-    return { error: 'Solo el administrador puede asignar proyectos.' }
+  if (!isDirectorRole(profile?.role)) {
+    return { error: 'Solo el director de obra puede asignar obras.' }
   }
 
-  // Eliminar asignaciones actuales
-  const adminClient = await createAdminClient()
-  const client = adminClient || supabase
+  // Solo a miembros de su equipo y solo en obras que él creó
+  const { data: member } = await supabase.from('profiles').select('id, invited_by').eq('id', memberId).maybeSingle()
+  if (!member || member.invited_by !== user.id) {
+    return { error: 'Ese usuario no pertenece a tu equipo.' }
+  }
+  const { data: ownProjects } = await supabase.from('projects').select('id').eq('created_by', user.id)
+  const ownIds = new Set((ownProjects || []).map((p) => p.id))
+  if (projectIds.some((id) => !ownIds.has(id))) {
+    return { error: 'Solo puedes asignar obras que tú administras.' }
+  }
 
-  const { error: deleteError } = await client
-    .from('project_members')
-    .delete()
-    .eq('user_id', memberId)
+  const client = createAdminClient() || supabase
 
-  if (deleteError) return { error: deleteError.message }
+  // Se reemplazan las asignaciones del miembro solo dentro de las obras del director
+  if (ownIds.size > 0) {
+    const { error: deleteError } = await client
+      .from('project_members')
+      .delete()
+      .eq('user_id', memberId)
+      .in('project_id', Array.from(ownIds))
+    if (deleteError) return { error: deleteError.message }
+  }
 
-  // Insertar nuevas asignaciones si hay
   if (projectIds.length > 0) {
-    const insertData = projectIds.map(projectId => ({
-      user_id: memberId,
-      project_id: projectId,
-      role: 'resident' // Default role in project_members
-    }))
-
     const { error: insertError } = await client
       .from('project_members')
-      .insert(insertData)
-
+      .insert(projectIds.map((projectId) => ({ user_id: memberId, project_id: projectId, role: 'resident' })))
     if (insertError) return { error: insertError.message }
   }
 
@@ -537,6 +580,8 @@ export async function updateMemberProjects(memberId: string, projectIds: string[
 
 export async function getProjectMembers(projectId: string) {
   const supabase = await createClient()
+  const access = await getProjectAccess(supabase, projectId)
+  if (!access.ok) return []
 
   // Buscar todos los miembros asignados a este proyecto
   const { data: projectMembers } = await supabase

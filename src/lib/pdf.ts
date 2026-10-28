@@ -40,6 +40,51 @@ export function sanitizeDoc(doc: JsPDF): JsPDF {
   return doc
 }
 
+// --- Fuente incrustada ----------------------------------------------------------
+// Helvetica es una fuente "estándar" que jsPDF no incrusta: cada visor la sustituye
+// por otra con medidas distintas y el espaciado entre letras y palabras sale
+// irregular. Se incrusta Plus Jakarta Sans (la letra de la app).
+export const PDF_FONT = 'PlusJakarta'
+const FONT_FILES = { normal: '/fonts/PlusJakartaSans-Regular.ttf', bold: '/fonts/PlusJakartaSans-Bold.ttf' }
+
+/** Lee un archivo de fuente como base64. Se puede reemplazar en pruebas. */
+export let readFontFile = async (path: string): Promise<string> => {
+  const res = await fetch(path)
+  if (!res.ok) throw new Error(`No se pudo cargar la fuente ${path}`)
+  const bytes = new Uint8Array(await res.arrayBuffer())
+  let binary = ''
+  for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
+  return btoa(binary)
+}
+export function setFontReader(reader: (path: string) => Promise<string>) {
+  readFontFile = reader
+}
+
+/** Registra la fuente y hace que cualquier setFont('helvetica', …) la use. */
+export async function embedFont(doc: JsPDF): Promise<boolean> {
+  try {
+    const [normal, bold] = await Promise.all([readFontFile(FONT_FILES.normal), readFontFile(FONT_FILES.bold)])
+    doc.addFileToVFS('PlusJakartaSans-Regular.ttf', normal)
+    doc.addFont('PlusJakartaSans-Regular.ttf', PDF_FONT, 'normal')
+    doc.addFileToVFS('PlusJakartaSans-Bold.ttf', bold)
+    doc.addFont('PlusJakartaSans-Bold.ttf', PDF_FONT, 'bold')
+  } catch (err) {
+    console.warn('PDF: se usa Helvetica porque no se pudo cargar la fuente', err)
+    return false
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const d = doc as any
+  const setFont = d.setFont.bind(doc)
+  d.setFont = (family: string, style = 'normal', ...rest: unknown[]) => {
+    const isBase = !family || family.toLowerCase() === 'helvetica'
+    // No hay cursiva incrustada: se usa la normal
+    const st = style === 'bold' || style === 'bolditalic' ? 'bold' : 'normal'
+    return isBase ? setFont(PDF_FONT, st, ...rest) : setFont(family, style, ...rest)
+  }
+  d.setFont('helvetica', 'normal')
+  return true
+}
+
 // --- Logo ---------------------------------------------------------------------
 export type LoadedImage = { base64: string; width: number; height: number; format: 'PNG' | 'JPEG' }
 
@@ -87,9 +132,10 @@ export type PdfDoc = {
   /** Tabla de pares etiqueta/valor en dos columnas. */
   fields: (pairs: [string, string][]) => void
   paragraph: (text: string, opts?: { size?: number; color?: [number, number, number]; indent?: number }) => void
-  signatures: (sigs: SignatureSpec[]) => void
+  /** Bloque de firmas; con título, ambos se mantienen en la misma página. */
+  signatures: (sigs: SignatureSpec[], title?: string) => void
   /** Fotos en cuadrícula de 2 columnas, conservando su proporción. */
-  photos: (images: LoadedImage[]) => void
+  photos: (images: LoadedImage[], title?: string) => void
   /** Dibuja pies de página en todas las páginas y guarda el archivo. */
   save: (filename: string, footerNote: string) => void
 }
@@ -111,6 +157,7 @@ export async function createPdf(opts: {
 }): Promise<PdfDoc> {
   const { jsPDF } = await import('jspdf')
   const doc = sanitizeDoc(new jsPDF())
+  await embedFont(doc)
   const logo = await loadImage(opts.logoUrl)
   const pageHeight = doc.internal.pageSize.getHeight()
 
@@ -237,10 +284,15 @@ export async function createPdf(opts: {
       }
       api.y += 3
     },
-    photos(images) {
+    photos(images, title) {
       const gap = 4
       const colW = (PAGE.width - gap) / 2
       const maxH = 68
+      // El título se queda con la primera fila de fotos
+      if (title) {
+        api.ensure(16 + maxH + 8)
+        api.section(title)
+      }
       for (let i = 0; i < images.length; i += 2) {
         const row = images.slice(i, i + 2).map((img) => {
           const ratio = Math.min(colW / img.width, maxH / img.height)
@@ -265,10 +317,12 @@ export async function createPdf(opts: {
         api.y += rowH + 11
       }
     },
-    signatures(sigs) {
+    signatures(sigs, title) {
       const colW = PAGE.width / Math.min(sigs.length, 3)
       const blockH = 46
-      api.ensure(blockH + 4)
+      // Título y firmas se miden juntos para que nunca queden en páginas distintas
+      api.ensure(blockH + 4 + (title ? 16 : 0))
+      if (title) api.section(title)
       const top = api.y
       sigs.forEach((s, i) => {
         const x = PAGE.left + i * colW

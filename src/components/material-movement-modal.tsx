@@ -43,6 +43,8 @@ export function MaterialMovementModal({
   const isEntrada = type === 'entrada'
   const qty = parseFloat(quantity) || 0
   const after = isEntrada ? stock + qty : stock - qty
+  // Una salida no puede dejar la existencia en negativo
+  const overdraw = !isEntrada && qty > stock
   const ids = { qty: `qty-${type}-${materialId}`, area: `area-${type}-${materialId}`, who: `who-${type}-${materialId}`, why: `why-${type}-${materialId}`, notes: `notes-${type}-${materialId}` }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -122,10 +124,17 @@ export function MaterialMovementModal({
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
               aria-describedby={`${ids.qty}-after`}
+              aria-invalid={overdraw || undefined}
             />
-            <p id={`${ids.qty}-after`} className={`text-sm ${after < 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
-              Saldo después del movimiento: <strong>{Math.round(after * 100) / 100} {unit}</strong>
-            </p>
+            {overdraw ? (
+              <p id={`${ids.qty}-after`} role="alert" className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+                No hay suficiente existencia: hay {stock} {unit} y quieres sacar {qty}. Corrige la cantidad.
+              </p>
+            ) : (
+              <p id={`${ids.qty}-after`} className="text-sm text-slate-500">
+                Saldo después del movimiento: <strong>{Math.round(after * 100) / 100} {unit}</strong>
+              </p>
+            )}
           </div>
 
           {!isEntrada && (
@@ -165,7 +174,7 @@ export function MaterialMovementModal({
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
             <Button
               type="submit"
-              disabled={loading}
+              disabled={loading || overdraw || qty <= 0}
               className={`gap-1.5 font-bold rounded-xl px-5 text-white ${isEntrada ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-amber-600 hover:bg-amber-700'}`}
             >
               {loading && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}

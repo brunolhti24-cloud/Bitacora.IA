@@ -113,6 +113,13 @@ export default async function AreaDetailsPage({ params }: { params: Promise<{ id
                             })}
                           </CardTitle>
                           
+                          {/* Reporte anterior al inicio de obra registrado */}
+                          {area.projects?.start_date && report.report_date < area.projects.start_date && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200" title={`La obra inicia el ${formatDateOnly(area.projects.start_date)}`}>
+                              Antes del inicio de obra
+                            </span>
+                          )}
+
                           {/* Badges de Estado */}
                           {status === 'firmada' ? (
                             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">

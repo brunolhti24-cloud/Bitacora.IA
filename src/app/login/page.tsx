@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { login, validateInviteCode, incrementInviteUsage, upsertProfile } from './actions'
+import { login, validateInviteCode, completeSignup } from './actions'
 import { createClient } from '@/lib/supabase/client'
 import { 
   Building2, 
@@ -72,9 +72,6 @@ function LoginFormContent() {
 
       let assignedRole = 'admin'
       let companyName: string | undefined = undefined
-      let inviteId: string | undefined = undefined
-      let usedCount = 0
-      let invitedBy: string | undefined = undefined
 
       // Validar código de invitación si existe
       if (code) {
@@ -86,9 +83,6 @@ function LoginFormContent() {
         }
         assignedRole = result.role!
         companyName = result.company_name
-        inviteId = result.invite_id
-        usedCount = result.used_count || 0
-        invitedBy = result.created_by
       }
 
       // Crear cuenta DESDE EL CLIENTE (browser) para que Supabase guarde las cookies
@@ -116,7 +110,7 @@ function LoginFormContent() {
         }
         let session = signInData.session
         if (session) {
-          await upsertProfile(session.user.id, fullName, assignedRole, companyName, invitedBy)
+          await completeSignup(fullName, code || undefined)
           if (assignedRole === 'subcontratista') {
             router.push('/dashboard/mis-tareas')
           } else {
@@ -169,17 +163,11 @@ function LoginFormContent() {
 
       // Guardar perfil usando la cliente browser con sesión activa
       try {
-        await upsertProfile(session.user.id, fullName, assignedRole, companyName, invitedBy)
+        await completeSignup(fullName, code || undefined)
       } catch (e) {
         console.log('El perfil se sincronizó mediante trigger de base de datos')
       }
 
-      // Incrementar usos del código de invitación
-      if (inviteId) {
-        try {
-          await incrementInviteUsage(inviteId, usedCount)
-        } catch (e) {}
-      }
 
       // Redirigir según el rol
       if (assignedRole === 'subcontratista') {

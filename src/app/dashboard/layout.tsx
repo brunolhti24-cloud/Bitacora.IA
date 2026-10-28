@@ -208,13 +208,12 @@ export default async function DashboardLayout({
           <div className="mt-auto pt-4">
             <div className="rounded-2xl bg-[#031033] p-4 text-white shadow-xl relative overflow-hidden group">
               <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-[#144CC9]/20 rounded-full blur-xl group-hover:bg-[#144CC9]/35 transition-all" />
-              <div className="flex items-center gap-1.5 text-white font-black text-xs uppercase tracking-wider">
-                <ShieldCheck className="w-4 h-4 text-[#A7EC80]" />
-                <span>Bitacor.AI 2.0 Tech</span>
+              <div className="relative flex items-center gap-2.5">
+                <img src="/logo.png" alt="" className="h-9 w-9 object-contain shrink-0" />
+                <span className="text-base font-black tracking-tight text-white">Bitacor.AI</span>
               </div>
-              <p className="text-[11px] text-slate-300 mt-1 leading-relaxed font-medium">
-                Command Center activo & Control Inteligente de Obra.
-              </p>
+              <p className="relative text-xs font-bold text-[#A7EC80] mt-3">Control inteligente de obra</p>
+              <p className="relative text-[11px] text-slate-300 mt-0.5 font-medium">Tu obra bajo control.</p>
             </div>
           </div>
         </aside>

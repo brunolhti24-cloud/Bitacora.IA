@@ -93,14 +93,13 @@ export function ExportBitacoraPdfButton({ report }: { report: BitacoraReport }) 
         const images = (await Promise.all(photoRows.map((ph) => loadImage(ph.photo_url)))).filter(
           (img): img is NonNullable<typeof img> => !!img
         )
-        pdf.section(`Evidencia fotográfica (${photoRows.length})`)
-        if (images.length > 0) pdf.photos(images)
+        if (images.length > 0) pdf.photos(images, `Evidencia fotográfica (${photoRows.length})`)
+        else pdf.section(`Evidencia fotográfica (${photoRows.length})`)
         if (images.length < photoRows.length) {
           pdf.paragraph(`${photoRows.length - images.length} foto(s) no se pudieron incluir; se pueden ver en la plataforma.`, { size: 8, color: [90, 100, 120] })
         }
       }
 
-      pdf.section('Firmas')
       pdf.signatures([
         {
           label: 'Elaboró',
@@ -118,7 +117,7 @@ export function ExportBitacoraPdfButton({ report }: { report: BitacoraReport }) 
           signedAt: status === 'firmada' ? rep?.signed_at || null : null,
           required: true,
         },
-      ])
+      ], 'Firmas')
 
       pdf.save(
         `bitacora_${folio || r.report_date}_${slug(projectName)}.pdf`,

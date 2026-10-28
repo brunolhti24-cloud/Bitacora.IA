@@ -1,6 +1,5 @@
 'use client'
 
-import { todayInObra } from '@/lib/dates'
 import { useActionState, use, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -9,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import Link from 'next/link'
 import { createDailyReport } from '../../../../actions'
 import { SignaturePad } from '@/components/signature-pad'
+import { ReportDateField } from '@/components/report-date-field'
 import { ReportPhotosInput } from '@/components/report-photos-input'
 import { AiBitacoraEnhancer } from '@/components/ai-bitacora-enhancer'
 
@@ -47,17 +47,7 @@ export default function NewBitacoraAreaPage({ params }: { params: Promise<{ id: 
           <form action={action} className="space-y-6">
             <input type="hidden" name="area_id" value={areaId} />
             
-            <div className="space-y-2">
-              <Label htmlFor="report_date">Fecha del Reporte *</Label>
-              <Input
-                id="report_date"
-                name="report_date"
-                type="date"
-                defaultValue={todayInObra()}
-                required
-                className="w-full text-base"
-              />
-            </div>
+            <ReportDateField projectId={projectId} />
             
             <div className="space-y-2">
               <div className="flex items-center justify-between">

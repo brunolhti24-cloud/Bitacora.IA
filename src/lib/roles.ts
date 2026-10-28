@@ -11,3 +11,8 @@ export const ROLE_LABELS: Record<string, string> = {
 export function roleLabel(role?: string | null): string {
   return (role && ROLE_LABELS[role]) || ''
 }
+
+/** Director de obra: la base guarda a algunos como 'admin' y a otros como 'director'. */
+export function isDirectorRole(role?: string | null): boolean {
+  return role === 'admin' || role === 'director'
+}

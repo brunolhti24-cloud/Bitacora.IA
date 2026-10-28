@@ -5,11 +5,15 @@ import { useState, useRef, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { MessageSquare, X, Send, CheckCircle2, Loader2 } from 'lucide-react'
+import { MessageSquare, X, Send, CheckCircle2, Loader2, AlertCircle } from 'lucide-react'
+import { usePathname } from 'next/navigation'
 
 export function ChatWidget({ isAdmin }: { isAdmin: boolean }) {
   const [isOpen, setIsOpen] = useState(false)
   const [input, setInput] = useState('')
+  // Obra abierta: /dashboard/projects/<id>/...
+  const pathname = usePathname()
+  const currentProjectId = pathname?.match(/\/dashboard\/projects\/([0-9a-f-]{36})/)?.[1] ?? null
 
   const { messages, sendMessage, status, setMessages } = useChat({
     onError: (error) => {
@@ -32,7 +36,7 @@ export function ChatWidget({ isAdmin }: { isAdmin: boolean }) {
     if (!input.trim() || isLoading) return
     const textToSend = input
     setInput('')
-    sendMessage({ text: textToSend })
+    sendMessage({ text: textToSend }, { body: { projectId: currentProjectId } })
   }
 
   // Función auxiliar para extraer texto visible de un mensaje
@@ -78,6 +82,18 @@ export function ChatWidget({ isAdmin }: { isAdmin: boolean }) {
     return message.parts.some(
       (p: any) => (p.type?.startsWith('tool-') || p.type === 'dynamic-tool') && (p.state === 'output-available' || p.state === 'result' || p.output !== undefined)
     )
+  }
+
+  // Resultado real de las herramientas: solo se confirma una acción si de verdad salió bien
+  const ACTION_TOOLS = ['tool-createProjectArea', 'tool-deleteProjectArea']
+  function toolOutcome(message: any): 'ok' | 'error' | null {
+    if (!message.parts) return null
+    const outputs = message.parts.filter(
+      (p: any) => (p.type?.startsWith('tool-') || p.type === 'dynamic-tool') && (p.output !== undefined || p.state === 'output-error')
+    )
+    if (outputs.some((p: any) => p.state === 'output-error' || p.output?.ok === false || p.output?.error)) return 'error'
+    if (outputs.some((p: any) => ACTION_TOOLS.includes(p.type) && p.output?.ok === true)) return 'ok'
+    return null
   }
 
   // Mostrar todos los mensajes que tengan texto O herramientas completadas
@@ -192,10 +208,16 @@ export function ChatWidget({ isAdmin }: { isAdmin: boolean }) {
                     }`}
                   >
                     {isUser ? text : renderMessageText(text)}
-                    {m.role === 'assistant' && hasCompletedToolCalls(m) && (
+                    {m.role === 'assistant' && toolOutcome(m) === 'ok' && (
                       <div className="mt-1.5 flex items-center gap-1 text-emerald-600 text-xs font-medium border-t border-slate-100 pt-1">
-                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
                         Acción ejecutada correctamente
+                      </div>
+                    )}
+                    {m.role === 'assistant' && toolOutcome(m) === 'error' && (
+                      <div className="mt-1.5 flex items-center gap-1 text-red-600 text-xs font-medium border-t border-slate-100 pt-1">
+                        <AlertCircle className="h-3.5 w-3.5" aria-hidden />
+                        No se pudo completar
                       </div>
                     )}
                   </div>

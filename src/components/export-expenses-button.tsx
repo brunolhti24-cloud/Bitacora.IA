@@ -1,6 +1,6 @@
 'use client'
 
-import { sanitizeDoc } from '@/lib/pdf'
+import { embedFont, sanitizeDoc } from '@/lib/pdf'
 import { formatMoney } from '@/lib/finance'
 
 import { formatDateOnly, formatDateTime } from '@/lib/dates'
@@ -119,6 +119,7 @@ export function ExportExpensesButton({ expenses, title = 'Control General de Gas
 
       const { jsPDF } = await import('jspdf')
       const doc = sanitizeDoc(new jsPDF())
+      await embedFont(doc)
       const pageHeight = doc.internal.pageSize.getHeight()
 
       let currentY = 0

@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/client'
 import { addDays, formatDateOnly, formatDateTime, startOfMonth, todayInObra } from '@/lib/dates'
 import { summarizeFinance, formatMoney } from '@/lib/finance'
 import { createPdf, roleLabel, slug, STATUS_LABELS } from '@/lib/pdf'
+import { isDirectorRole } from '@/lib/roles'
 
 interface ProjectPdfProps {
   project: {
@@ -91,9 +92,16 @@ export function ExportProjectPdfButton({ project }: ProjectPdfProps) {
       const p = { ...project, ...(proj || {}) }
       const director = (proj?.director as unknown as Company) || null
       const reports = reportsRes.data || []
-      const canSeeIncomes = !incomesRes.error && ['admin', 'director'].includes(me?.role || '')
+      // Mismo permiso que la pantalla de Finanzas: el director ve ingresos y caja.
+      // Si la lectura falla se informa el error en lugar de ocultarlo como permiso.
+      const canSeeIncomes = isDirectorRole(me?.role)
+      if (canSeeIncomes && incomesRes.error) throw new Error(`No se pudieron leer los ingresos: ${incomesRes.error.message}`)
+      if (expensesRes.error) throw new Error(`No se pudieron leer los gastos: ${expensesRes.error.message}`)
       const fin = summarizeFinance(p.base_budget, canSeeIncomes ? incomesRes.data : [], expensesRes.data)
       const signed = reports.filter((r) => r.status === 'firmada').length
+      // Reportes con fecha anterior al inicio de obra registrado (actividades preliminares)
+      const isPreliminary = (date: string) => !!p.start_date && date < p.start_date
+      const preliminary = reports.filter((r) => isPreliminary(r.report_date)).length
 
       const periodLabel = dFrom
         ? `${formatDateOnly(dFrom)} al ${formatDateOnly(dTo)}`
@@ -121,14 +129,20 @@ export function ExportProjectPdfButton({ project }: ProjectPdfProps) {
         ['Avance físico actual', `${p.physical_progress || 0}%`],
         ['Bitácoras en el periodo', `${reports.length} (${signed} firmadas, ${reports.length - signed} pendientes)`],
       ])
+      if (preliminary > 0) {
+        pdf.paragraph(
+          `Atención: ${preliminary} ${preliminary === 1 ? 'bitácora tiene' : 'bitácoras tienen'} fecha anterior al inicio de obra registrado (${formatDateOnly(p.start_date)}). Se marcan como actividad preliminar.`,
+          { size: 8.5, color: [180, 83, 9] }
+        )
+      }
 
       pdf.section(`Resumen financiero al ${formatDateOnly(dTo)}`)
       pdf.fields([
         ['Presupuesto autorizado', formatMoney(fin.budget)],
         ['Presupuesto por ejercer', `${formatMoney(fin.budgetRemaining)}${fin.budgetUsedPct !== null ? ` (ejercido ${fin.budgetUsedPct}%)` : ''}`],
-        ['Ingresos recibidos', canSeeIncomes ? formatMoney(fin.incomes) : 'Solo visible para el director'],
+        ['Ingresos recibidos', canSeeIncomes ? formatMoney(fin.incomes) : 'No disponible para tu rol'],
         ['Gastos pagados', formatMoney(fin.expenses)],
-        ['Saldo de caja (ingresos menos gastos)', canSeeIncomes ? formatMoney(fin.cash) : 'Solo visible para el director'],
+        ['Saldo de caja (ingresos menos gastos)', canSeeIncomes ? formatMoney(fin.cash) : 'No disponible para tu rol'],
       ])
       pdf.paragraph('El presupuesto autorizado no es dinero disponible. El saldo de caja solo considera ingresos recibidos y gastos pagados.', { size: 8, color: [90, 100, 120] })
 
@@ -148,7 +162,7 @@ export function ExportProjectPdfButton({ project }: ProjectPdfProps) {
           doc.setFont('helvetica', 'bold')
           doc.setFontSize(9.5)
           doc.setTextColor(3, 16, 51)
-          doc.text(`${r.folio || 'Sin folio'}  ·  ${formatDateOnly(r.report_date, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}  ·  ${area}`, 16, pdf.y)
+          doc.text(`${r.folio || 'Sin folio'}  ·  ${formatDateOnly(r.report_date, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}  ·  ${area}${isPreliminary(r.report_date) ? '  ·  Actividad preliminar' : ''}`, 16, pdf.y)
           pdf.y += 7
           const signLine =
             r.status === 'firmada'
@@ -165,11 +179,10 @@ export function ExportProjectPdfButton({ project }: ProjectPdfProps) {
         }
       }
 
-      pdf.section('Firmas del expediente')
       pdf.signatures([
         { label: 'Elaboró el expediente', name: me?.full_name, role: roleLabel(me?.role), required: true },
         { label: 'Vo. Bo. director de obra', name: director?.full_name, role: 'Director de obra', required: true },
-      ])
+      ], 'Firmas del expediente')
 
       pdf.save(
         `Expediente_${slug(p.name)}_${dFrom ? `${dFrom}_a_${dTo}` : `hasta_${dTo}`}.pdf`,

@@ -3,11 +3,18 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { isDirectorRole } from '@/lib/roles'
+import { getProjectAccess, projectIdOf } from '@/lib/permissions'
 
 export async function createDailyReport(projectId: string, prevState: any, formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autorizado', success: false }
+
+  // Acceso a la obra y rol (también protege contra llamadas directas a la acción)
+  const access = await getProjectAccess(supabase, projectId, ['director', 'residente', 'subcontratista', 'operador'])
+  if (!access.ok) return { error: access.error, success: false }
+  if ((await projectIdOf(supabase, 'project_areas', formData.get('area_id') as string)) !== projectId) return { error: 'El registro no pertenece a esta obra.', success: false }
 
   const areaId = formData.get('area_id') as string
   const report_date = formData.get('report_date') as string
@@ -77,6 +84,10 @@ export async function createArea(projectId: string, prevState: any, formData: Fo
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autorizado' }
 
+  // Acceso a la obra y rol (también protege contra llamadas directas a la acción)
+  const access = await getProjectAccess(supabase, projectId, ['director'])
+  if (!access.ok) return { error: access.error }
+
   const name = formData.get('name') as string
   if (!name) return { error: 'El nombre es obligatorio' }
 
@@ -93,6 +104,10 @@ export async function createExpense(projectId: string, prevState: any, formData:
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autorizado', success: false }
+
+  // Acceso a la obra y rol (también protege contra llamadas directas a la acción)
+  const access = await getProjectAccess(supabase, projectId)
+  if (!access.ok) return { error: access.error, success: false }
 
   const amount = parseFloat(formData.get('amount') as string)
   const description = formData.get('description') as string
@@ -112,10 +127,10 @@ export async function createExpense(projectId: string, prevState: any, formData:
       .from('receipts')
       .upload(fileName, receipt)
     
-    if (!uploadError) {
-      const { data: { publicUrl } } = supabase.storage.from('receipts').getPublicUrl(fileName)
-      receipt_url = publicUrl
-    }
+    if (uploadError) return { error: `No se pudo subir el comprobante: ${uploadError.message}`, success: false }
+
+    const { data: { publicUrl } } = supabase.storage.from('receipts').getPublicUrl(fileName)
+    receipt_url = publicUrl
   }
 
   const concept = (formData.get('description') as string) || (formData.get('concept') as string)
@@ -142,6 +157,10 @@ export async function updateProjectProgress(projectId: string, prevState: any, f
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autorizado' }
 
+  // Acceso a la obra y rol (también protege contra llamadas directas a la acción)
+  const access = await getProjectAccess(supabase, projectId, ['director', 'residente'])
+  if (!access.ok) return { error: access.error }
+
   const physical_progress = parseFloat(formData.get('physical_progress') as string)
   if (isNaN(physical_progress) || physical_progress < 0 || physical_progress > 100) {
     return { error: 'El porcentaje de avance debe ser un número entre 0 y 100.' }
@@ -165,9 +184,13 @@ export async function createIncome(projectId: string, prevState: any, formData: 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autorizado' }
 
+  // Acceso a la obra y rol (también protege contra llamadas directas a la acción)
+  const access = await getProjectAccess(supabase, projectId, ['director'])
+  if (!access.ok) return { error: access.error }
+
   // Verificar que sea admin
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'admin') return { error: 'Solo administradores pueden registrar ingresos' }
+  if (!isDirectorRole(profile?.role)) return { error: 'Solo el director de obra puede registrar ingresos' }
 
   const amount = parseFloat(formData.get('amount') as string)
   const description = formData.get('description') as string
@@ -196,6 +219,11 @@ export async function acceptDailyReport(reportId: string, projectId: string, are
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autorizado' }
 
+  // Acceso a la obra y rol (también protege contra llamadas directas a la acción)
+  const access = await getProjectAccess(supabase, projectId, ['director', 'residente'])
+  if (!access.ok) return { error: access.error }
+  if ((await projectIdOf(supabase, 'daily_reports', reportId)) !== projectId) return { error: 'El registro no pertenece a esta obra.' }
+
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
   const role = profile?.role || ''
   if (role !== 'residente' && role !== 'admin' && role !== 'director') {
@@ -221,6 +249,11 @@ export async function signDailyReport(reportId: string, projectId: string, areaI
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autorizado' }
+
+  // Acceso a la obra y rol (también protege contra llamadas directas a la acción)
+  const access = await getProjectAccess(supabase, projectId, ['director'])
+  if (!access.ok) return { error: access.error }
+  if ((await projectIdOf(supabase, 'daily_reports', reportId)) !== projectId) return { error: 'El registro no pertenece a esta obra.' }
 
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
   const role = profile?.role || ''
@@ -249,6 +282,11 @@ export async function updateArea(areaId: string, name: string, projectId: string
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autorizado' }
 
+  // Acceso a la obra y rol (también protege contra llamadas directas a la acción)
+  const access = await getProjectAccess(supabase, projectId, ['director'])
+  if (!access.ok) return { error: access.error }
+  if ((await projectIdOf(supabase, 'project_areas', areaId)) !== projectId) return { error: 'El registro no pertenece a esta obra.' }
+
   if (!name.trim()) {
     return { error: 'El nombre del área no puede estar vacío' }
   }
@@ -269,6 +307,10 @@ export async function createMaterial(projectId: string, prevState: any, formData
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autorizado' }
+
+  // Acceso a la obra y rol (también protege contra llamadas directas a la acción)
+  const access = await getProjectAccess(supabase, projectId, ['director', 'residente'])
+  if (!access.ok) return { error: access.error }
 
   const name = (formData.get('name') as string || '').trim()
   const category = (formData.get('category') as string || 'Materiales').trim()
@@ -336,9 +378,29 @@ export async function recordMaterialMovement(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autorizado' }
 
+  // Acceso a la obra y rol (también protege contra llamadas directas a la acción)
+  const access = await getProjectAccess(supabase, projectId)
+  if (!access.ok) return { error: access.error }
+  if ((await projectIdOf(supabase, 'materials', materialId)) !== projectId) return { error: 'El registro no pertenece a esta obra.' }
+
   if (!quantity || quantity <= 0) return { error: 'La cantidad debe ser mayor a 0' }
   if (type === 'salida' && (!details.receivedBy?.trim() || !details.reason?.trim())) {
     return { error: 'Para una salida indica quién recibe el material y el motivo.' }
+  }
+
+  // Regla de inventario: una salida no puede superar la existencia. La función de la
+  // base de datos lo vuelve a validar con bloqueo de fila (salidas simultáneas).
+  if (type === 'salida') {
+    const { data: mat, error: matError } = await supabase
+      .from('materials')
+      .select('total_received, total_used, unit')
+      .eq('id', materialId)
+      .single()
+    if (matError || !mat) return { error: 'Material no encontrado' }
+    const stock = (Number(mat.total_received) || 0) - (Number(mat.total_used) || 0)
+    if (quantity > stock) {
+      return { error: `No hay suficiente existencia: quedan ${stock} ${mat.unit || ''} y se intentan sacar ${quantity}.` }
+    }
   }
 
   // Existencias y registro del movimiento en una sola transacción (función en la base de datos)
@@ -362,6 +424,11 @@ export async function deleteMaterial(materialId: string, projectId: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autorizado' }
+
+  // Acceso a la obra y rol (también protege contra llamadas directas a la acción)
+  const access = await getProjectAccess(supabase, projectId, ['director', 'residente'])
+  if (!access.ok) return { error: access.error }
+  if ((await projectIdOf(supabase, 'materials', materialId)) !== projectId) return { error: 'El registro no pertenece a esta obra.' }
 
   const { error } = await supabase
     .from('materials')

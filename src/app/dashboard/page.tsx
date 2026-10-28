@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { isDirectorRole } from '@/lib/roles'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ProjectActions } from '@/components/project-actions'
 import { DashboardSummary } from '@/components/dashboard-summary'
@@ -21,6 +22,7 @@ export default async function DashboardPage() {
     .maybeSingle()
 
   const isAdmin = profile?.role === 'admin'
+  const canCreate = isDirectorRole(profile?.role)
   const isSubcontratista = profile?.role === 'subcontratista'
 
   if (isSubcontratista) {
@@ -73,7 +75,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-12">
-      <DashboardSummary metrics={metrics} canCreate={isAdmin} />
+      <DashboardSummary metrics={metrics} canCreate={canCreate} />
 
       {error ? (
         <div className="rounded-2xl bg-red-50 p-6 text-red-700 border border-red-200 font-medium">
