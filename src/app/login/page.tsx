@@ -283,10 +283,10 @@ function LoginFormContent() {
               <p className="text-sm font-medium text-slate-600">
                 Ya tienes una sesión abierta como <strong className="text-[#031033]">{sesion.nombre}</strong>.
               </p>
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="grid gap-2">
                 <Link
                   href={sesion.destino}
-                  className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-full bg-[#031033] text-white text-sm font-bold hover:bg-[#144CC9] transition-colors"
+                  className="inline-flex w-full whitespace-nowrap items-center justify-center gap-2 h-11 px-5 rounded-full bg-[#031033] text-white text-sm font-bold hover:bg-[#144CC9] transition-colors"
                 >
                   Continuar como {sesion.nombre.split(' ')[0]}
                   <ArrowRight className="w-4 h-4" />
@@ -295,9 +295,9 @@ function LoginFormContent() {
                   type="button"
                   onClick={cerrarSesion}
                   disabled={cerrando}
-                  className="inline-flex items-center justify-center h-11 px-5 rounded-full border border-slate-300 bg-white text-sm font-bold text-[#031033] hover:border-[#031033] transition-colors disabled:opacity-60"
+                  className="inline-flex w-full whitespace-nowrap items-center justify-center h-11 px-5 rounded-full border border-slate-300 bg-white text-sm font-bold text-[#031033] hover:border-[#031033] transition-colors disabled:opacity-60"
                 >
-                  {cerrando ? 'Cerrando sesión...' : 'Cerrar sesión y entrar con otra cuenta'}
+                  {cerrando ? 'Cerrando sesión...' : 'Entrar con otra cuenta'}
                 </button>
               </div>
             </div>
