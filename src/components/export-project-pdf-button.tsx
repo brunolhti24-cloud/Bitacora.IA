@@ -9,7 +9,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { createClient } from '@/lib/supabase/client'
 import { addDays, formatDateOnly, formatDateTime, startOfMonth, todayInObra } from '@/lib/dates'
 import { summarizeFinance, formatMoney } from '@/lib/finance'
-import { createPdf, roleLabel, slug, STATUS_LABELS } from '@/lib/pdf'
+import { createPdf, roleLabel, slug } from '@/lib/pdf'
+import { signatureLabel } from '@/lib/signatures'
 import { isDirectorRole } from '@/lib/roles'
 
 interface ProjectPdfProps {
@@ -73,7 +74,7 @@ export function ExportProjectPdfButton({ project }: ProjectPdfProps) {
 
       let reportsQuery = supabase
         .from('daily_reports')
-        .select('id, folio, version, report_date, progress_notes, status, created_at, accepted_at, signed_at, creator:profiles!daily_reports_created_by_fkey(full_name, role), acceptor:profiles!daily_reports_accepted_by_fkey(full_name), signer:profiles!daily_reports_signed_by_fkey(full_name), project_areas(name)')
+        .select('id, folio, version, report_date, progress_notes, status, signature_url, created_at, accepted_at, signed_at, creator:profiles!daily_reports_created_by_fkey(full_name, role), acceptor:profiles!daily_reports_accepted_by_fkey(full_name), signer:profiles!daily_reports_signed_by_fkey(full_name), project_areas(name)')
         .eq('project_id', project.id)
         .lte('report_date', dTo)
         .order('report_date', { ascending: true })
@@ -126,8 +127,8 @@ export function ExportProjectPdfButton({ project }: ProjectPdfProps) {
         ['Inicio de obra', p.start_date ? formatDateOnly(p.start_date) : 'Sin registro'],
         ['Director de obra', director?.full_name || 'Sin registro'],
         ['Áreas o frentes', `${areasCount ?? 0}`],
-        ['Avance físico actual', `${p.physical_progress || 0}%`],
-        ['Bitácoras en el periodo', `${reports.length} (${signed} firmadas, ${reports.length - signed} pendientes)`],
+        ['Avance físico reportado (captura manual)', `${p.physical_progress || 0}%`],
+        ['Bitácoras en el periodo', `${reports.length} (${signed} con firmas completas, ${reports.length - signed} pendientes de firma)`],
       ])
       if (preliminary > 0) {
         pdf.paragraph(
@@ -166,10 +167,10 @@ export function ExportProjectPdfButton({ project }: ProjectPdfProps) {
           pdf.y += 7
           const signLine =
             r.status === 'firmada'
-              ? `Firmada por ${signer?.full_name || 'el director'}${r.signed_at ? ` el ${formatDateTime(r.signed_at)}` : ''}`
+              ? `Firmas completas. Visto bueno de ${signer?.full_name || 'el director'}${r.signed_at ? ` el ${formatDateTime(r.signed_at)}` : ''}`
               : r.status === 'aceptada'
-              ? `Aceptada por ${acceptor?.full_name || 'el residente'}${r.accepted_at ? ` el ${formatDateTime(r.accepted_at)}` : ''}. Pendiente de firma del director`
-              : STATUS_LABELS.pendiente
+              ? `Validada por ${acceptor?.full_name || 'el residente'}${r.accepted_at ? ` el ${formatDateTime(r.accepted_at)}` : ''}. ${signatureLabel(r)}`
+              : signatureLabel(r)
           pdf.paragraph(
             `Elaboró: ${[creator?.full_name, roleLabel(creator?.role)].filter(Boolean).join(', ') || 'Sin registro'}${(r.version || 1) > 1 ? `  ·  Versión ${r.version}` : ''}\n${signLine}`,
             { size: 8, color: [90, 100, 120] }
@@ -207,13 +208,13 @@ export function ExportProjectPdfButton({ project }: ProjectPdfProps) {
             className="gap-2 text-xs font-semibold bg-[#144CC9] text-white hover:bg-blue-700 rounded-full shadow-sm transition-all h-9 px-4"
           >
             <FileText className="w-4 h-4 text-white" aria-hidden />
-            Exportar Expediente Oficial (PDF)
+            Descargar expediente de obra
           </Button>
         }
       />
       <DialogContent className="sm:max-w-md rounded-2xl">
         <DialogHeader>
-          <DialogTitle>Exportar Expediente Oficial</DialogTitle>
+          <DialogTitle>Descargar expediente de obra</DialogTitle>
           <DialogDescription>
             Elige el periodo. El PDF incluye todas las bitácoras de esas fechas y el periodo queda impreso en el documento.
           </DialogDescription>

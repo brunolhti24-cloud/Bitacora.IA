@@ -36,7 +36,7 @@ export function AcceptBitacoraButton({
   if (accepted) {
     return (
       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
-        <CheckCircle2 className="w-3.5 h-3.5" /> Aceptada por Residente
+        <CheckCircle2 className="w-3.5 h-3.5" /> Validada por el responsable
       </span>
     )
   }
@@ -50,11 +50,11 @@ export function AcceptBitacoraButton({
     >
       {loading ? (
         <>
-          <Loader2 className="w-3.5 h-3.5 animate-spin" /> Aceptando...
+          <Loader2 className="w-3.5 h-3.5 animate-spin" /> Validando...
         </>
       ) : (
         <>
-          <CheckCircle2 className="w-3.5 h-3.5" /> Aceptar Bitácora
+          <CheckCircle2 className="w-3.5 h-3.5" /> Validar como responsable
         </>
       )}
     </Button>

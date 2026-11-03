@@ -71,10 +71,10 @@ export function SignBitacoraModal({
       <DialogContent className="sm:max-w-md rounded-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-emerald-700">
-            <Sparkles className="w-5 h-5 text-emerald-600" /> Firma Oficial de Director
+            <Sparkles className="w-5 h-5 text-emerald-600" /> Visto bueno del director
           </DialogTitle>
           <DialogDescription>
-            Como Director, estampa tu firma digital para validar y cerrar oficialmente esta bitácora de obra.
+            Como director, firma para dar tu visto bueno a esta bitácora. Con tu firma, la bitácora queda con firmas completas.
           </DialogDescription>
         </DialogHeader>
 

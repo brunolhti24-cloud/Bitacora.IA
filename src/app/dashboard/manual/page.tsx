@@ -307,7 +307,7 @@ export default function ManualPage() {
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="font-extrabold text-blue-600">✍️ Firma digital:</span>
-                        <span>Validación legal del reporte dibujando tu firma en el recuadro digital.</span>
+                        <span>Firma del reporte dibujando tu firma en el recuadro digital.</span>
                       </li>
                     </ul>
                   </div>

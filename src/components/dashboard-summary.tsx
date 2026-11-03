@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { PlusCircle } from 'lucide-react'
 
-export type SummaryMetric = { label: string; value: string; hint?: string; bar?: number; alert?: boolean }
+export type SummaryMetric = { label: string; value: string; hint?: string; bar?: number; alert?: boolean; danger?: boolean }
 
 // Encabezado del dashboard de obras: título + indicadores que requieren atención
 export function DashboardSummary({ metrics, canCreate }: { metrics: SummaryMetric[]; canCreate: boolean }) {
@@ -15,7 +15,7 @@ export function DashboardSummary({ metrics, canCreate }: { metrics: SummaryMetri
             Obras en Ejecución
           </h1>
           <p className="text-sm text-slate-500 leading-relaxed font-medium">
-            Avance físico, bitácoras, finanzas y materiales de cada obra en un solo lugar.
+            Pendientes, bitácoras, cronograma, finanzas y materiales de cada obra en un solo lugar.
           </p>
         </div>
 
@@ -34,18 +34,18 @@ export function DashboardSummary({ metrics, canCreate }: { metrics: SummaryMetri
         {metrics.map((m) => (
           <div
             key={m.label}
-            className={`rounded-2xl border p-3.5 sm:p-4 ${m.alert ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-200/70'}`}
+            className={`rounded-2xl border p-3.5 sm:p-4 ${m.danger ? 'bg-red-50 border-red-200' : m.alert ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-200/70'}`}
           >
             <dt className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-500">{m.label}</dt>
-            <dd className={`text-2xl sm:text-3xl font-black mt-1 ${m.alert ? 'text-amber-700' : m.bar !== undefined ? 'text-emerald-600' : 'text-slate-900'}`}>
+            <dd className={`text-2xl sm:text-3xl font-black mt-1 ${m.danger ? 'text-red-700' : m.alert ? 'text-amber-700' : 'text-slate-900'}`}>
               {m.value}
             </dd>
             {m.bar !== undefined ? (
               <div className="mt-2 h-1.5 w-full rounded-full bg-slate-200 overflow-hidden" aria-hidden>
-                <div className="h-full rounded-full bg-emerald-500" style={{ width: `${m.bar}%` }} />
+                <div className="h-full rounded-full bg-slate-500" style={{ width: `${m.bar}%` }} />
               </div>
             ) : (
-              <p className={`text-[11px] sm:text-xs mt-1 leading-snug ${m.alert ? 'text-amber-800' : 'text-slate-500'}`}>{m.hint}</p>
+              <p className={`text-[11px] sm:text-xs mt-1 leading-snug ${m.danger ? 'text-red-800' : m.alert ? 'text-amber-800' : 'text-slate-500'}`}>{m.hint}</p>
             )}
           </div>
         ))}

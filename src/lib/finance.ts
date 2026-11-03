@@ -41,3 +41,9 @@ export function formatMoney(value: number): string {
   const abs = Math.abs(value).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   return `${value < 0 ? '-' : ''}$${abs}`
 }
+
+/** Importe con moneda para textos en pantalla: −$2,550.00 MXN */
+export function formatMXN(value: number): string {
+  const abs = Math.abs(value).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return `${value < 0 ? '−' : ''}$${abs} MXN`
+}

@@ -5,7 +5,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { MessageSquare, X, Send, CheckCircle2, Loader2, AlertCircle } from 'lucide-react'
+import { MessageSquare, X, Send, CheckCircle2, Loader2, AlertCircle, RotateCcw } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 
 export function ChatWidget({ isAdmin }: { isAdmin: boolean }) {
@@ -15,7 +15,7 @@ export function ChatWidget({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname()
   const currentProjectId = pathname?.match(/\/dashboard\/projects\/([0-9a-f-]{36})/)?.[1] ?? null
 
-  const { messages, sendMessage, status, setMessages } = useChat({
+  const { messages, sendMessage, status, error, regenerate, clearError } = useChat({
     onError: (error) => {
       console.error('Chat error:', error)
     }
@@ -96,6 +96,17 @@ export function ChatWidget({ isAdmin }: { isAdmin: boolean }) {
     return null
   }
 
+  // La consulta falló o terminó sin respuesta: se avisa y se ofrece reintentar
+  const lastMessage = messages[messages.length - 1]
+  const failed =
+    status === 'error' ||
+    (status === 'ready' && !!lastMessage && (lastMessage.role === 'user' || !getMessageText(lastMessage).trim()))
+
+  const retry = () => {
+    clearError()
+    regenerate({ body: { projectId: currentProjectId } })
+  }
+
   // Mostrar todos los mensajes que tengan texto O herramientas completadas
   const visibleMessages = messages.filter(m => {
     const text = getMessageText(m)
@@ -172,7 +183,7 @@ export function ChatWidget({ isAdmin }: { isAdmin: boolean }) {
                 <p>¡Hola! Soy el asistente IA de la constructora.</p>
                 <p className="mt-2">Puedes preguntarme cosas como:</p>
                 <ul className="mt-2 space-y-1 italic text-xs">
-                  <li>"Dime el saldo del proyecto Torre Alta"</li>
+                  <li>"Dime presupuesto, ingresos, gastos y saldo de esta obra"</li>
                   <li>"¿Cuáles son los últimos reportes del proyecto X?"</li>
                   <li>"En el proyecto X, crea el área Recámara 1"</li>
                 </ul>
@@ -229,6 +240,23 @@ export function ChatWidget({ isAdmin }: { isAdmin: boolean }) {
                 <div className="bg-white border text-gray-400 rounded-2xl rounded-bl-none shadow-sm px-4 py-2 text-sm animate-pulse flex items-center gap-2">
                   <Loader2 className="h-3 w-3 animate-spin text-blue-600" />
                   Pensando...
+                </div>
+              </div>
+            )}
+            {failed && (
+              <div className="flex items-start">
+                <div role="alert" className="max-w-[85%] rounded-2xl rounded-bl-none border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-800 shadow-sm">
+                  <p className="flex items-center gap-1.5 font-semibold">
+                    <AlertCircle className="h-4 w-4 shrink-0" aria-hidden />
+                    No pude completar la consulta.
+                  </p>
+                  <p className="mt-1 text-xs text-red-700">
+                    {error ? 'Hubo un problema de conexión con el asistente.' : 'El asistente no devolvió una respuesta.'} Puedes intentarlo de nuevo.
+                  </p>
+                  <Button type="button" size="sm" variant="outline" onClick={retry} className="mt-2 h-8 border-red-200 bg-white text-xs text-red-700 hover:bg-red-100">
+                    <RotateCcw className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                    Reintentar
+                  </Button>
                 </div>
               </div>
             )}

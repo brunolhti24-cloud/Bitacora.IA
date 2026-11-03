@@ -52,6 +52,10 @@ export let readFontFile = async (path: string): Promise<string> => {
   const res = await fetch(path)
   if (!res.ok) throw new Error(`No se pudo cargar la fuente ${path}`)
   const bytes = new Uint8Array(await res.arrayBuffer())
+  // Si la sesión expiró, la respuesta puede ser la página de login: jsPDF no avisa
+  // al registrar una fuente inválida y después falla todo el documento
+  const isTrueType = bytes.length > 4 && bytes[0] === 0 && bytes[1] === 1 && bytes[2] === 0 && bytes[3] === 0
+  if (!isTrueType) throw new Error(`El archivo ${path} no es una fuente TrueType`)
   let binary = ''
   for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
   return btoa(binary)
@@ -378,12 +382,6 @@ export async function createPdf(opts: {
     },
   }
   return api
-}
-
-export const STATUS_LABELS: Record<string, string> = {
-  pendiente: 'Pendiente de aceptación',
-  aceptada: 'Aceptada, pendiente de firma del director',
-  firmada: 'Firmada por el director',
 }
 
 export function slug(text: string): string {

@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Download } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatDateOnly, formatDateTime } from '@/lib/dates'
-import { createPdf, loadImage, roleLabel, slug, STATUS_LABELS } from '@/lib/pdf'
+import { createPdf, loadImage, roleLabel, slug } from '@/lib/pdf'
+import { signatureLabel } from '@/lib/signatures'
 
 interface BitacoraReport {
   id: string
@@ -73,8 +74,8 @@ export function ExportBitacoraPdfButton({ report }: { report: BitacoraReport }) 
         ['Área o frente', areaName],
         ['Elaboró', [creator?.full_name, roleLabel(creator?.role)].filter(Boolean).join(', ') || 'Sin registro'],
         ['Fecha de elaboración', rep?.created_at ? formatDateTime(rep.created_at) : 'Sin registro'],
-        ['Estado', STATUS_LABELS[status] || status],
-        ['Aceptó', acceptor?.full_name ? `${acceptor.full_name}${rep?.accepted_at ? `, ${formatDateTime(rep.accepted_at)}` : ''}` : 'Pendiente de aceptación'],
+        ['Estado de firmas', signatureLabel(r)],
+        ['Validó', acceptor?.full_name ? `${acceptor.full_name}${rep?.accepted_at ? `, ${formatDateTime(rep.accepted_at)}` : ''}` : 'Sin validación adicional'],
       ])
 
       pdf.section('Avances y actividades')

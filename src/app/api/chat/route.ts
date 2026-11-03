@@ -1,7 +1,7 @@
-import { summarizeFinance } from '@/lib/finance'
+import { summarizeFinance, formatMXN } from '@/lib/finance'
 import { isDirectorRole } from '@/lib/roles'
 import { openai } from '@ai-sdk/openai'
-import { streamText, convertToModelMessages } from 'ai'
+import { streamText, convertToModelMessages, stepCountIs } from 'ai'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 
@@ -78,12 +78,16 @@ export async function POST(req: Request) {
 Usa SIEMPRE las herramientas antes de responder sobre datos de obras; nunca inventes datos.
 Cada herramienta devuelve ok: true o ok: false.
 - Si ok es false, explica el problema con sus palabras y NO digas que la acción se realizó. No reintentes la misma herramienta.
-- Después de usar una herramienta, escribe siempre una respuesta final en texto.
+- Después de usar una herramienta, escribe siempre una respuesta final en texto, aunque la pregunta tenga varias partes.
+- Los importes ya vienen con formato (ej. −$2,550.00 MXN): cópialos tal cual, sin redondear ni cambiar el signo.
+- Si preguntan varios datos de la misma obra (presupuesto, ingresos, gastos, saldo), usa getProjectFinancials una sola vez y responde todos en una lista.
 ${context}
 Obras del usuario: ${projects.map((p) => p.name).join(', ') || 'ninguna'}.
 
 ${HELP}`,
       temperature: 0.3,
+      // Por omisión el modelo se detiene al usar una herramienta y la respuesta queda vacía
+      stopWhen: stepCountIs(5),
       tools: {
         getProjectsList: {
           description: 'Lista las obras del usuario.',
@@ -117,12 +121,12 @@ ${HELP}`,
             return {
               ok: true,
               obra: project.name,
-              presupuesto_autorizado: fin.budget,
-              gastos_pagados: fin.expenses,
-              presupuesto_por_ejercer: fin.budgetRemaining,
-              porcentaje_presupuesto_ejercido: fin.budgetUsedPct,
-              ingresos_recibidos: incomesVisible ? fin.incomes : 'no disponible para este rol',
-              saldo_de_caja: incomesVisible ? fin.cash : 'no disponible para este rol',
+              presupuesto_autorizado: formatMXN(fin.budget),
+              gastos_pagados: formatMXN(fin.expenses),
+              presupuesto_por_ejercer: formatMXN(fin.budgetRemaining),
+              porcentaje_presupuesto_ejercido: fin.budgetUsedPct === null ? 'sin presupuesto registrado' : `${fin.budgetUsedPct}%`,
+              ingresos_recibidos: incomesVisible ? formatMXN(fin.incomes) : 'no disponible para este rol',
+              saldo_de_caja: incomesVisible ? formatMXN(fin.cash) : 'no disponible para este rol',
               nota: 'Saldo de caja = ingresos recibidos menos gastos pagados. El presupuesto por ejercer no es dinero disponible.',
             }
           },

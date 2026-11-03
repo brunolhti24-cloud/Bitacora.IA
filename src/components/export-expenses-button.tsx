@@ -163,7 +163,7 @@ export function ExportExpensesButton({ expenses, title = 'Control General de Gas
       doc.setFontSize(7)
       doc.setFont('helvetica', 'normal')
       doc.setTextColor(203, 213, 225)
-      doc.text('Reporte Oficial de Finanzas y Control de Gastos', 14, 16)
+      doc.text('Reporte de finanzas y control de gastos', 14, 16)
 
       // Nombre de la empresa en grande
       const companyDisplayName = companyName || projectName || 'CONTROL FINANCIERO'

@@ -47,7 +47,7 @@ export function NewSpecialRequestModal({
         render={
           <Button className="gap-2 bg-amber-600 hover:bg-amber-700 text-white font-medium">
             <PlusCircle className="h-4 w-4" />
-            Nueva Solicitud Especial
+            Nueva solicitud
           </Button>
         }
       />
@@ -56,10 +56,10 @@ export function NewSpecialRequestModal({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl">
               <Package className="h-5 w-5 text-amber-600" />
-              Solicitud Especial
+              Nueva solicitud
             </DialogTitle>
             <DialogDescription>
-              Solicita materiales, maquinaria, herramientas o equipo pesado. La solicitud le llegará al director para su aprobación.
+              Pide materiales, maquinaria, herramientas, equipo o servicios, ya sea para comprar, rentar o contratar. El director la revisará.
             </DialogDescription>
           </DialogHeader>
 
@@ -88,7 +88,7 @@ export function NewSpecialRequestModal({
 
             {/* Categoría */}
             <div className="grid gap-2">
-              <Label htmlFor="category">Categoría del Recurso *</Label>
+              <Label htmlFor="category">Tipo de recurso *</Label>
               <select id="category" name="category" className={selectClasses} required defaultValue="materiales">
                 <option value="materiales">📦 Materiales (Cemento, varilla, arena...)</option>
                 <option value="maquinaria">🚜 Maquinaria (Retroexcavadora, bailarina...)</option>
@@ -103,7 +103,7 @@ export function NewSpecialRequestModal({
               <Input
                 id="title"
                 name="title"
-                placeholder="Ej: Retroexcavadora CAT 416 o 50 Ton Cemento"
+                placeholder="Ej: Renta de retroexcavadora o 50 bultos de cemento"
                 required
               />
             </div>
@@ -167,7 +167,7 @@ export function NewSpecialRequestModal({
               Cancelar
             </Button>
             <Button type="submit" disabled={isPending} className="bg-amber-600 hover:bg-amber-700 text-white font-medium">
-              {isPending ? 'Enviando...' : 'Enviar Solicitud al Director'}
+              {isPending ? 'Enviando...' : 'Enviar al director'}
             </Button>
           </DialogFooter>
         </form>

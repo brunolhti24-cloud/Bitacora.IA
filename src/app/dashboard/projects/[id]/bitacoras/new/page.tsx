@@ -106,7 +106,7 @@ export default function NewBitacoraPage({ params }: { params: Promise<{ id: stri
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="physical_progress">Actualizar % Avance Físico Global (Opcional)</Label>
+              <Label htmlFor="physical_progress">Avance físico reportado de la obra, % (opcional)</Label>
               <Input
                 id="physical_progress"
                 name="physical_progress"
@@ -117,6 +117,7 @@ export default function NewBitacoraPage({ params }: { params: Promise<{ id: stri
                 placeholder="Ej. 15.5"
                 className="w-full text-base"
               />
+            <p className="text-xs text-muted-foreground">Captura manual. Solo se aplica si lo registra el director o el residente.</p>
             </div>
 
             <ReportPhotosInput projectId={projectId} onUploadingChange={setUploadingPhotos} />

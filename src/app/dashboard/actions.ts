@@ -138,6 +138,8 @@ export async function createTask(prevState: any, formData: FormData) {
   const description = formData.get('description') as string
   const assigned_to = formData.get('assigned_to') as string || null
   const due_date = (formData.get('due_date') as string) || null
+  const start_date = (formData.get('start_date') as string) || null
+  if (start_date && due_date && start_date > due_date) return { error: 'La fecha de inicio no puede ser posterior a la de término.' }
   const area_id = (formData.get('area_id') as string) || null
   const priorityRaw = (formData.get('priority') as string) || 'normal'
   const priority = ['baja', 'normal', 'alta', 'urgente'].includes(priorityRaw) ? priorityRaw : 'normal'
@@ -189,9 +191,13 @@ export async function createTask(prevState: any, formData: FormData) {
     }
   }
 
-  const { error } = await supabase
-    .from('tasks')
-    .insert([{ project_id, title, description, assigned_to, status: 'Pendiente', due_date, area_id, priority }])
+  const row = { project_id, title, description, assigned_to, status: 'Pendiente', due_date, area_id, priority }
+  let { error } = await supabase.from('tasks').insert([{ ...row, start_date }])
+  // Sin la migración del cronograma no existe start_date: se guarda la actividad sin ella
+  if (error?.message.includes('start_date')) {
+    if (start_date) return { error: 'Falta aplicar la migración del cronograma para guardar la fecha de inicio.' }
+    ;({ error } = await supabase.from('tasks').insert([row]))
+  }
 
   if (error) return { error: error.message }
 
@@ -200,10 +206,24 @@ export async function createTask(prevState: any, formData: FormData) {
   return { success: true }
 }
 
+const TASK_STATUSES = ['Pendiente', 'En Proceso', 'Terminada']
+
+// Director, residente y contratista actualizan cualquier actividad de la obra;
+// los demás roles (operador, administración) solo las que tienen asignadas.
+async function canUpdateTask(supabase: Awaited<ReturnType<typeof createClient>>, taskId: string) {
+  const access = await getProjectAccess(supabase, await projectIdOf(supabase, 'tasks', taskId))
+  if (!access.ok) return access
+  if (access.isDirector || access.role === 'residente' || access.role === 'subcontratista') return access
+  const { data: task } = await supabase.from('tasks').select('assigned_to').eq('id', taskId).maybeSingle()
+  if (task?.assigned_to === access.userId) return access
+  return { ok: false as const, error: 'Solo puedes actualizar las actividades asignadas a ti.' }
+}
+
 export async function updateTaskStatus(taskId: string, status: string, projectId: string) {
   const supabase = await createClient()
-  const access = await getProjectAccess(supabase, await projectIdOf(supabase, 'tasks', taskId))
+  const access = await canUpdateTask(supabase, taskId)
   if (!access.ok) throw new Error(access.error)
+  if (!TASK_STATUSES.includes(status)) throw new Error('Estado no válido.')
   const { error } = await supabase
     .from('tasks')
     .update({ status })
@@ -213,11 +233,63 @@ export async function updateTaskStatus(taskId: string, status: string, projectId
   revalidatePath('/dashboard/projects/' + projectId)
 }
 
+/**
+ * Programa una actividad del cronograma: fechas, avance y estado.
+ * Pueden hacerlo director, residente y contratista, o la persona asignada.
+ * El avance de las actividades NO cambia el avance físico reportado de la obra.
+ */
+export async function updateTaskSchedule(
+  taskId: string,
+  input: { start_date: string | null; due_date: string | null; progress: number; status: string },
+  projectId?: string
+) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autorizado' }
+  const access = await canUpdateTask(supabase, taskId)
+  if (!access.ok) return { error: access.error }
+  const canPlan = access.isDirector || access.role === 'residente' || access.role === 'subcontratista'
+
+  const start_date = input.start_date || null
+  const due_date = input.due_date || null
+  const progress = Math.round(Number(input.progress))
+  if (start_date && due_date && start_date > due_date) return { error: 'La fecha de inicio no puede ser posterior a la de término.' }
+  if (!Number.isFinite(progress) || progress < 0 || progress > 100) return { error: 'El avance debe estar entre 0 y 100 %.' }
+  if (!TASK_STATUSES.includes(input.status)) return { error: 'Estado no válido.' }
+
+  // Las fechas solo las programa quien planea la obra; el asignado reporta avance y estado
+  if (!canPlan) {
+    const { data: current } = await supabase.from('tasks').select('start_date, due_date').eq('id', taskId).maybeSingle()
+    if ((current?.start_date || null) !== start_date || (current?.due_date || null) !== due_date) {
+      return { error: 'Las fechas las programa el director, el residente o el contratista.' }
+    }
+  }
+
+  // Completada siempre es 100 %; con 100 % la actividad queda completada
+  const status = progress === 100 ? 'Terminada' : input.status
+  const finalProgress = status === 'Terminada' ? 100 : progress
+
+  const { error } = await supabase
+    .from('tasks')
+    .update({ start_date, due_date, progress: finalProgress, status, updated_at: new Date().toISOString() })
+    .eq('id', taskId)
+  if (error) {
+    if (error.message.includes('start_date') || error.message.includes('progress')) {
+      return { error: 'Falta aplicar la migración del cronograma (20261103_cronograma_y_avance.sql).' }
+    }
+    return { error: error.message }
+  }
+
+  if (projectId) revalidatePath('/dashboard/projects/' + projectId)
+  revalidatePath('/dashboard/mis-tareas')
+  return { success: true }
+}
+
 export async function setTaskBlocked(taskId: string, blocked: boolean, reason: string | null, projectId?: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autorizado' }
-  const access = await getProjectAccess(supabase, await projectIdOf(supabase, 'tasks', taskId))
+  const access = await canUpdateTask(supabase, taskId)
   if (!access.ok) return { error: access.error }
   if (blocked && !reason?.trim()) return { error: 'Indica qué está bloqueando la tarea.' }
 
@@ -375,7 +447,7 @@ export async function updateSpecialRequestStatus(requestId: string, status: 'apr
   return { success: true }
 }
 
-// Seguimiento después de aprobar: compra, entrega en obra y recepción
+// Seguimiento después de aprobar: adquisición o contratación (compra, renta o servicio), entrega y recepción
 const NEXT_STAGE: Record<string, 'comprada' | 'entregada' | 'recibida'> = {
   aprobada: 'comprada',
   comprada: 'entregada',

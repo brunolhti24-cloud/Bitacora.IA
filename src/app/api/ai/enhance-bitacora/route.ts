@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     const { text } = await generateText({
       model: openai('gpt-4o-mini'),
       system: `Eres un Ingeniero Residente y Perito de Obra experto en redacción de bitácoras de construcción. 
-Tu tarea es tomar las notas rápidas, borrador o viñetas del usuario y transformarlas en un reporte oficial de bitácora diario técnico, formal, bien estructurado y en español.
+Tu tarea es tomar las notas rápidas, borrador o viñetas del usuario y transformarlas en un reporte de bitácora diario técnico, formal, bien estructurado y en español.
 
 Instrucciones de formato:
 1. Divide el reporte en secciones claras (ej. ACTIVIDADES REALIZADAS, MATERIALES E INSUMOS, OBSERVACIONES DE CAMPO).

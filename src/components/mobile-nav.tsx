@@ -118,7 +118,7 @@ export function MobileNav({
                   className="flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-extrabold text-[#031033] hover:text-[#144CC9] hover:bg-black/5 transition-all"
                 >
                   <CheckSquare className="w-5 h-5 text-[#144CC9]" />
-                  <span>Tareas (Kanban)</span>
+                  <span>Mis actividades</span>
                 </Link>
               )}
 

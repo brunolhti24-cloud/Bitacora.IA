@@ -32,10 +32,10 @@ export default async function MisTareasPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900 flex items-center gap-2.5">
             <CheckSquare className="h-8 w-8 text-emerald-600" />
-            Mis Tareas Asignadas
+            Mis actividades asignadas
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Arrastra las tarjetas de una columna a otra para notificar tu avance de obra en tiempo real.
+            Arrastra cada actividad a su columna para avisar cómo va. Las fechas y el avance se ven en el cronograma de cada obra.
           </p>
         </div>
       </div>

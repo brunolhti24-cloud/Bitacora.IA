@@ -30,15 +30,17 @@ export interface SpecialRequest {
 const TRACK: { stage: string; label: string }[] = [
   { stage: 'solicitada', label: 'Solicitada' },
   { stage: 'aprobada', label: 'Aprobada' },
-  { stage: 'comprada', label: 'Comprada' },
+  { stage: 'comprada', label: 'Adquisición o contratación' },
   { stage: 'entregada', label: 'Entregada en obra' },
   { stage: 'recibida', label: 'Recibida' },
 ]
 const NEXT: Record<string, { stage: 'comprada' | 'entregada' | 'recibida'; action: string; roles: string[] }> = {
-  aprobada: { stage: 'comprada', action: 'Registrar Compra', roles: ['admin', 'director', 'administracion'] },
-  comprada: { stage: 'entregada', action: 'Registrar Entrega en Obra', roles: ['admin', 'director', 'administracion', 'residente'] },
-  entregada: { stage: 'recibida', action: 'Confirmar Recepción', roles: ['admin', 'director', 'residente'] },
+  aprobada: { stage: 'comprada', action: 'Registrar adquisición o contratación', roles: ['admin', 'director', 'administracion'] },
+  comprada: { stage: 'entregada', action: 'Registrar entrega en obra', roles: ['admin', 'director', 'administracion', 'residente'] },
+  entregada: { stage: 'recibida', action: 'Confirmar recepción', roles: ['admin', 'director', 'residente'] },
 }
+
+const ACQUISITION_MODES = ['Compra', 'Renta', 'Servicio'] as const
 
 function daysUntil(date: string, today: string) {
   return Math.round((Date.parse(date) - Date.parse(today)) / 86400000)
@@ -147,13 +149,20 @@ export function SpecialRequestsList({
     })
   }
 
-  const handleAdvance = (requestId: string, stage: 'comprada' | 'entregada' | 'recibida') => {
+  const handleAdvance = (requestId: string, stage: 'comprada' | 'entregada' | 'recibida', note?: string) => {
     setStageError(null)
     startTransition(async () => {
-      const res = await advanceSpecialRequest(requestId, stage)
-      if (res?.error) setStageError({ id: requestId, message: res.error })
+      const res = await advanceSpecialRequest(requestId, stage, note)
+      if (res?.error) return setStageError({ id: requestId, message: res.error })
+      setAcquiringId(null)
+      setSupplier('')
     })
   }
+
+  // Adquisición o contratación: compra, renta o servicio, con proveedor opcional
+  const [acquiringId, setAcquiringId] = useState<string | null>(null)
+  const [mode, setMode] = useState<(typeof ACQUISITION_MODES)[number]>('Compra')
+  const [supplier, setSupplier] = useState('')
 
   return (
     <div className="space-y-6">
@@ -182,7 +191,7 @@ export function SpecialRequestsList({
           ))}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider mr-2">Estado:</span>
           {[
             { id: 'all', label: 'Todos' },
@@ -211,7 +220,7 @@ export function SpecialRequestsList({
           <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
           <CardTitle className="text-lg text-slate-700">No hay solicitudes registradas</CardTitle>
           <CardDescription className="mt-1">
-            Usa el botón "Nueva Solicitud Especial" para solicitar materiales o equipos.
+            Usa el botón “Nueva solicitud” para pedir materiales, maquinaria, herramientas o servicios.
           </CardDescription>
         </Card>
       ) : (
@@ -293,15 +302,52 @@ export function SpecialRequestsList({
                   )}
 
                   {req.status === 'aprobada' && NEXT[req.stage || 'aprobada'] && NEXT[req.stage || 'aprobada'].roles.includes(userRole) && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={isPending}
-                      onClick={() => handleAdvance(req.id, NEXT[req.stage || 'aprobada'].stage)}
-                      className="w-full text-xs h-8 border-slate-200 hover:bg-slate-50 text-slate-700 font-medium"
-                    >
-                      {NEXT[req.stage || 'aprobada'].action}
-                    </Button>
+                    acquiringId === req.id ? (
+                      <div className="space-y-2 rounded-lg border bg-slate-50 p-3">
+                        <fieldset>
+                          <legend className="text-xs font-semibold text-slate-700">¿Cómo se obtuvo?</legend>
+                          <div className="mt-1.5 flex flex-wrap gap-1.5">
+                            {ACQUISITION_MODES.map((m) => (
+                              <label key={m} className={`cursor-pointer rounded-md border px-2.5 py-1 text-xs font-medium ${mode === m ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-700'}`}>
+                                <input type="radio" name={`modo-${req.id}`} value={m} checked={mode === m} onChange={() => setMode(m)} className="sr-only" />
+                                {m}
+                              </label>
+                            ))}
+                          </div>
+                        </fieldset>
+                        <label htmlFor={`proveedor-${req.id}`} className="block text-xs font-semibold text-slate-700">Proveedor o contratista (opcional)</label>
+                        <Input id={`proveedor-${req.id}`} value={supplier} onChange={(e) => setSupplier(e.target.value)} placeholder="Ej: Rentas del Bajío" className="h-8 bg-white text-xs" />
+                        <div className="flex justify-end gap-2 pt-1">
+                          <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => { setAcquiringId(null); setSupplier('') }}>
+                            Cancelar
+                          </Button>
+                          <Button
+                            size="sm"
+                            disabled={isPending}
+                            className="h-8 text-xs"
+                            onClick={() => handleAdvance(req.id, 'comprada', [mode, supplier.trim()].filter(Boolean).join(' · '))}
+                          >
+                            Registrar
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={isPending}
+                        onClick={() => {
+                          const next = NEXT[req.stage || 'aprobada']
+                          if (next.stage === 'comprada') {
+                            setMode('Compra')
+                            setAcquiringId(req.id)
+                          } else handleAdvance(req.id, next.stage)
+                        }}
+                        className="w-full text-xs h-8 border-slate-200 hover:bg-slate-50 text-slate-700 font-medium"
+                      >
+                        {NEXT[req.stage || 'aprobada'].action}
+                      </Button>
+                    )
                   )}
 
                   {stageError?.id === req.id && (

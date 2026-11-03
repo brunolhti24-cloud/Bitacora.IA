@@ -170,7 +170,7 @@ export default async function DashboardLayout({
                 className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-extrabold text-[#031033] hover:text-[#144CC9] hover:bg-black/5 transition-all duration-200 group"
               >
                 <CheckSquare className="w-4 h-4 text-[#144CC9] shrink-0 group-hover:scale-110 transition-transform" />
-                <span>Tareas (Kanban)</span>
+                <span>Mis actividades</span>
               </Link>
             )}
 

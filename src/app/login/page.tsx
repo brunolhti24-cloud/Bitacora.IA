@@ -209,7 +209,7 @@ function LoginFormContent() {
           </h1>
 
           <p className="text-base text-slate-300 leading-relaxed font-medium">
-            Administra proyectos, bitácoras de campo con firma digital, tablero Kanban de tareas, finanzas y solicitudes especiales de materiales o maquinaria.
+            Administra proyectos, bitácoras de campo con firma digital, cronograma de actividades, finanzas y solicitudes especiales de materiales o maquinaria.
           </p>
 
           <div className="grid grid-cols-2 gap-4 pt-4">
@@ -225,7 +225,7 @@ function LoginFormContent() {
                 <div className="p-2 rounded-lg bg-[#A7EC80]/20 text-[#A7EC80]"><FileSpreadsheet className="w-5 h-5" /></div>
                 <span className="text-2xl font-black text-white">PDFs</span>
               </div>
-              <p className="text-xs text-slate-300 font-medium">Exportación Oficial con Firma Digital</p>
+              <p className="text-xs text-slate-300 font-medium">Expediente en PDF con firmas digitales</p>
             </div>
           </div>
         </div>

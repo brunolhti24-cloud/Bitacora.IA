@@ -7,7 +7,8 @@ import { ExportBitacoraPdfButton } from '@/components/export-bitacora-pdf-button
 import { AcceptBitacoraButton } from '@/components/accept-bitacora-button'
 import { SignBitacoraModal } from '@/components/sign-bitacora-modal'
 import { EditAreaModal } from '@/components/edit-area-modal'
-import { CheckCircle2, FileCheck2, AlertCircle, Clock } from 'lucide-react'
+import { FileCheck2, AlertCircle, Clock } from 'lucide-react'
+import { signatureStage, SIGNATURE_LABELS } from '@/lib/signatures'
 
 export default async function AreaDetailsPage({ params }: { params: Promise<{ id: string, areaId: string }> }) {
   const resolvedParams = await params
@@ -91,8 +92,8 @@ export default async function AreaDetailsPage({ params }: { params: Promise<{ id
           <div className="space-y-4">
             {reports?.map(report => {
               const status = report.status || 'pendiente'
+              const stage = signatureStage(report)
               const creatorName = report.creator?.full_name || 'Personal de Obra'
-              const acceptorName = report.acceptor?.full_name || 'Residente'
               const directorName = (report.signer as any)?.full_name || (report.acceptor as any)?.full_name || 'Director de Obra'
 
               return (
@@ -121,17 +122,17 @@ export default async function AreaDetailsPage({ params }: { params: Promise<{ id
                           )}
 
                           {/* Badges de Estado */}
-                          {status === 'firmada' ? (
+                          {stage === 'completa' ? (
                             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                              <FileCheck2 className="w-3.5 h-3.5" /> Firmada por Director
+                              <FileCheck2 className="w-3.5 h-3.5" aria-hidden /> {SIGNATURE_LABELS.completa}
                             </span>
-                          ) : status === 'aceptada' ? (
+                          ) : stage === 'director' ? (
                             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-300">
-                              <CheckCircle2 className="w-3.5 h-3.5" /> Aceptada por {acceptorName}
+                              <Clock className="w-3.5 h-3.5" aria-hidden /> {SIGNATURE_LABELS.director}
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
-                              <Clock className="w-3.5 h-3.5" /> Pendiente de Residente
+                              <Clock className="w-3.5 h-3.5" aria-hidden /> {SIGNATURE_LABELS.responsable}
                             </span>
                           )}
                         </div>
@@ -143,7 +144,7 @@ export default async function AreaDetailsPage({ params }: { params: Promise<{ id
 
                       {/* Botones de Acción (Aceptar / Firmar / PDF) */}
                       <div className="flex items-center gap-2">
-                        {(isResidente || isAdmin) && status === 'pendiente' && (
+                        {(isResidente || isAdmin) && stage === 'responsable' && (
                           <AcceptBitacoraButton
                             reportId={report.id}
                             projectId={resolvedParams.id}
@@ -151,7 +152,7 @@ export default async function AreaDetailsPage({ params }: { params: Promise<{ id
                           />
                         )}
 
-                        {isAdmin && status === 'aceptada' && (
+                        {isAdmin && stage === 'director' && (
                           <SignBitacoraModal
                             reportId={report.id}
                             projectId={resolvedParams.id}
@@ -214,7 +215,7 @@ export default async function AreaDetailsPage({ params }: { params: Promise<{ id
                       <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 space-y-1">
                         <div className="flex items-center gap-1.5 font-bold text-xs uppercase tracking-wider text-amber-800">
                           <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-                          <span>Solicitud Especial para el Director:</span>
+                          <span>Solicitud para el director:</span>
                         </div>
                         <p className="text-sm font-medium pl-5 text-amber-950">
                           {report.special_request}

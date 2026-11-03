@@ -1,3 +1,4 @@
+import { todayInObra } from '@/lib/dates'
 import { createClient } from '@/lib/supabase/server'
 import { isDirectorRole } from '@/lib/roles'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -59,18 +60,21 @@ export default async function DashboardPage() {
 
   // Pendientes que requieren acción del director
   const projectIds = list.map((p) => p.id)
-  const [{ count: unsignedReports }, { count: pendingRequests }] = projectIds.length
+  const today = todayInObra()
+  const [{ count: unsignedReports }, { count: pendingRequests }, { count: overdueTasks }] = projectIds.length
     ? await Promise.all([
         supabase.from('daily_reports').select('id', { count: 'exact', head: true }).in('project_id', projectIds).neq('status', 'firmada'),
         supabase.from('special_requests').select('id', { count: 'exact', head: true }).in('project_id', projectIds).eq('status', 'pendiente'),
+        supabase.from('tasks').select('id', { count: 'exact', head: true }).in('project_id', projectIds).neq('status', 'Terminada').lt('due_date', today),
       ])
-    : [{ count: 0 }, { count: 0 }]
+    : [{ count: 0 }, { count: 0 }, { count: 0 }]
 
+  // Primero lo que requiere atención; el avance queda como dato de contexto
   const metrics = [
-    { label: 'En ejecución', value: `${inProgress}`, hint: `de ${totalProjects} registradas` },
-    { label: 'Avance promedio', value: `${avgProgress}%`, bar: avgProgress },
-    { label: 'Por firmar', value: `${unsignedReports ?? 0}`, hint: (unsignedReports ?? 0) > 0 ? 'Bitácoras sin firma del director' : 'Todas las bitácoras firmadas', alert: (unsignedReports ?? 0) > 0 },
-    { label: 'Solicitudes', value: `${pendingRequests ?? 0}`, hint: (pendingRequests ?? 0) > 0 ? 'Esperan tu respuesta' : 'Sin solicitudes pendientes', alert: (pendingRequests ?? 0) > 0 },
+    { label: 'Solicitudes pendientes', value: `${pendingRequests ?? 0}`, hint: (pendingRequests ?? 0) > 0 ? 'Esperan respuesta del director' : 'Sin solicitudes por responder', alert: (pendingRequests ?? 0) > 0 },
+    { label: 'Actividades vencidas', value: `${overdueTasks ?? 0}`, hint: (overdueTasks ?? 0) > 0 ? 'Pasaron su fecha de término' : 'Ninguna actividad vencida', danger: (overdueTasks ?? 0) > 0 },
+    { label: 'Bitácoras por firmar', value: `${unsignedReports ?? 0}`, hint: (unsignedReports ?? 0) > 0 ? 'Les falta alguna firma' : 'Todas con firmas completas', alert: (unsignedReports ?? 0) > 0 },
+    { label: 'Obras en ejecución', value: `${inProgress}`, hint: `de ${totalProjects} · avance reportado promedio ${avgProgress}%` },
   ]
 
   return (
@@ -140,13 +144,13 @@ export default async function DashboardPage() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-xs font-bold text-slate-700">
                     <span className="flex items-center gap-1.5 text-slate-600 font-bold">
-                      <Layers className="w-4 h-4 text-blue-600" /> Avance Físico Global:
+                      <Layers className="w-4 h-4 text-blue-600" /> Avance físico reportado:
                     </span>
                     <span className="text-blue-600 font-black text-sm">{project.physical_progress || 0}%</span>
                   </div>
-                  <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200/80 shadow-2xs">
+                  <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 rounded-full transition-all duration-500 shadow-2xs"
+                      className="h-full bg-[#144CC9] rounded-full"
                       style={{ width: `${project.physical_progress || 0}%` }}
                     />
                   </div>

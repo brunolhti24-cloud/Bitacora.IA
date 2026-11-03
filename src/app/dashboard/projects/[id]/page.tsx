@@ -5,14 +5,15 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { NewAreaForm } from '@/components/new-area-form'
 import { FinanceTab } from './finance-tab'
-import { KanbanTab } from './kanban-tab'
+import { CronogramaTab } from './cronograma-tab'
 import { MaterialsTab } from './materials-tab'
 import { NewSpecialRequestModal } from '@/components/new-special-request-modal'
 import { UpdateProgressModal } from '@/components/update-progress-modal'
 import { SpecialRequestsList, SpecialRequest } from '@/components/special-requests-list'
 import { ExportProjectPdfButton } from '@/components/export-project-pdf-button'
 import { DeleteAreaButton } from '@/components/delete-area-button'
-import { Folder, HardHat, ArrowRight, Building2, MapPin, Layers, FileText, PlusCircle, ArrowLeft, Activity, Boxes, ClipboardList, Wallet } from 'lucide-react'
+import { Folder, ArrowRight, MapPin, ArrowLeft, ClipboardList, CalendarX2, FileSignature } from 'lucide-react'
+import { formatDateTime, todayInObra } from '@/lib/dates'
 
 function getAreaImage(name: string) {
   const lower = name.toLowerCase()
@@ -93,6 +94,29 @@ export default async function ProjectDetailsPage({ params }: { params: Promise<{
     profiles: req.profiles ? { full_name: req.profiles.full_name, role: req.profiles.role } : undefined
   }))
 
+  // Avance físico reportado: quién y cuándo
+  const progress = Number(project.physical_progress) || 0
+  const progressUpdatedAt: string | null = project.progress_updated_at || null
+  let progressUpdatedBy: string | null = null
+  if (project.progress_updated_by) {
+    const { data: updater } = await supabase.from('profiles').select('full_name').eq('id', project.progress_updated_by).maybeSingle()
+    progressUpdatedBy = updater?.full_name || null
+  }
+  const canEditProgress = isAdmin || role === 'residente'
+
+  // Pendientes de la obra
+  const today = todayInObra()
+  const [{ count: overdueCount }, { count: unsignedCount }] = await Promise.all([
+    supabase.from('tasks').select('id', { count: 'exact', head: true }).eq('project_id', resolvedParams.id).neq('status', 'Terminada').lt('due_date', today),
+    supabase.from('daily_reports').select('id', { count: 'exact', head: true }).eq('project_id', resolvedParams.id).neq('status', 'firmada'),
+  ])
+  const pendingRequestsCount = specialRequests.filter((r) => r.status === 'pendiente').length
+  const attention = [
+    { label: 'Solicitudes pendientes', count: pendingRequestsCount, hint: 'Esperan respuesta del director', empty: 'Sin solicitudes por responder', icon: ClipboardList, tone: 'border-amber-300 bg-amber-50/60', iconTone: 'text-amber-600' },
+    { label: 'Actividades vencidas', count: overdueCount ?? 0, hint: 'Pasó su fecha de término', empty: 'Ninguna actividad vencida', icon: CalendarX2, tone: 'border-red-300 bg-red-50/60', iconTone: 'text-red-600' },
+    { label: 'Bitácoras por firmar', count: unsignedCount ?? 0, hint: 'Les falta alguna firma', empty: 'Todas con firmas completas', icon: FileSignature, tone: 'border-blue-300 bg-blue-50/60', iconTone: 'text-[#144CC9]' },
+  ]
+
   const totalReportsCount = areas?.reduce((acc, a) => acc + (a.daily_reports[0]?.count || 0), 0) || 0
 
   return (
@@ -134,68 +158,89 @@ export default async function ProjectDetailsPage({ params }: { params: Promise<{
         </div>
       </div>
 
-      {/* Tarjeta de Avance Físico Global */}
-      <div className="p-5 sm:p-6 bg-[#031033] text-white rounded-[2rem] shadow-lg border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
-        <div className="flex items-center gap-6 flex-1">
-          <div className="relative flex items-center justify-center w-20 h-20 rounded-full bg-[#144CC9] text-white font-black text-2xl shrink-0 shadow-lg">
-            {project.physical_progress}%
-          </div>
-
-          <div className="space-y-3 flex-1 pt-1">
-            <div className="flex items-center justify-between">
-              <span className="text-[13px] font-semibold uppercase tracking-widest text-white">
-                Avance Global de la Obra
-              </span>
+      {/* Lo que requiere atención: solicitudes, actividades vencidas y bitácoras por firmar */}
+      <section aria-labelledby="atencion-titulo" className="space-y-3">
+        <h2 id="atencion-titulo" className="text-sm font-bold uppercase tracking-wider text-slate-500">Requiere atención</h2>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {attention.map((item) => (
+            <div
+              key={item.label}
+              className={`flex items-start gap-3 rounded-2xl border bg-white p-4 shadow-sm ${item.count > 0 ? item.tone : 'border-slate-200'}`}
+            >
+              <item.icon className={`mt-0.5 h-5 w-5 shrink-0 ${item.count > 0 ? item.iconTone : 'text-slate-400'}`} aria-hidden />
+              <div className="min-w-0">
+                <p className={`text-2xl font-black leading-none ${item.count > 0 ? 'text-[#031033]' : 'text-slate-400'}`}>{item.count}</p>
+                <p className="mt-1 text-sm font-semibold text-slate-800">{item.label}</p>
+                <p className="text-xs text-slate-500">{item.count > 0 ? item.hint : item.empty}</p>
+              </div>
             </div>
+          ))}
+        </div>
+      </section>
 
-            <div className="h-4 w-full bg-slate-100/20 rounded-full overflow-hidden p-0">
-              <div
-                className="h-full bg-gradient-to-r from-teal-300 to-[#A7EC80] rounded-full transition-all duration-500 shadow-sm"
-                style={{ width: `${project.physical_progress}%` }}
-              />
-            </div>
+      {/* Avance físico reportado: se captura a mano, no es un cálculo automático */}
+      <section aria-labelledby="avance-titulo" className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+            <h2 id="avance-titulo" className="text-sm font-bold text-slate-800">Avance físico reportado</h2>
+            <span className="text-lg font-black text-[#031033]">{progress}%</span>
           </div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100} aria-labelledby="avance-titulo">
+            <div className="h-full rounded-full bg-[#144CC9]" style={{ width: `${progress}%` }} />
+          </div>
+          <p className="text-xs text-slate-500">
+            Captura manual.{' '}
+            {progressUpdatedAt
+              ? <>Actualizado por <strong className="font-semibold text-slate-700">{progressUpdatedBy || 'usuario sin nombre'}</strong> el {formatDateTime(progressUpdatedAt)}.</>
+              : 'Sin registro de quién lo actualizó.'}
+          </p>
         </div>
-
-        <div className="mt-4 md:mt-0 flex shrink-0">
-          <UpdateProgressModal projectId={project.id} currentProgress={project.physical_progress || 0} />
-        </div>
-      </div>
+        {canEditProgress && (
+          <div className="flex shrink-0">
+            <UpdateProgressModal projectId={project.id} currentProgress={progress} />
+          </div>
+        )}
+      </section>
 
       {/* Tabs Navigation */}
       <Tabs defaultValue="areas" className="w-full">
-        <TabsList className={`w-full flex md:grid ${(!isOperador) ? 'md:grid-cols-5' : 'md:grid-cols-4'} p-1.5 bg-[#A7EC80] rounded-3xl md:rounded-full mb-8 shadow-sm h-auto md:h-12 overflow-x-auto justify-start`}>
+        <TabsList className={`w-full flex md:grid ${(!isOperador) ? 'md:grid-cols-5' : 'md:grid-cols-4'} p-1.5 bg-slate-100 border border-slate-200 rounded-3xl md:rounded-full mb-8 h-auto md:h-12 overflow-x-auto justify-start`}>
           <TabsTrigger
             value="areas"
-            className="rounded-full font-semibold text-sm text-[#031033] hover:text-[#031033]/80 data-active:bg-white data-active:text-[#031033] data-active:shadow-md transition-all h-full"
+            className="rounded-full font-semibold text-sm text-slate-600 hover:text-[#031033] data-active:bg-white data-active:text-[#031033] data-active:shadow-md transition-all h-full"
           >
             Áreas ({areas?.length || 0})
           </TabsTrigger>
           <TabsTrigger
             value="materials"
-            className="rounded-full font-semibold text-sm text-[#031033] hover:text-[#031033]/80 data-active:bg-white data-active:text-[#031033] data-active:shadow-md transition-all h-full"
+            className="rounded-full font-semibold text-sm text-slate-600 hover:text-[#031033] data-active:bg-white data-active:text-[#031033] data-active:shadow-md transition-all h-full"
           >
             Materiales
           </TabsTrigger>
           <TabsTrigger
-            value="kanban"
-            className="rounded-full font-semibold text-sm text-[#031033] hover:text-[#031033]/80 data-active:bg-white data-active:text-[#031033] data-active:shadow-md transition-all h-full"
+            value="cronograma"
+            className="rounded-full font-semibold text-sm text-slate-600 hover:text-[#031033] data-active:bg-white data-active:text-[#031033] data-active:shadow-md transition-all h-full"
           >
-            Kanban
+            Cronograma
           </TabsTrigger>
           {!isOperador && (
             <TabsTrigger
               value="finances"
-              className="rounded-full font-semibold text-sm text-[#031033] hover:text-[#031033]/80 data-active:bg-white data-active:text-[#031033] data-active:shadow-md transition-all h-full"
+              className="rounded-full font-semibold text-sm text-slate-600 hover:text-[#031033] data-active:bg-white data-active:text-[#031033] data-active:shadow-md transition-all h-full"
             >
               {isAdmin ? 'Finanzas' : 'Gastos'}
             </TabsTrigger>
           )}
           <TabsTrigger
             value="solicitudes"
-            className="rounded-full font-semibold text-sm text-[#031033] hover:text-[#031033]/80 data-active:bg-white data-active:text-[#031033] data-active:shadow-md transition-all h-full"
+            className="rounded-full font-semibold text-sm text-slate-600 hover:text-[#031033] data-active:bg-white data-active:text-[#031033] data-active:shadow-md transition-all h-full"
           >
             Solicitudes
+            {pendingRequestsCount > 0 && (
+              <span className="ml-1.5 rounded-full bg-amber-500 px-1.5 text-[11px] font-bold text-white" aria-label={`${pendingRequestsCount} pendientes`}>
+                {pendingRequestsCount}
+              </span>
+            )}
           </TabsTrigger>
         </TabsList>
 
@@ -287,8 +332,8 @@ export default async function ProjectDetailsPage({ params }: { params: Promise<{
           <MaterialsTab projectId={project.id} />
         </TabsContent>
 
-        <TabsContent value="kanban">
-          <KanbanTab projectId={project.id} />
+        <TabsContent value="cronograma">
+          <CronogramaTab projectId={project.id} />
         </TabsContent>
 
         {!isOperador && (
@@ -299,7 +344,7 @@ export default async function ProjectDetailsPage({ params }: { params: Promise<{
 
         <TabsContent value="solicitudes" className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-slate-900">Solicitudes del Proyecto</h2>
+            <h2 className="text-xl font-semibold text-slate-900">Solicitudes de la obra</h2>
             <NewSpecialRequestModal defaultProjectId={project.id} />
           </div>
           <SpecialRequestsList requests={specialRequests} isAdmin={isAdmin} userRole={role} />

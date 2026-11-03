@@ -44,11 +44,11 @@ export function UpdateProgressModal({
       <DialogTrigger
         render={
           <Button 
-            variant="default" 
+            variant="outline" 
             size="sm" 
-            className="gap-1.5 text-xs font-semibold text-white bg-[#144CC9] hover:bg-blue-700 rounded-full shadow-sm transition-all h-9 px-4 shrink-0"
+            className="gap-1.5 text-xs font-semibold rounded-full h-9 px-4 shrink-0"
           >
-            Editar Avance
+            Actualizar avance
           </Button>
         }
       />
@@ -57,10 +57,10 @@ export function UpdateProgressModal({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl font-bold text-slate-900">
               <Activity className="h-5 w-5 text-blue-600" />
-              Actualizar Avance Físico
+              Actualizar avance físico reportado
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              Ajusta manualmente el porcentaje general de avance acumulado en la obra.
+              Captura manual del avance físico de la obra. Se guardará tu nombre y la fecha. No se calcula a partir de las actividades del cronograma.
             </DialogDescription>
           </DialogHeader>
 

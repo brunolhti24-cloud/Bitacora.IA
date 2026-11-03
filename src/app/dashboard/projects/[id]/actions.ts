@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { isDirectorRole } from '@/lib/roles'
 import { getProjectAccess, projectIdOf } from '@/lib/permissions'
+import { signatureStage } from '@/lib/signatures'
 
 export async function createDailyReport(projectId: string, prevState: any, formData: FormData) {
   const supabase = await createClient()
@@ -70,8 +71,10 @@ export async function createDailyReport(projectId: string, prevState: any, formD
   }
 
   // 3. Actualizar el avance físico del proyecto si se proporcionó uno válido
-  if (!isNaN(physical_progress) && physical_progress >= 0 && physical_progress <= 100) {
-    await supabase.from('projects').update({ physical_progress }).eq('id', projectId)
+  // Solo el director y el residente reportan el avance físico (igual que en el botón de la obra)
+  const canReportProgress = access.isDirector || access.role === 'residente'
+  if (canReportProgress && !isNaN(physical_progress) && physical_progress >= 0 && physical_progress <= 100) {
+    await saveReportedProgress(supabase, projectId, physical_progress, user.id)
   }
 
   revalidatePath(`/dashboard/projects/${projectId}`)
@@ -152,6 +155,17 @@ export async function createExpense(projectId: string, prevState: any, formData:
   return { error: null, success: true }
 }
 
+// Avance físico capturado a mano: se guarda quién lo reportó y cuándo.
+// Si aún no se aplica la migración del cronograma, se guarda solo el porcentaje.
+async function saveReportedProgress(supabase: Awaited<ReturnType<typeof createClient>>, projectId: string, physical_progress: number, userId: string) {
+  const { error } = await supabase
+    .from('projects')
+    .update({ physical_progress, progress_updated_by: userId, progress_updated_at: new Date().toISOString() })
+    .eq('id', projectId)
+  if (!error || !error.message.includes('progress_updated')) return error
+  return (await supabase.from('projects').update({ physical_progress }).eq('id', projectId)).error
+}
+
 export async function updateProjectProgress(projectId: string, prevState: any, formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -166,11 +180,7 @@ export async function updateProjectProgress(projectId: string, prevState: any, f
     return { error: 'El porcentaje de avance debe ser un número entre 0 y 100.' }
   }
 
-  const { error } = await supabase
-    .from('projects')
-    .update({ physical_progress })
-    .eq('id', projectId)
-
+  const error = await saveReportedProgress(supabase, projectId, physical_progress, user.id)
   if (error) return { error: error.message }
 
   revalidatePath(`/dashboard/projects/${projectId}`)
@@ -258,8 +268,14 @@ export async function signDailyReport(reportId: string, projectId: string, areaI
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
   const role = profile?.role || ''
   if (role !== 'admin' && role !== 'director') {
-    return { error: 'Solo el Director de Obra puede firmar y aprobar oficialmente las bitácoras.' }
+    return { error: 'Solo el Director de Obra puede dar el visto bueno a las bitácoras.' }
   }
+
+  // Orden de firmas: primero el responsable, después el visto bueno del director
+  const { data: current } = await supabase.from('daily_reports').select('status, signature_url').eq('id', reportId).maybeSingle()
+  const stage = signatureStage(current || {})
+  if (stage === 'completa') return { error: 'Esta bitácora ya tiene las firmas completas.' }
+  if (stage === 'responsable') return { error: 'Falta la firma del responsable antes del visto bueno del director.' }
 
   const { error } = await supabase
     .from('daily_reports')
