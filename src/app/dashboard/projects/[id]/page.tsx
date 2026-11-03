@@ -29,8 +29,18 @@ function getAreaImage(name: string) {
   return 'https://images.unsplash.com/photo-1504307651254-35680f356f58?q=80&w=600&auto=format&fit=crop'
 }
 
-export default async function ProjectDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+const TABS = ['areas', 'materials', 'cronograma', 'finances', 'solicitudes']
+
+export default async function ProjectDetailsPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ tab?: string }>
+}) {
   const resolvedParams = await params
+  // Pestaña inicial desde la URL (ej. ?tab=cronograma al venir de "Requiere atención")
+  const { tab } = await searchParams
   const supabase = await createClient()
 
   // Obtener detalles del proyecto
@@ -112,9 +122,9 @@ export default async function ProjectDetailsPage({ params }: { params: Promise<{
   ])
   const pendingRequestsCount = specialRequests.filter((r) => r.status === 'pendiente').length
   const attention = [
-    { label: 'Solicitudes pendientes', count: pendingRequestsCount, hint: 'Esperan respuesta del director', empty: 'Sin solicitudes por responder', icon: ClipboardList, tone: 'border-amber-300 bg-amber-50/60', iconTone: 'text-amber-600' },
-    { label: 'Actividades vencidas', count: overdueCount ?? 0, hint: 'Pasó su fecha de término', empty: 'Ninguna actividad vencida', icon: CalendarX2, tone: 'border-red-300 bg-red-50/60', iconTone: 'text-red-600' },
-    { label: 'Bitácoras por firmar', count: unsignedCount ?? 0, hint: 'Les falta alguna firma', empty: 'Todas con firmas completas', icon: FileSignature, tone: 'border-blue-300 bg-blue-50/60', iconTone: 'text-[#144CC9]' },
+    { label: 'Solicitudes pendientes', count: pendingRequestsCount, hint: 'Esperan respuesta del director', empty: 'Sin solicitudes por responder', icon: ClipboardList, tone: 'border-amber-300 bg-amber-50/60', iconTone: 'text-amber-600', href: '?tab=solicitudes' },
+    { label: 'Actividades vencidas', count: overdueCount ?? 0, hint: 'Pasó su fecha de término', empty: 'Ninguna actividad vencida', icon: CalendarX2, tone: 'border-red-300 bg-red-50/60', iconTone: 'text-red-600', href: '?tab=cronograma' },
+    { label: 'Bitácoras por firmar', count: unsignedCount ?? 0, hint: 'Les falta alguna firma', empty: 'Todas con firmas completas', icon: FileSignature, tone: 'border-blue-300 bg-blue-50/60', iconTone: 'text-[#144CC9]', href: `/dashboard/pendientes?tipo=firmas&obra=${resolvedParams.id}` },
   ]
 
   const totalReportsCount = areas?.reduce((acc, a) => acc + (a.daily_reports[0]?.count || 0), 0) || 0
@@ -163,17 +173,19 @@ export default async function ProjectDetailsPage({ params }: { params: Promise<{
         <h2 id="atencion-titulo" className="text-sm font-bold uppercase tracking-wider text-slate-500">Requiere atención</h2>
         <div className="grid gap-3 sm:grid-cols-3">
           {attention.map((item) => (
-            <div
+            <Link
               key={item.label}
-              className={`flex items-start gap-3 rounded-2xl border bg-white p-4 shadow-sm ${item.count > 0 ? item.tone : 'border-slate-200'}`}
+              href={item.href}
+              className={`group flex items-start gap-3 rounded-2xl border bg-white p-4 shadow-sm transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#144CC9] ${item.count > 0 ? item.tone : 'border-slate-200'}`}
             >
               <item.icon className={`mt-0.5 h-5 w-5 shrink-0 ${item.count > 0 ? item.iconTone : 'text-slate-400'}`} aria-hidden />
               <div className="min-w-0">
                 <p className={`text-2xl font-black leading-none ${item.count > 0 ? 'text-[#031033]' : 'text-slate-400'}`}>{item.count}</p>
                 <p className="mt-1 text-sm font-semibold text-slate-800">{item.label}</p>
                 <p className="text-xs text-slate-500">{item.count > 0 ? item.hint : item.empty}</p>
+                {item.count > 0 && <p className="mt-1 text-xs font-semibold text-[#144CC9] group-hover:underline">Ver cuáles</p>}
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </section>
@@ -203,7 +215,7 @@ export default async function ProjectDetailsPage({ params }: { params: Promise<{
       </section>
 
       {/* Tabs Navigation */}
-      <Tabs defaultValue="areas" className="w-full">
+      <Tabs key={tab || 'areas'} defaultValue={tab && TABS.includes(tab) && !(tab === 'finances' && isOperador) ? tab : 'areas'} className="w-full">
         <TabsList className={`w-full flex md:grid ${(!isOperador) ? 'md:grid-cols-5' : 'md:grid-cols-4'} p-1.5 bg-slate-100 border border-slate-200 rounded-3xl md:rounded-full mb-8 h-auto md:h-12 overflow-x-auto justify-start`}>
           <TabsTrigger
             value="areas"

@@ -1,7 +1,7 @@
 import Link from 'next/link'
-import { PlusCircle } from 'lucide-react'
+import { ChevronRight, PlusCircle } from 'lucide-react'
 
-export type SummaryMetric = { label: string; value: string; hint?: string; bar?: number; alert?: boolean; danger?: boolean }
+export type SummaryMetric = { label: string; value: string; hint?: string; bar?: number; alert?: boolean; danger?: boolean; href?: string }
 
 // Encabezado del dashboard de obras: título + indicadores que requieren atención
 export function DashboardSummary({ metrics, canCreate }: { metrics: SummaryMetric[]; canCreate: boolean }) {
@@ -30,26 +30,45 @@ export function DashboardSummary({ metrics, canCreate }: { metrics: SummaryMetri
         )}
       </div>
 
-      <dl className="relative z-10 grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6 sm:mt-8">
-        {metrics.map((m) => (
-          <div
-            key={m.label}
-            className={`rounded-2xl border p-3.5 sm:p-4 ${m.danger ? 'bg-red-50 border-red-200' : m.alert ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-200/70'}`}
-          >
-            <dt className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-500">{m.label}</dt>
-            <dd className={`text-2xl sm:text-3xl font-black mt-1 ${m.danger ? 'text-red-700' : m.alert ? 'text-amber-700' : 'text-slate-900'}`}>
-              {m.value}
-            </dd>
-            {m.bar !== undefined ? (
-              <div className="mt-2 h-1.5 w-full rounded-full bg-slate-200 overflow-hidden" aria-hidden>
-                <div className="h-full rounded-full bg-slate-500" style={{ width: `${m.bar}%` }} />
-              </div>
-            ) : (
-              <p className={`text-[11px] sm:text-xs mt-1 leading-snug ${m.danger ? 'text-red-800' : m.alert ? 'text-amber-800' : 'text-slate-500'}`}>{m.hint}</p>
-            )}
-          </div>
-        ))}
-      </dl>
+      <div className="relative z-10 grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6 sm:mt-8">
+        {metrics.map((m) => {
+          const tone = m.danger ? 'bg-red-50 border-red-200' : m.alert ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-200/70'
+          const body = (
+            <>
+              <p className="flex items-center justify-between gap-1 text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-500">
+                {m.label}
+                {m.href && <ChevronRight className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5" aria-hidden />}
+              </p>
+              <p className={`text-2xl sm:text-3xl font-black mt-1 ${m.danger ? 'text-red-700' : m.alert ? 'text-amber-700' : 'text-slate-900'}`}>
+                {m.value}
+              </p>
+              {m.bar !== undefined ? (
+                <div className="mt-2 h-1.5 w-full rounded-full bg-slate-200 overflow-hidden" aria-hidden>
+                  <div className="h-full rounded-full bg-slate-500" style={{ width: `${m.bar}%` }} />
+                </div>
+              ) : (
+                <p className={`text-[11px] sm:text-xs mt-1 leading-snug ${m.danger ? 'text-red-800' : m.alert ? 'text-amber-800' : 'text-slate-500'}`}>
+                  {m.hint}
+                  {m.href && <span className="mt-1 block font-semibold underline-offset-2 group-hover:underline">Ver detalle</span>}
+                </p>
+              )}
+            </>
+          )
+          return m.href ? (
+            <Link
+              key={m.label}
+              href={m.href}
+              className={`group rounded-2xl border p-3.5 sm:p-4 transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#144CC9] focus-visible:ring-offset-2 ${tone}`}
+            >
+              <div>{body}</div>
+            </Link>
+          ) : (
+            <div key={m.label} className={`rounded-2xl border p-3.5 sm:p-4 ${tone}`}>
+              {body}
+            </div>
+          )
+        })}
+      </div>
     </section>
   )
 }

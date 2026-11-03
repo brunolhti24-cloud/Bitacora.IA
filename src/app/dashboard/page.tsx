@@ -1,6 +1,7 @@
 import { todayInObra } from '@/lib/dates'
 import { createClient } from '@/lib/supabase/server'
 import { isDirectorRole } from '@/lib/roles'
+import { getVisibleProjectsQuery } from '@/lib/projects'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ProjectActions } from '@/components/project-actions'
 import { DashboardSummary } from '@/components/dashboard-summary'
@@ -30,26 +31,7 @@ export default async function DashboardPage() {
     redirect('/dashboard/mis-tareas')
   }
 
-  let projectsQuery = supabase.from('projects').select('*')
-
-  if (isAdmin) {
-    projectsQuery = projectsQuery.eq('created_by', user.id)
-  } else if (profile?.invited_by) {
-    projectsQuery = projectsQuery.eq('created_by', profile.invited_by)
-  } else {
-    const { data: mainAdmin } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('role', 'admin')
-      .limit(1)
-      .maybeSingle()
-
-    if (mainAdmin) {
-      projectsQuery = projectsQuery.eq('created_by', mainAdmin.id)
-    }
-  }
-
-  const { data: projects, error } = await projectsQuery.order('created_at', { ascending: false })
+  const { data: projects, error } = await getVisibleProjectsQuery(supabase, user.id, profile)
 
   const list = projects || []
   const totalProjects = list.length
@@ -71,9 +53,9 @@ export default async function DashboardPage() {
 
   // Primero lo que requiere atención; el avance queda como dato de contexto
   const metrics = [
-    { label: 'Solicitudes pendientes', value: `${pendingRequests ?? 0}`, hint: (pendingRequests ?? 0) > 0 ? 'Esperan respuesta del director' : 'Sin solicitudes por responder', alert: (pendingRequests ?? 0) > 0 },
-    { label: 'Actividades vencidas', value: `${overdueTasks ?? 0}`, hint: (overdueTasks ?? 0) > 0 ? 'Pasaron su fecha de término' : 'Ninguna actividad vencida', danger: (overdueTasks ?? 0) > 0 },
-    { label: 'Bitácoras por firmar', value: `${unsignedReports ?? 0}`, hint: (unsignedReports ?? 0) > 0 ? 'Les falta alguna firma' : 'Todas con firmas completas', alert: (unsignedReports ?? 0) > 0 },
+    { label: 'Solicitudes pendientes', value: `${pendingRequests ?? 0}`, hint: (pendingRequests ?? 0) > 0 ? 'Esperan respuesta del director' : 'Sin solicitudes por responder', alert: (pendingRequests ?? 0) > 0, href: '/dashboard/pendientes?tipo=solicitudes' },
+    { label: 'Actividades vencidas', value: `${overdueTasks ?? 0}`, hint: (overdueTasks ?? 0) > 0 ? 'Pasaron su fecha de término' : 'Ninguna actividad vencida', danger: (overdueTasks ?? 0) > 0, href: '/dashboard/pendientes?tipo=vencidas' },
+    { label: 'Bitácoras por firmar', value: `${unsignedReports ?? 0}`, hint: (unsignedReports ?? 0) > 0 ? 'Les falta alguna firma' : 'Todas con firmas completas', alert: (unsignedReports ?? 0) > 0, href: '/dashboard/pendientes?tipo=firmas' },
     { label: 'Obras en ejecución', value: `${inProgress}`, hint: `de ${totalProjects} · avance reportado promedio ${avgProgress}%` },
   ]
 
