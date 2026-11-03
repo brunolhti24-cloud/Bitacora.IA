@@ -2,6 +2,7 @@
 
 import { useState, useActionState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -33,7 +34,13 @@ function LoginFormContent() {
   const inviteFromUrl = searchParams.get('invite') || ''
   const roleFromUrl = searchParams.get('role') || ''
 
-  const [isLogin, setIsLogin] = useState(!inviteFromUrl)
+  // ?registro (desde la landing) abre directamente «Crear Cuenta».
+  const registroFromUrl = searchParams.has('registro')
+
+  const [isLogin, setIsLogin] = useState(!inviteFromUrl && !registroFromUrl)
+  // Sesión ya abierta en este navegador: se ofrece continuar o cerrarla.
+  const [sesion, setSesion] = useState<{ nombre: string; destino: string } | null>(null)
+  const [cerrando, setCerrando] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [inviteCode, setInviteCode] = useState(inviteFromUrl)
   const [signupError, setSignupError] = useState<string | null>(null)
@@ -47,6 +54,30 @@ function LoginFormContent() {
       setInviteCode(inviteFromUrl)
     }
   }, [inviteFromUrl])
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, role')
+        .eq('id', user.id)
+        .maybeSingle()
+      setSesion({
+        nombre: profile?.full_name || user.email || 'tu cuenta',
+        destino: profile?.role === 'subcontratista' ? '/dashboard/mis-tareas' : '/dashboard',
+      })
+    })
+  }, [])
+
+  const cerrarSesion = async () => {
+    setCerrando(true)
+    await createClient().auth.signOut()
+    setSesion(null)
+    setCerrando(false)
+    router.refresh()
+  }
 
   const isPending = isLoginPending || signupPending
   const currentError = isLogin ? loginState?.error : signupError
@@ -201,31 +232,31 @@ function LoginFormContent() {
         <div className="relative z-10 my-auto space-y-6 max-w-lg">
           <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1.5 text-xs font-semibold text-[#A7EC80] ring-1 ring-inset ring-white/20 backdrop-blur-md">
             <Sparkles className="h-3.5 w-3.5 text-[#A7EC80]" />
-            <span>Sistema Integral de Gestión de Construcción</span>
+            <span>Control inteligente de obra</span>
           </div>
           
           <h1 className="text-4xl font-extrabold tracking-tight text-white leading-tight lg:text-5xl">
-            Control total de tus obras en <span className="text-[#A7EC80]">tiempo real</span>.
+            Tu obra <span className="text-[#A7EC80]">bajo control</span>.
           </h1>
 
           <p className="text-base text-slate-300 leading-relaxed font-medium">
-            Administra proyectos, bitácoras de campo con firma digital, cronograma de actividades, finanzas y solicitudes especiales de materiales o maquinaria.
+            Consulta avances, registra lo que sucede en campo y da seguimiento a tareas, materiales, gastos y solicitudes desde un mismo lugar.
           </p>
 
           <div className="grid grid-cols-2 gap-4 pt-4">
             <div className="rounded-2xl bg-white/5 p-4 border border-white/10 backdrop-blur-md">
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 rounded-lg bg-[#144CC9]/20 text-[#144CC9]"><HardHat className="w-5 h-5" /></div>
-                <span className="text-2xl font-black text-white">100%</span>
+                <span className="text-2xl font-black text-white">Bitácoras</span>
               </div>
-              <p className="text-xs text-slate-300 font-medium">Digitalización de Bitácoras de Campo</p>
+              <p className="text-xs text-slate-300 font-medium">Registro diario de campo con evidencias</p>
             </div>
             <div className="rounded-2xl bg-white/5 p-4 border border-white/10 backdrop-blur-md">
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 rounded-lg bg-[#A7EC80]/20 text-[#A7EC80]"><FileSpreadsheet className="w-5 h-5" /></div>
                 <span className="text-2xl font-black text-white">PDFs</span>
               </div>
-              <p className="text-xs text-slate-300 font-medium">Expediente en PDF con firmas digitales</p>
+              <p className="text-xs text-slate-300 font-medium">Reportes PDF con evidencias y firmas registradas</p>
             </div>
           </div>
         </div>
@@ -246,6 +277,31 @@ function LoginFormContent() {
             <img src="/logo.png" alt="Bitacor.AI Logo" className="h-10 w-10 object-contain drop-shadow-sm" />
             <span className="text-2xl font-black text-[#031033]">Bitacor.AI</span>
           </div>
+
+          {sesion && (
+            <div className="p-4 rounded-xl bg-[#EAEBEF]/60 border border-slate-200 space-y-3">
+              <p className="text-sm font-medium text-slate-600">
+                Ya tienes una sesión abierta como <strong className="text-[#031033]">{sesion.nombre}</strong>.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Link
+                  href={sesion.destino}
+                  className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-full bg-[#031033] text-white text-sm font-bold hover:bg-[#144CC9] transition-colors"
+                >
+                  Continuar como {sesion.nombre.split(' ')[0]}
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+                <button
+                  type="button"
+                  onClick={cerrarSesion}
+                  disabled={cerrando}
+                  className="inline-flex items-center justify-center h-11 px-5 rounded-full border border-slate-300 bg-white text-sm font-bold text-[#031033] hover:border-[#031033] transition-colors disabled:opacity-60"
+                >
+                  {cerrando ? 'Cerrando sesión...' : 'Cerrar sesión y entrar con otra cuenta'}
+                </button>
+              </div>
+            </div>
+          )}
 
           {inviteFromUrl && (
             <div className="p-4 rounded-xl bg-gradient-to-r from-blue-900/40 to-indigo-900/40 border border-blue-500/30 text-xs text-blue-200 space-y-1">

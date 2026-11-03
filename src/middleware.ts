@@ -45,11 +45,8 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(url)
     }
 
-    if (user && request.nextUrl.pathname === '/login') {
-      const url = request.nextUrl.clone()
-      url.pathname = '/dashboard'
-      return NextResponse.redirect(url)
-    }
+    // /login siempre muestra la pantalla de acceso, aun con sesión abierta: ahí se
+    // ofrece continuar con esa sesión o cerrarla para entrar con otra cuenta.
 
     return supabaseResponse
   } catch (error) {
