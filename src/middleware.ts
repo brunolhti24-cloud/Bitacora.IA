@@ -35,6 +35,12 @@ export async function middleware(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser()
 
+    // Quien llega a bitacor.ai sin sesión ve la página de presentación (www).
+    const host = (request.headers.get('x-forwarded-host') || request.headers.get('host') || '').split(':')[0]
+    if (!user && request.nextUrl.pathname === '/' && host === 'bitacor.ai') {
+      return NextResponse.redirect('https://www.bitacor.ai/')
+    }
+
     if (
       !user &&
       !request.nextUrl.pathname.startsWith('/login') &&
