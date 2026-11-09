@@ -49,27 +49,25 @@ export async function login(prevState: any, formData: FormData) {
   }
 }
 
-// validateInviteCode: Valida el código de invitación y devuelve el rol y empresa
+// validateInviteCode: Valida el código de invitación y devuelve el rol y la empresa.
+// Con la migración de seguridad, las invitaciones solo se leen con lookup_invite.
 export async function validateInviteCode(code: string) {
   const supabase = await createClient()
+  const clean = code.trim().toUpperCase()
 
-  const { data: invite } = await supabase
-    .from('company_invites')
-    .select('*')
-    .eq('code', code.trim().toUpperCase())
-    .single()
+  const { data: rows, error } = await supabase.rpc('lookup_invite', { p_code: clean })
+  let invite = Array.isArray(rows) ? rows[0] : null
+  if (error) {
+    // Sin la migración todavía: lectura directa de la tabla
+    const { data } = await supabase.from('company_invites').select('role, company_name').eq('code', clean).maybeSingle()
+    invite = data
+  }
 
   if (!invite) {
     return { error: 'El código de invitación no es válido.' }
   }
 
-  return { 
-    role: invite.role, 
-    company_name: invite.company_name, 
-    invite_id: invite.id, 
-    used_count: invite.used_count,
-    created_by: invite.created_by 
-  }
+  return { role: invite.role as string, company_name: invite.company_name as string | undefined }
 }
 
 // incrementInviteUsage: Incrementa el contador de usos de un código
@@ -82,13 +80,20 @@ export async function completeSignup(fullName: string, inviteCode?: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No hay sesión activa.' }
 
+  const code = (inviteCode || '').trim().toUpperCase()
+
+  // La base decide el rol y el equipo (migración 20261109). Nadie puede cambiarlos desde el navegador.
+  const { data: rpcRole, error: rpcError } = await supabase.rpc('complete_signup', { p_full_name: fullName, p_code: code || null })
+  if (!rpcError) return { success: true, role: rpcRole as string }
+  if (!isMissingFunction(rpcError)) return { error: rpcError.message }
+
+  // Sin la migración todavía: misma lógica desde el servidor
   const { data: existing } = await supabase
     .from('profiles')
     .select('role, invited_by, company_name')
     .eq('id', user.id)
     .maybeSingle()
 
-  const code = (inviteCode || '').trim().toUpperCase()
   const payload: Record<string, unknown> = { id: user.id, full_name: fullName.trim() }
   let consumedInvite: { id: string; used_count: number | null } | null = null
 
@@ -124,6 +129,11 @@ export async function completeSignup(fullName: string, inviteCode?: string) {
   }
 
   return { success: true, role: (payload.role as string) || existing?.role || 'admin' }
+}
+
+// La función aún no existe en la base (falta aplicar la migración)
+function isMissingFunction(error: { code?: string; message?: string }) {
+  return error.code === 'PGRST202' || error.code === '42883' || /could not find the function/i.test(error.message || '')
 }
 
 export async function logout() {

@@ -568,9 +568,15 @@ export async function updateTeamMember(memberId: string, fullName: string, role:
     return { error: 'Ese usuario no pertenece a tu equipo.' }
   }
 
-  const client = createAdminClient() || supabase
-  const { error } = await client.from('profiles').update({ full_name: fullName.trim(), role }).eq('id', memberId)
-  if (error) return { error: error.message }
+  // La base solo acepta cambios de rol a través de update_team_member (migración 20261109)
+  const { error: rpcError } = await supabase.rpc('update_team_member', { p_member: memberId, p_full_name: fullName.trim(), p_role: role })
+  if (rpcError) {
+    const missing = rpcError.code === 'PGRST202' || rpcError.code === '42883' || /could not find the function/i.test(rpcError.message)
+    if (!missing) return { error: rpcError.message }
+    const client = createAdminClient() || supabase
+    const { error } = await client.from('profiles').update({ full_name: fullName.trim(), role }).eq('id', memberId)
+    if (error) return { error: error.message }
+  }
 
   revalidatePath('/dashboard/equipo')
   revalidatePath('/dashboard', 'layout')

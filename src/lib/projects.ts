@@ -1,8 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { isDirectorRole } from '@/lib/roles'
 
 /**
- * Obras que ve el usuario en el tablero: las suyas si es el director principal,
- * o las del director que lo invitó.
+ * Obras que ve el usuario en el tablero: las de su constructora (el director que
+ * lo invitó, o él mismo si es el director). Quien no pertenece a ningún equipo ve
+ * solo las obras a las que lo asignaron (las filtra la base con sus reglas).
+ * Antes se tomaba "el primer admin" de toda la base, que podía ser de otra empresa.
  */
 export async function getVisibleProjectsQuery(
   supabase: SupabaseClient,
@@ -11,14 +14,8 @@ export async function getVisibleProjectsQuery(
 ) {
   let query = supabase.from('projects').select('*')
 
-  if (profile?.role === 'admin') {
-    query = query.eq('created_by', userId)
-  } else if (profile?.invited_by) {
-    query = query.eq('created_by', profile.invited_by)
-  } else {
-    const { data: mainAdmin } = await supabase.from('profiles').select('id').eq('role', 'admin').limit(1).maybeSingle()
-    if (mainAdmin) query = query.eq('created_by', mainAdmin.id)
-  }
+  if (profile?.invited_by) query = query.eq('created_by', profile.invited_by)
+  else if (isDirectorRole(profile?.role)) query = query.eq('created_by', userId)
 
   return query.order('created_at', { ascending: false })
 }
