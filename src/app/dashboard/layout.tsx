@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { ChatWidget } from '@/components/chat-widget'
 import { NotificationBell } from '@/components/notification-bell'
 import { MobileNav } from '@/components/mobile-nav'
-import { FolderKanban, CheckSquare, Receipt, ClipboardList, Users, Building2, ShieldCheck, Sparkles, UserCheck, HelpCircle, BarChart, User } from 'lucide-react'
+import { Archive, FolderKanban, CheckSquare, Receipt, ClipboardList, Users, Building2, ShieldCheck, UserCheck, HelpCircle, BarChart, User } from 'lucide-react'
 
 export default async function DashboardLayout({
   children,
@@ -23,9 +23,22 @@ export default async function DashboardLayout({
   // Obtenemos el perfil del usuario para mostrar su nombre
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, role, company_name, company_logo_url')
+    .select('full_name, role, company_name, company_logo_url, invited_by')
     .eq('id', user.id)
     .maybeSingle()
+
+  // Empresa del usuario; el equipo hereda la del director que lo invitó
+  let companyName: string | null = profile?.company_name || null
+  let companyLogoUrl: string | null = profile?.company_logo_url || null
+  if (profile?.invited_by && (!companyName || !companyLogoUrl)) {
+    const { data: owner } = await supabase
+      .from('profiles')
+      .select('company_name, company_logo_url')
+      .eq('id', profile.invited_by)
+      .maybeSingle()
+    companyName = companyName || owner?.company_name || null
+    companyLogoUrl = companyLogoUrl || owner?.company_logo_url || null
+  }
 
   const role = profile?.role || 'admin'
   const isAdmin = role === 'admin' || role === 'director'
@@ -47,25 +60,27 @@ export default async function DashboardLayout({
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between bg-[#031033] px-3 sm:px-4 md:px-6 shadow-md transition-all gap-3">
         {/* Lado Izquierdo: Logo y Marca */}
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink-0">
-          <Link href="/dashboard" className="flex items-center gap-2 group">
-            {profile?.company_logo_url ? (
-              <img
-                src={profile.company_logo_url}
-                alt="Logo Empresa"
-                className="h-8 sm:h-9 w-auto max-w-[90px] sm:max-w-[150px] object-contain drop-shadow-xs rounded-md"
-              />
+          {/* Bitacor.AI siempre visible; al lado, la empresa del usuario */}
+          <Link href="/dashboard" className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <img src="/logo.png" alt="" className="h-7 w-7 sm:h-8 sm:w-8 object-contain" />
+            <span className="hidden min-[430px]:inline text-base sm:text-lg font-black tracking-tight text-white">Bitacor.AI</span>
+          </Link>
+
+          <Link
+            href="/dashboard/perfil"
+            title={companyName ? `${companyName}: cambiar logotipo o nombre` : 'Agrega el nombre y el logotipo de tu empresa'}
+            className="flex items-center gap-2 min-w-0 rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-white/90 transition-colors hover:bg-white/20"
+          >
+            {companyLogoUrl ? (
+              <img src={companyLogoUrl} alt={companyName || 'Logotipo de la empresa'} className="h-6 sm:h-7 w-auto max-w-[80px] sm:max-w-[130px] rounded object-contain bg-white" />
             ) : (
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <img src="/logo.png" alt="Bitacor.AI Logo" className="h-7 w-7 sm:h-8 sm:w-8 object-contain" />
-                <span className="text-base sm:text-lg font-black tracking-tight text-white">
-                  {profile?.company_name || 'Bitacor.AI'}
-                </span>
-              </div>
+              <Building2 className="h-3.5 w-3.5 shrink-0 text-[#A7EC80]" aria-hidden />
             )}
-            
-            <span className="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-white/10 text-white/90 border border-white/20 hidden sm:inline-flex items-center gap-1 shadow-2xs">
-              <Sparkles className="w-3 h-3 text-emerald-400" /> Bitacor.AI
-            </span>
+            {(!companyLogoUrl || companyName) && (
+              <span className={`truncate text-[10px] sm:text-[11px] font-extrabold uppercase tracking-widest max-w-[110px] sm:max-w-[200px] ${companyLogoUrl ? 'hidden lg:inline' : ''}`}>
+                {companyName || 'Tu empresa'}
+              </span>
+            )}
           </Link>
         </div>
 
@@ -150,26 +165,36 @@ export default async function DashboardLayout({
         {/* Sidebar */}
         <aside className="hidden w-64 flex-col justify-between bg-[#EAEBEF] p-4 md:flex">
           <nav className="space-y-1">
-            <div className="px-3 py-2 text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
+            <div className="pb-3 px-3 text-[11px] text-center font-bold uppercase tracking-widest text-[#031033]">
               Navegación Principal
             </div>
 
             {!isAdminis && (
               <Link
                 href="/dashboard"
-                className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-extrabold text-[#031033] hover:text-[#144CC9] hover:bg-black/5 transition-all duration-200 group"
+                className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-[#031033] hover:text-[#144CC9] hover:bg-black/5 transition-all duration-200 group"
               >
-                <FolderKanban className="w-4 h-4 text-[#144CC9] shrink-0 group-hover:scale-110 transition-transform" />
+                <FolderKanban className="w-5 h-5 text-[#144CC9] shrink-0 group-hover:scale-110 transition-transform" />
                 <span>Obras y Bitácoras</span>
+              </Link>
+            )}
+
+            {!isAdminis && !isSub && (
+              <Link
+                href="/dashboard/archivo"
+                className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-[#031033] hover:text-[#144CC9] hover:bg-black/5 transition-all duration-200 group"
+              >
+                <Archive className="w-5 h-5 text-[#144CC9] shrink-0 group-hover:scale-110 transition-transform" />
+                <span>Archivo</span>
               </Link>
             )}
 
             {(isSub || isOperador) && (
               <Link
                 href="/dashboard/mis-tareas"
-                className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-extrabold text-[#031033] hover:text-[#144CC9] hover:bg-black/5 transition-all duration-200 group"
+                className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-[#031033] hover:text-[#144CC9] hover:bg-black/5 transition-all duration-200 group"
               >
-                <CheckSquare className="w-4 h-4 text-[#144CC9] shrink-0 group-hover:scale-110 transition-transform" />
+                <CheckSquare className="w-5 h-5 text-[#144CC9] shrink-0 group-hover:scale-110 transition-transform" />
                 <span>Mis actividades</span>
               </Link>
             )}
@@ -177,9 +202,9 @@ export default async function DashboardLayout({
             {(isAdmin || isResidente) && (
               <Link
                 href="/dashboard/equipo"
-                className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-extrabold text-[#031033] hover:text-[#144CC9] hover:bg-black/5 transition-all duration-200 group"
+                className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-[#031033] hover:text-[#144CC9] hover:bg-black/5 transition-all duration-200 group"
               >
-                <Users className="w-4 h-4 text-[#144CC9] shrink-0 group-hover:scale-110 transition-transform" />
+                <Users className="w-5 h-5 text-[#144CC9] shrink-0 group-hover:scale-110 transition-transform" />
                 <span>Equipo de Trabajo</span>
               </Link>
             )}

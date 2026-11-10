@@ -9,9 +9,20 @@ import { SignBitacoraModal } from '@/components/sign-bitacora-modal'
 import { EditAreaModal } from '@/components/edit-area-modal'
 import { FileCheck2, AlertCircle, Clock } from 'lucide-react'
 import { signatureStage, SIGNATURE_LABELS } from '@/lib/signatures'
+import { cleanNotes } from '@/lib/text'
+import { areaColor } from '@/lib/area-colors'
+import { PROJECT_STATUS_LABELS, projectStatus } from '@/lib/permissions'
+import { ArchiveReportButton } from '@/components/archive-report-button'
 
-export default async function AreaDetailsPage({ params }: { params: Promise<{ id: string, areaId: string }> }) {
+export default async function AreaDetailsPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string, areaId: string }>
+  searchParams: Promise<{ ver?: string }>
+}) {
   const resolvedParams = await params
+  const showArchived = (await searchParams).ver === 'archivadas'
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -55,11 +66,19 @@ export default async function AreaDetailsPage({ params }: { params: Promise<{ id
   }
 
   // Obtener las bitácoras del área
-  const { data: reports } = await supabase
+  const { data: allReports } = await supabase
     .from('daily_reports')
     .select('*, creator:profiles!daily_reports_created_by_fkey(full_name), acceptor:profiles!daily_reports_accepted_by_fkey(full_name), signer:profiles!daily_reports_signed_by_fkey(full_name), report_photos(id, photo_url)')
     .eq('area_id', resolvedParams.areaId)
     .order('report_date', { ascending: false })
+
+  // Las bitácoras archivadas salen del historial y se consultan aparte (o en Archivo)
+  const archivedReports = (allReports || []).filter((r) => r.archived_at)
+  const activeReports = (allReports || []).filter((r) => !r.archived_at)
+  const reports = showArchived ? archivedReports : activeReports
+  const projectState = projectStatus(area.projects?.status)
+  const color = areaColor(area)
+  const areaUrl = `/dashboard/projects/${resolvedParams.id}/areas/${area.id}`
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -69,24 +88,44 @@ export default async function AreaDetailsPage({ params }: { params: Promise<{ id
             &larr; Volver a {area.projects?.name}
           </Link>
           <div className="flex items-center gap-3">
+            <span className="h-8 w-2 shrink-0 rounded-full" style={{ backgroundColor: color.hex }} aria-hidden />
             <h1 className="text-3xl font-bold tracking-tight text-gray-900">
               {area.name}
             </h1>
-            <EditAreaModal areaId={area.id} currentName={area.name} projectId={resolvedParams.id} />
+            {isAdmin && <EditAreaModal areaId={area.id} currentName={area.name} currentColor={area.color || null} projectId={resolvedParams.id} />}
           </div>
           <p className="text-gray-500 text-sm">Historial de Bitácoras del Área</p>
         </div>
-        <Link href={`/dashboard/projects/${resolvedParams.id}/areas/${area.id}/bitacoras/new`}>
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl">
-            + Nueva Bitácora
-          </Button>
-        </Link>
+        {projectState === 'activa' && (
+          <Link href={`${areaUrl}/bitacoras/new`}>
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl">
+              + Nueva Bitácora
+            </Button>
+          </Link>
+        )}
       </div>
+
+      {projectState !== 'activa' && (
+        <p role="status" className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+          <strong>{PROJECT_STATUS_LABELS[projectState]}.</strong> Solo consulta: para registrar bitácoras, el director debe reactivarla desde Archivo.
+        </p>
+      )}
+
+      {archivedReports.length > 0 && (
+        <nav aria-label="Bitácoras vigentes o archivadas" className="inline-flex rounded-lg bg-slate-100 p-1 text-sm font-semibold">
+          <Link href={areaUrl} aria-current={!showArchived ? 'page' : undefined} className={`rounded-md px-3 py-1.5 ${!showArchived ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}>
+            Vigentes ({activeReports.length})
+          </Link>
+          <Link href={`${areaUrl}?ver=archivadas`} aria-current={showArchived ? 'page' : undefined} className={`rounded-md px-3 py-1.5 ${showArchived ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}>
+            Archivadas ({archivedReports.length})
+          </Link>
+        </nav>
+      )}
 
       <div>
         {reports?.length === 0 ? (
           <Card className="p-8 text-center bg-gray-50 rounded-2xl border-dashed">
-            <CardDescription className="text-sm">No hay bitácoras registradas para esta área.</CardDescription>
+            <CardDescription className="text-sm">{showArchived ? 'No hay bitácoras archivadas en esta área.' : 'No hay bitácoras registradas para esta área.'}</CardDescription>
           </Card>
         ) : (
           <div className="space-y-4">
@@ -160,6 +199,8 @@ export default async function AreaDetailsPage({ params }: { params: Promise<{ id
                           />
                         )}
 
+                        {isAdmin && <ArchiveReportButton reportId={report.id} projectId={resolvedParams.id} archived={!!report.archived_at} />}
+
                         <ExportBitacoraPdfButton
                           report={{
                             id: report.id,
@@ -183,7 +224,7 @@ export default async function AreaDetailsPage({ params }: { params: Promise<{ id
                   <CardContent className="py-4 space-y-3">
                     <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 text-sm text-slate-800 whitespace-pre-line">
                       <strong className="block text-xs uppercase tracking-wider text-slate-500 mb-1">Avances y Actividades:</strong>
-                      {report.progress_notes}
+                      {cleanNotes(report.progress_notes)}
                     </div>
 
                     {/* Evidencia fotográfica */}

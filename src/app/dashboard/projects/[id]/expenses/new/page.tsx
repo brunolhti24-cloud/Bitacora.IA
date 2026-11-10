@@ -1,7 +1,8 @@
 'use client'
 
 import { todayInObra } from '@/lib/dates'
-import { useActionState, use } from 'react'
+import { useActionState, use, useState } from 'react'
+import { prepareUpload } from '@/lib/image'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,6 +21,14 @@ export default function NewExpensePage({ params }: { params: Promise<{ id: strin
   
   const createActionWithId = createExpense.bind(null, projectId)
   const [state, action, isPending] = useActionState(createActionWithId, initialState)
+  const [fileError, setFileError] = useState<string | null>(null)
+
+  // La foto del celular se reduce antes de enviarla: sin esto el formulario falla por tamaño
+  const handleReceiptChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFileError(null)
+    const { error } = await prepareUpload(e.target)
+    if (error) setFileError(error)
+  }
 
   return (
     <div className="mx-auto max-w-lg space-y-6 pb-20 md:pb-0">
@@ -99,9 +108,15 @@ export default function NewExpensePage({ params }: { params: Promise<{ id: strin
                 name="receipt"
                 type="file"
                 accept="image/*,.pdf"
+                onChange={handleReceiptChange}
                 className="w-full text-base file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
               />
+              {fileError && <p role="alert" className="text-sm font-medium text-red-600">{fileError}</p>}
             </div>
+
+            {state?.success && (
+              <p role="status" className="text-sm font-medium text-emerald-700">Gasto guardado.</p>
+            )}
 
             {state?.error && (
               <p className="text-sm font-medium text-red-500">{state.error}</p>

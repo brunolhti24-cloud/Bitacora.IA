@@ -118,6 +118,11 @@ export async function loadImage(url: string | null | undefined): Promise<LoadedI
 }
 
 // --- Maquetación --------------------------------------------------------------
+/** Logotipo de Bitacor.AI para el encabezado de los PDF. */
+const BRAND_LOGO = '/logo.png'
+/** Alto que ocupa el bloque de firmas con su título (para reservarlo junto a las fotos). */
+export const SIGNATURES_HEIGHT = 66
+
 export const PAGE = { left: 14, right: 196, width: 182, top: 44, bottom: 272 }
 const HEADER: [number, number, number] = [26, 26, 46] // azul marino original de los reportes
 const PLANO: [number, number, number] = [30, 41, 59]
@@ -138,8 +143,12 @@ export type PdfDoc = {
   paragraph: (text: string, opts?: { size?: number; color?: [number, number, number]; indent?: number }) => void
   /** Bloque de firmas; con título, ambos se mantienen en la misma página. */
   signatures: (sigs: SignatureSpec[], title?: string) => void
-  /** Fotos en cuadrícula de 2 columnas, conservando su proporción. */
-  photos: (images: LoadedImage[], title?: string) => void
+  /**
+   * Fotos en cuadrícula de 2 columnas, conservando su proporción. `keepWith` reserva
+   * esos mm debajo de la última fila (p. ej. las firmas): si cabe, la fila se reduce
+   * un poco en lugar de mandar lo que sigue a otra hoja.
+   */
+  photos: (images: LoadedImage[], title?: string, opts?: { keepWith?: number }) => void
   /** Dibuja pies de página en todas las páginas y guarda el archivo. */
   save: (filename: string, footerNote: string) => void
 }
@@ -162,40 +171,64 @@ export async function createPdf(opts: {
   const { jsPDF } = await import('jspdf')
   const doc = sanitizeDoc(new jsPDF())
   await embedFont(doc)
-  const logo = await loadImage(opts.logoUrl)
+  const [logo, brand] = await Promise.all([loadImage(opts.logoUrl), loadImage(BRAND_LOGO)])
   const pageHeight = doc.internal.pageSize.getHeight()
 
+  // Encabezado: Bitacor.AI a la izquierda y la empresa (logo y nombre) a la derecha
   const header = (first: boolean) => {
+    const h = first ? 32 : 18
     doc.setFillColor(...HEADER)
-    doc.rect(0, 0, 210, first ? 32 : 18, 'F')
-    doc.setTextColor(148, 163, 184)
+    doc.rect(0, 0, 210, h, 'F')
+
+    const mark = first ? 12 : 8
+    const markY = (h - mark) / 2
+    let textX = PAGE.left
+    if (brand) {
+      try {
+        doc.addImage(brand.base64, brand.format, PAGE.left, markY, mark, mark, 'bitacor-logo', 'FAST')
+        textX = PAGE.left + mark + 3
+      } catch {
+        // logo ilegible: queda solo el texto
+      }
+    }
+    doc.setTextColor(255, 255, 255)
     doc.setFont('helvetica', 'bold')
-    doc.setFontSize(8)
-    doc.text('BITACOR.AI', PAGE.left, 10)
+    doc.setFontSize(first ? 12 : 9)
+    doc.text('Bitacor.AI', textX, first ? h / 2 - 0.5 : h / 2 + 1)
     doc.setTextColor(203, 213, 225)
     doc.setFont('helvetica', 'normal')
-    doc.text(opts.docLabel, PAGE.left + 22, 10)
-    if (first && opts.companyName?.trim()) {
-      doc.setTextColor(255, 255, 255)
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(14)
-      // El nombre de la empresa no invade el área del logo
-      const maxW = logo ? 120 : PAGE.width
-      doc.text(doc.splitTextToSize(opts.companyName.trim(), maxW)[0], PAGE.left, 23)
-    }
+    doc.setFontSize(8)
+    if (first) doc.text(opts.docLabel, textX, h / 2 + 4.5)
+    else doc.text(opts.docLabel, textX + 20, h / 2 + 1)
+
+    // Empresa: logo pegado al margen derecho y nombre a su izquierda
+    const company = opts.companyName?.trim()
+    let rightEdge = PAGE.right
     if (first && logo) {
       try {
-        const ratio = Math.min(44 / logo.width, 20 / logo.height)
+        const ratio = Math.min(40 / logo.width, 18 / logo.height)
         const w = logo.width * ratio
-        const h = logo.height * ratio
+        const lh = logo.height * ratio
         const x = PAGE.right - w
-        const y = 6 + (20 - h) / 2
+        const y = (h - lh) / 2
         doc.setFillColor(255, 255, 255)
-        doc.roundedRect(x - 2, y - 1.5, w + 4, h + 3, 1.5, 1.5, 'F')
-        doc.addImage(logo.base64, logo.format, x, y, w, h, undefined, 'FAST')
+        doc.roundedRect(x - 2, y - 1.5, w + 4, lh + 3, 1.5, 1.5, 'F')
+        doc.addImage(logo.base64, logo.format, x, y, w, lh, 'company-logo', 'FAST')
+        rightEdge = x - 6
       } catch {
         // logo ilegible: se omite
       }
+    }
+    if (company) {
+      doc.setTextColor(255, 255, 255)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(first ? 12 : 8.5)
+      // El nombre no invade el bloque de Bitacor.AI
+      const maxW = rightEdge - (textX + 46)
+      const lines: string[] = doc.splitTextToSize(company, maxW).slice(0, first ? 2 : 1)
+      const lineH = first ? 5.2 : 4
+      const startY = h / 2 + 1.5 - ((lines.length - 1) * lineH) / 2
+      lines.forEach((line, i) => doc.text(line, rightEdge, startY + i * lineH, { align: 'right' }))
     }
   }
 
@@ -288,18 +321,29 @@ export async function createPdf(opts: {
       }
       api.y += 3
     },
-    photos(images, title) {
+    photos(images, title, o = {}) {
       const gap = 4
       const colW = (PAGE.width - gap) / 2
       const maxH = 68
+      const minH = 42
+      const labelH = 11
+      const lastRow = Math.max(0, Math.ceil(images.length / 2) - 1) * 2
+      // Alto de la última fila si se quiere dejar espacio debajo en esta misma hoja
+      const fitLast = (y: number) => {
+        if (!o.keepWith) return maxH
+        const room = PAGE.bottom - y - labelH - o.keepWith
+        return room >= minH ? Math.min(maxH, room) : maxH
+      }
       // El título se queda con la primera fila de fotos
       if (title) {
-        api.ensure(16 + maxH + 8)
+        const firstH = lastRow === 0 ? fitLast(api.y + 16) : maxH
+        api.ensure(16 + firstH + 8)
         api.section(title)
       }
       for (let i = 0; i < images.length; i += 2) {
+        const limit = i === lastRow ? fitLast(api.y) : maxH
         const row = images.slice(i, i + 2).map((img) => {
-          const ratio = Math.min(colW / img.width, maxH / img.height)
+          const ratio = Math.min(colW / img.width, limit / img.height)
           return { img, w: img.width * ratio, h: img.height * ratio }
         })
         const rowH = Math.max(...row.map((r) => r.h))
@@ -318,7 +362,7 @@ export async function createPdf(opts: {
           doc.setTextColor(...MUTED)
           doc.text(`Foto ${i + j + 1}`, PAGE.left + j * (colW + gap), api.y + rowH + 4)
         })
-        api.y += rowH + 11
+        api.y += rowH + labelH
       }
     },
     signatures(sigs, title) {

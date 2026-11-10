@@ -6,6 +6,7 @@ import { logout } from '@/app/login/actions'
 import { 
   Menu, 
   X, 
+  Archive,
   FolderKanban, 
   CheckSquare, 
   Users, 
@@ -96,7 +97,7 @@ export function MobileNav({
             </div>
 
             <nav className="space-y-1.5 flex-1">
-              <div className="px-3 py-2 text-[10px] font-extrabold uppercase tracking-widest text-slate-500">
+              <div className="pb-2 px-3 text-[11px] font-bold uppercase tracking-widest text-slate-500">
                 Navegación Principal
               </div>
 
@@ -108,6 +109,17 @@ export function MobileNav({
                 >
                   <FolderKanban className="w-5 h-5 text-[#144CC9]" />
                   <span>Obras y Bitácoras</span>
+                </Link>
+              )}
+
+              {!isAdminis && !isSub && (
+                <Link
+                  href="/dashboard/archivo"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-extrabold text-[#031033] hover:text-[#144CC9] hover:bg-black/5 transition-all"
+                >
+                  <Archive className="w-5 h-5 text-[#144CC9]" />
+                  <span>Archivo</span>
                 </Link>
               )}
 

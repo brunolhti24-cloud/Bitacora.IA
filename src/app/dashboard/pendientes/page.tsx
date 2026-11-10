@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { ArrowLeft, ArrowRight, CalendarX2, ClipboardList, FileSignature, MapPin, User } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getVisibleProjectsQuery } from '@/lib/projects'
+import { projectStatus } from '@/lib/permissions'
 import { formatDateOnly, todayInObra } from '@/lib/dates'
 import { signatureLabel } from '@/lib/signatures'
 import { roleLabel } from '@/lib/roles'
@@ -30,7 +31,8 @@ export default async function PendientesPage({ searchParams }: { searchParams: P
 
   const { data: profile } = await supabase.from('profiles').select('role, invited_by').eq('id', user.id).maybeSingle()
   const { data: projects } = await getVisibleProjectsQuery(supabase, user.id, profile)
-  const allProjects = (projects || []) as { id: string; name: string }[]
+  // Solo obras activas: las terminadas o archivadas no generan pendientes
+  const allProjects = ((projects || []) as { id: string; name: string; status?: string | null }[]).filter((p) => projectStatus(p.status) === 'activa')
   // Con ?obra= se limita a una obra (desde la página de la obra)
   const scoped = obra ? allProjects.filter((p) => p.id === obra) : allProjects
   const ids = scoped.map((p) => p.id)

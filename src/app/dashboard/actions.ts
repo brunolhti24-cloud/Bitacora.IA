@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { isDirectorRole } from '@/lib/roles'
-import { getProjectAccess, projectIdOf } from '@/lib/permissions'
+import { getProjectAccess, projectIdOf, closedProjectError, type ProjectStatus } from '@/lib/permissions'
 
 export async function createProject(prevState: any, formData: FormData) {
   const supabase = await createClient()
@@ -126,6 +126,36 @@ function createAdminClient() {
 // Roles que el director puede asignar a su equipo (nunca 'admin')
 const ASSIGNABLE_ROLES = ['director', 'residente', 'administracion', 'subcontratista', 'operador']
 
+/** Marca una obra como terminada o archivada, o la reactiva. No borra nada. */
+export async function setProjectStatus(projectId: string, status: ProjectStatus) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autorizado' }
+  if (!['activa', 'terminada', 'archivada'].includes(status)) return { error: 'Estado no válido.' }
+
+  const access = await getProjectAccess(supabase, projectId, ['director'])
+  if (!access.ok) return { error: access.error }
+
+  const closed = status !== 'activa'
+  const { data: updated, error } = await supabase
+    .from('projects')
+    .update({ status, closed_at: closed ? new Date().toISOString() : null, closed_by: closed ? user.id : null })
+    .eq('id', projectId)
+    .select('id')
+  if (error) {
+    if (error.message.includes('status') || error.message.includes('closed_')) {
+      return { error: 'Falta aplicar la migración del archivo (20261110_archivo_y_colores.sql).' }
+    }
+    return { error: error.message }
+  }
+  if (!updated?.length) return { error: 'No se pudo actualizar la obra.' }
+
+  revalidatePath('/dashboard')
+  revalidatePath('/dashboard/archivo')
+  revalidatePath('/dashboard/projects/' + projectId)
+  return { success: true }
+}
+
 export async function createTask(prevState: any, formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -134,6 +164,8 @@ export async function createTask(prevState: any, formData: FormData) {
   const project_id = formData.get('project_id') as string
   const access = await getProjectAccess(supabase, project_id, ['director', 'residente', 'subcontratista'])
   if (!access.ok) return { error: access.error }
+  const closed = closedProjectError(access)
+  if (closed) return { error: closed }
   const title = formData.get('title') as string
   const description = formData.get('description') as string
   const assigned_to = formData.get('assigned_to') as string || null
@@ -360,6 +392,8 @@ export async function createSpecialRequest(prevState: any, formData: FormData) {
   const project_id = formData.get('project_id') as string
   const access = await getProjectAccess(supabase, project_id)
   if (!access.ok) return { error: access.error }
+  const closed = closedProjectError(access)
+  if (closed) return { error: closed }
   const category = formData.get('category') as string
   const title = formData.get('title') as string
   const description = formData.get('description') as string

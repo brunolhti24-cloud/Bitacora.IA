@@ -3,25 +3,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { Camera, ImagePlus, Loader2, X, AlertCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { compressImage } from '@/lib/image'
 
 export const REPORT_PHOTOS_BUCKET = 'report_photos'
 const MAX_PHOTOS = 8
-const MAX_SIDE = 1600
 
 type Photo = { id: string; preview: string; url?: string; status: 'subiendo' | 'lista' | 'error'; error?: string }
-
-// Reduce la foto del celular (3-8 MB) a ~300 KB antes de subirla
-async function compress(file: File): Promise<Blob> {
-  const bitmap = await createImageBitmap(file).catch(() => null)
-  if (!bitmap) return file
-  const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height))
-  const canvas = document.createElement('canvas')
-  canvas.width = Math.round(bitmap.width * scale)
-  canvas.height = Math.round(bitmap.height * scale)
-  canvas.getContext('2d')?.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
-  bitmap.close()
-  return new Promise((resolve) => canvas.toBlob((b) => resolve(b || file), 'image/jpeg', 0.8))
-}
 
 /**
  * Fotos de evidencia de la bitácora. Se suben directo a Supabase Storage desde el
@@ -55,7 +42,7 @@ export function ReportPhotosInput({ projectId, onUploadingChange }: { projectId:
       selected.map(async (file, i) => {
         const { id } = queued[i]
         try {
-          const blob = await compress(file)
+          const blob = await compressImage(file)
           const path = `${projectId}/${id}.jpg`
           const { error } = await supabase.storage.from(REPORT_PHOTOS_BUCKET).upload(path, blob, { contentType: 'image/jpeg' })
           if (error) throw error

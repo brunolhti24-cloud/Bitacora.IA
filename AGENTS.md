@@ -26,7 +26,8 @@ Toda la interfaz y los textos van en español de México.
 - Las migraciones de `supabase/migrations/` deben ser idempotentes (se pueden
   correr dos veces). Ya aplicadas en BogoArc: `20261022_trazabilidad`,
   `20261026_fotos_bitacora`, `20261028_ingresos_y_archivos`, `20261103_cronograma_y_avance`.
-  Pendiente de aplicar: `20261109_seguridad_por_constructora` (reglas por constructora;
+  Pendientes de aplicar (confirmar con el dueño): `20261110_archivo_y_colores` (estado de obra,
+  bitácoras archivadas, color de áreas) y `20261109_seguridad_por_constructora` (reglas por constructora;
   el rol y el equipo solo cambian con las funciones `complete_signup` y `update_team_member`).
 - `supabase/setup.sql` es el esquema original; las migraciones lo amplían
   (por ejemplo, `incomes` usa `description`/`income_date`, no `concept`/`date`).
@@ -61,11 +62,19 @@ Toda la interfaz y los textos van en español de México.
 - Materiales: no se permite sacar más de lo que hay (formulario, server action y
   la función `record_material_movement` en la base).
 - No afirmes validez oficial o legal de reportes ni PDF.
+- Obras: `projects.status` activa, terminada o archivada (`projectStatus()` en
+  `src/lib/permissions.ts`). El tablero muestra las activas; las demás viven en
+  `/dashboard/archivo`. En una obra cerrada no se registran cambios (`closedProjectError`).
+- Archivos en formularios: las fotos se reducen en el navegador con `prepareUpload()`
+  de `src/lib/image.ts`; los server actions aceptan hasta 4 MB (`next.config.ts`).
+- La IA de redacción solo mejora el texto del usuario: no agrega datos ni repite
+  obra, fecha o responsable. Las notas se muestran con `cleanNotes()` (`src/lib/text.ts`).
 
 ## Diseño
 - El cliente prefirió el diseño original: azul `#144CC9`, marino `#031033`, fondos
   blancos; verde `#A7EC80` solo como acento. Prioriza visualmente lo pendiente
   (solicitudes, actividades vencidas, bitácoras por firmar).
 - PDF: `src/lib/pdf.ts` incrusta Plus Jakarta Sans (`public/fonts/`) y cae a
-  Helvetica si no carga.
+  Helvetica si no carga. El encabezado lleva el logo de Bitacor.AI y el de la empresa.
+- Áreas: tarjetas de color (`src/lib/area-colors.ts`), sin imágenes externas.
 - Revisa en móvil (390 px de ancho) que no haya scroll horizontal.

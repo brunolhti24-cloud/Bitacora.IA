@@ -2,12 +2,13 @@ import { todayInObra } from '@/lib/dates'
 import { createClient } from '@/lib/supabase/server'
 import { isDirectorRole } from '@/lib/roles'
 import { getVisibleProjectsQuery } from '@/lib/projects'
+import { projectStatus } from '@/lib/permissions'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ProjectActions } from '@/components/project-actions'
 import { DashboardSummary } from '@/components/dashboard-summary'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Building2, MapPin, ArrowRight, PlusCircle, Layers } from 'lucide-react'
+import { Archive, Building2, MapPin, ArrowRight, PlusCircle, Layers } from 'lucide-react'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -33,7 +34,10 @@ export default async function DashboardPage() {
 
   const { data: projects, error } = await getVisibleProjectsQuery(supabase, user.id, profile)
 
-  const list = projects || []
+  // El tablero muestra las obras activas; las terminadas y archivadas viven en Archivo
+  const allProjects = projects || []
+  const list = allProjects.filter((p) => projectStatus(p.status) === 'activa')
+  const closedCount = allProjects.length - list.length
   const totalProjects = list.length
   const inProgress = list.filter((p) => (p.physical_progress || 0) < 100).length
   const avgProgress = totalProjects > 0
@@ -63,11 +67,24 @@ export default async function DashboardPage() {
     <div className="space-y-8 max-w-7xl mx-auto pb-12">
       <DashboardSummary metrics={metrics} canCreate={canCreate} />
 
+      {closedCount > 0 && (
+        <Link
+          href="/dashboard/archivo"
+          className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
+        >
+          <span className="flex items-center gap-2">
+            <Archive className="h-4 w-4 text-slate-500" aria-hidden />
+            {closedCount} {closedCount === 1 ? 'obra terminada o archivada' : 'obras terminadas o archivadas'}
+          </span>
+          <span className="flex items-center gap-1 text-[#144CC9]">Ver archivo <ArrowRight className="h-4 w-4" aria-hidden /></span>
+        </Link>
+      )}
+
       {error ? (
         <div className="rounded-2xl bg-red-50 p-6 text-red-700 border border-red-200 font-medium">
           ⚠️ Error al cargar los proyectos: {error.message}
         </div>
-      ) : projects?.length === 0 ? (
+      ) : list.length === 0 ? (
         <Card className="flex flex-col items-center justify-center px-6 py-12 sm:p-16 text-center border-dashed border-2 border-slate-300 rounded-3xl bg-white/80 backdrop-blur-md shadow-xs">
           <CardHeader className="w-full max-w-2xl justify-items-center space-y-3">
             <div className="mx-auto w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 mb-2 border border-blue-200">
@@ -91,7 +108,7 @@ export default async function DashboardPage() {
         </Card>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {projects?.map((project) => (
+          {list.map((project) => (
             <Card
               key={project.id}
               className="group overflow-hidden rounded-3xl border border-slate-200/90 bg-white/90 backdrop-blur-md shadow-md hover:shadow-2xl hover:border-blue-500/60 transition-all duration-300 flex flex-col relative transform hover:-translate-y-1"

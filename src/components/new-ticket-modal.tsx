@@ -1,6 +1,7 @@
 'use client'
 
 import { todayInObra } from '@/lib/dates'
+import { fileToDataUrl, prepareUpload } from '@/lib/image'
 import { useState, useActionState, useEffect } from 'react'
 import { createExpense } from '@/app/dashboard/projects/[id]/actions'
 import { Button } from '@/components/ui/button'
@@ -64,13 +65,16 @@ export function NewTicketModal({
     }
   }, [state])
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setSelectedFile(file)
-      const url = URL.createObjectURL(file)
-      setImagePreview(url)
-    }
+  const [fileError, setFileError] = useState<string | null>(null)
+
+  // La foto del celular se reduce antes de enviarla: sin esto el formulario falla por tamaño
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFileError(null)
+    setScanMessage(null)
+    const { file, error } = await prepareUpload(e.target)
+    setSelectedFile(file)
+    setImagePreview(file && file.type.startsWith('image/') ? URL.createObjectURL(file) : null)
+    if (error) setFileError(error)
   }
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -85,41 +89,41 @@ export function NewTicketModal({
   // Función para escanear el ticket con GPT-4o Vision
   const handleScanTicketWithAI = async () => {
     if (!selectedFile) {
-      alert('Por favor selecciona primero una imagen del ticket.')
+      setFileError('Selecciona primero la foto del ticket.')
+      return
+    }
+
+    if (!selectedFile.type.startsWith('image/')) {
+      setFileError('La lectura con IA solo funciona con fotos. Para un PDF, captura los datos a mano.')
       return
     }
 
     setScanning(true)
     setScanMessage(null)
+    setFileError(null)
 
     try {
-      // Convertir archivo a base64
-      const reader = new FileReader()
-      reader.readAsDataURL(selectedFile)
-      reader.onload = async () => {
-        const base64String = reader.result as string
+      const res = await fetch('/api/ai/scan-ticket', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64: await fileToDataUrl(selectedFile) })
+      })
 
-        const res = await fetch('/api/ai/scan-ticket', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imageBase64: base64String })
-        })
-
-        const data = await res.json()
-        if (res.ok && data.ticketData) {
-          const { concept: aiConcept, amount: aiAmount, category: aiCategory, date: aiDate } = data.ticketData
-          if (aiConcept) setConcept(aiConcept)
-          if (aiAmount) setAmount(String(aiAmount))
-          if (aiCategory) setCategory(aiCategory)
-          if (aiDate) setExpenseDate(aiDate)
-          setScanMessage('✨ ¡Datos extraídos automáticamente del ticket!')
-        } else {
-          alert(data.error || 'No se pudo leer el ticket con IA.')
-        }
-        setScanning(false)
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data.ticketData) {
+        const { concept: aiConcept, amount: aiAmount, category: aiCategory, date: aiDate } = data.ticketData
+        if (aiConcept) setConcept(aiConcept)
+        if (aiAmount) setAmount(String(aiAmount))
+        if (aiCategory) setCategory(aiCategory)
+        // Solo se acepta una fecha válida y no futura
+        if (typeof aiDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(aiDate) && aiDate <= todayInObra()) setExpenseDate(aiDate)
+        setScanMessage('Datos leídos del ticket. Revísalos antes de guardar.')
+      } else {
+        setFileError(data.error || 'No se pudo leer el ticket con IA. Captura los datos a mano.')
       }
-    } catch (err: any) {
-      alert('Error de lectura con la IA')
+    } catch {
+      setFileError('No se pudo conectar con la IA. Captura los datos a mano.')
+    } finally {
       setScanning(false)
     }
   }
@@ -151,6 +155,12 @@ export function NewTicketModal({
           {state?.error && (
             <div className="mt-2 rounded-xl bg-red-50 p-3 text-xs font-medium text-red-600 border border-red-200">
               {state.error}
+            </div>
+          )}
+
+          {fileError && (
+            <div role="alert" className="mt-2 rounded-xl bg-red-50 p-3 text-xs font-medium text-red-600 border border-red-200">
+              {fileError}
             </div>
           )}
 
@@ -187,7 +197,7 @@ export function NewTicketModal({
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <Label htmlFor="receipt" className="text-xs font-semibold uppercase tracking-wider text-slate-700">
-                  Foto del Comprobante / Ticket *
+                  Foto del Comprobante / Ticket
                 </Label>
                 
                 {selectedFile && (
@@ -233,7 +243,7 @@ export function NewTicketModal({
                     onChange={handleImageChange}
                     className="text-xs cursor-pointer file:mr-2 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100"
                   />
-                  <p className="text-[11px] text-slate-500">Selecciona la foto y presiona 'Escanear con IA'.</p>
+                  <p className="text-[11px] text-slate-500">Opcional. Con una foto puedes presionar “Escanear con IA” para llenar los datos.</p>
                 </div>
               </div>
             </div>

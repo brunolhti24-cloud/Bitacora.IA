@@ -1,6 +1,6 @@
 'use client'
 
-import { embedFont, sanitizeDoc } from '@/lib/pdf'
+import { embedFont, loadImage, sanitizeDoc } from '@/lib/pdf'
 import { formatMoney } from '@/lib/finance'
 
 import { formatDateOnly, formatDateTime } from '@/lib/dates'
@@ -154,16 +154,26 @@ export function ExportExpensesButton({ expenses, title = 'Control General de Gas
       doc.setFillColor(26, 26, 46) // Dark Navy
       doc.rect(0, 0, 210, 36, 'F')
       
-      // Nosotros en chico a la izquierda
-      doc.setTextColor(148, 163, 184)
-      doc.setFontSize(8)
+      // Bitacor.AI a la izquierda, con su logotipo
+      let brandX = 14
+      const brand = await loadImage('/logo.png')
+      if (brand) {
+        try {
+          doc.addImage(brand.base64, brand.format, 14, 5.5, 10, 10, 'bitacor-logo', 'FAST')
+          brandX = 27
+        } catch {
+          // logo ilegible: queda solo el texto
+        }
+      }
+      doc.setTextColor(255, 255, 255)
+      doc.setFontSize(10)
       doc.setFont('helvetica', 'bold')
-      doc.text('BITACOR.AI', 14, 11)
+      doc.text('Bitacor.AI', brandX, 10.5)
 
       doc.setFontSize(7)
       doc.setFont('helvetica', 'normal')
       doc.setTextColor(203, 213, 225)
-      doc.text('Reporte de finanzas y control de gastos', 14, 16)
+      doc.text('Reporte de finanzas y control de gastos', brandX, 14.5)
 
       // Nombre de la empresa en grande
       const companyDisplayName = companyName || projectName || 'CONTROL FINANCIERO'

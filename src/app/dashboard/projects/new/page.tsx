@@ -1,5 +1,6 @@
 'use client'
 
+import { prepareUpload } from '@/lib/image'
 import { useActionState, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -28,12 +29,14 @@ export default function NewProjectPage() {
   const [state, action, isPending] = useActionState(createProject, initialState)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      const url = URL.createObjectURL(file)
-      setImagePreview(url)
-    }
+  const [fileError, setFileError] = useState<string | null>(null)
+
+  // La imagen se reduce en el navegador antes de enviarla (las fotos de celular pesan varios MB)
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFileError(null)
+    const { file, error } = await prepareUpload(e.target, { maxSide: 1600 })
+    if (file) setImagePreview(URL.createObjectURL(file))
+    if (error) setFileError(error)
   }
 
   const [displayBudget, setDisplayBudget] = useState('')
@@ -203,11 +206,13 @@ export default function NewProjectPage() {
                     type="file"
                     accept="image/*"
                     onChange={handleImageChange}
+                    aria-describedby={fileError ? 'file-error' : undefined}
                     className="text-xs cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                   />
                   <p className="text-xs text-slate-500">
                     Formatos JPG, PNG o WebP. Recomendado una foto de la fachada o terreno.
                   </p>
+                  {fileError && <p role="alert" id="file-error" className="text-xs font-medium text-red-600">{fileError}</p>}
                 </div>
               </div>
             </div>

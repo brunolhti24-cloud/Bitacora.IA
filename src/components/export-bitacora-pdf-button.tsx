@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Download } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatDateOnly, formatDateTime } from '@/lib/dates'
-import { createPdf, loadImage, roleLabel, slug } from '@/lib/pdf'
+import { createPdf, loadImage, roleLabel, slug, SIGNATURES_HEIGHT } from '@/lib/pdf'
+import { cleanNotes } from '@/lib/text'
 import { signatureLabel } from '@/lib/signatures'
 
 interface BitacoraReport {
@@ -79,7 +80,7 @@ export function ExportBitacoraPdfButton({ report }: { report: BitacoraReport }) 
       ])
 
       pdf.section('Avances y actividades')
-      pdf.paragraph(r.progress_notes || 'Sin detalles registrados.')
+      pdf.paragraph(cleanNotes(r.progress_notes) || 'Sin detalles registrados.')
 
       if (rep?.special_request) {
         pdf.section('Solicitud para el director')
@@ -94,7 +95,8 @@ export function ExportBitacoraPdfButton({ report }: { report: BitacoraReport }) 
         const images = (await Promise.all(photoRows.map((ph) => loadImage(ph.photo_url)))).filter(
           (img): img is NonNullable<typeof img> => !!img
         )
-        if (images.length > 0) pdf.photos(images, `Evidencia fotográfica (${photoRows.length})`)
+        // Se reserva el espacio de las firmas: con una fila de fotos quedan en la misma hoja
+        if (images.length > 0) pdf.photos(images, `Evidencia fotográfica (${photoRows.length})`, { keepWith: SIGNATURES_HEIGHT })
         else pdf.section(`Evidencia fotográfica (${photoRows.length})`)
         if (images.length < photoRows.length) {
           pdf.paragraph(`${photoRows.length - images.length} foto(s) no se pudieron incluir; se pueden ver en la plataforma.`, { size: 8, color: [90, 100, 120] })
@@ -112,8 +114,9 @@ export function ExportBitacoraPdfButton({ report }: { report: BitacoraReport }) 
         },
         {
           label: 'Vo. Bo. director de obra',
-          name: signer?.full_name,
-          role: roleLabel(signer?.role) || 'Director de obra',
+          // Sin firma todavía no se conoce quién dará el visto bueno
+          name: status === 'firmada' ? signer?.full_name : null,
+          role: 'Director de obra',
           image: directorSig,
           signedAt: status === 'firmada' ? rep?.signed_at || null : null,
           required: true,

@@ -1,6 +1,7 @@
 import { openai } from '@ai-sdk/openai'
 import { generateText } from 'ai'
 import { createClient } from '@/lib/supabase/server'
+import { cleanNotes } from '@/lib/text'
 
 export const maxDuration = 30
 
@@ -20,18 +21,22 @@ export async function POST(req: Request) {
 
     const { text } = await generateText({
       model: openai('gpt-4o-mini'),
-      system: `Eres un Ingeniero Residente y Perito de Obra experto en redacción de bitácoras de construcción. 
-Tu tarea es tomar las notas rápidas, borrador o viñetas del usuario y transformarlas en un reporte de bitácora diario técnico, formal, bien estructurado y en español.
+      system: `Eres corrector de estilo de bitácoras de obra en México. Tu única tarea es MEJORAR LA REDACCIÓN de las notas que escribe el usuario.
 
-Instrucciones de formato:
-1. Divide el reporte en secciones claras (ej. ACTIVIDADES REALIZADAS, MATERIALES E INSUMOS, OBSERVACIONES DE CAMPO).
-2. Mantén un lenguaje técnico pero claro y profesional.
-3. Corrige ortografía y gramática.
-4. NO agregues texto introductorio ni explicaciones fuera del reporte. Devuelve ÚNICAMENTE el texto formateado final del reporte.`,
-      prompt: `Proyecto: ${projectName || 'Obra'}\nÁrea: ${areaName || 'General'}\n\nNotas borrador del residente:\n"${draftNotes}"`
+Reglas:
+1. Conserva exactamente la información del usuario: no agregues actividades, materiales, medidas, observaciones, verificaciones ni conclusiones que no estén en sus notas.
+2. No repitas datos que ya aparecen en el encabezado de la bitácora: obra, área, fecha, folio, responsable, cargo o firma.
+3. No uses plantillas ni marcadores como [Fecha], [Nombre], "a definir". No escribas títulos como "BITÁCORA DIARIA".
+4. Texto plano: sin Markdown (sin **, #, ---). Si hay varias actividades, una por renglón empezando con "- ". Si es una sola idea, una o dos oraciones.
+5. Corrige ortografía, gramática y puntuación; usa lenguaje técnico claro y profesional, en pasado.
+6. Mantén una extensión parecida a la original: no la alargues.
+7. Devuelve únicamente el texto mejorado, sin introducciones ni comentarios.`,
+      // El nombre de la obra y del área solo dan contexto para elegir términos; no se repiten en el texto
+      prompt: `Contexto (no lo repitas): obra "${projectName || 'sin nombre'}", área "${areaName || 'general'}".\n\nNotas del usuario:\n${draftNotes}`,
+      temperature: 0.2,
     })
 
-    return new Response(JSON.stringify({ enhancedNotes: text }), {
+    return new Response(JSON.stringify({ enhancedNotes: cleanNotes(text) }), {
       headers: { 'Content-Type': 'application/json' }
     })
   } catch (error: any) {

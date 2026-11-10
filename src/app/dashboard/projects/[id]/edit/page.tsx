@@ -1,5 +1,6 @@
 'use client'
 
+import { prepareUpload } from '@/lib/image'
 import { useActionState, use, useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -58,12 +59,14 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
     setDisplayBudget(parts.join('.'))
   }
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      const url = URL.createObjectURL(file)
-      setImagePreview(url)
-    }
+  const [fileError, setFileError] = useState<string | null>(null)
+
+  // La imagen se reduce en el navegador antes de enviarla (las fotos de celular pesan varios MB)
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFileError(null)
+    const { file, error } = await prepareUpload(e.target, { maxSide: 1600 })
+    if (file) setImagePreview(URL.createObjectURL(file))
+    if (error) setFileError(error)
   }
 
   return (
@@ -230,6 +233,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
                     <p className="text-xs text-slate-500">
                       Sube una nueva imagen para reemplazar la portada actual.
                     </p>
+                    {fileError && <p role="alert" id="file-error" className="text-xs font-medium text-red-600">{fileError}</p>}
                   </div>
                 </div>
               </div>

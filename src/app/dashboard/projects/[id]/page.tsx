@@ -14,20 +14,8 @@ import { ExportProjectPdfButton } from '@/components/export-project-pdf-button'
 import { DeleteAreaButton } from '@/components/delete-area-button'
 import { Folder, ArrowRight, MapPin, ArrowLeft, ClipboardList, CalendarX2, FileSignature } from 'lucide-react'
 import { formatDateTime, todayInObra } from '@/lib/dates'
-
-function getAreaImage(name: string) {
-  const lower = name.toLowerCase()
-  if (lower.includes('baño') || lower.includes('bano')) return 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=600&auto=format&fit=crop'
-  if (lower.includes('recámara') || lower.includes('recamara') || lower.includes('habitación') || lower.includes('cuarto')) return 'https://images.unsplash.com/photo-1540518614846-7eded433c457?q=80&w=600&auto=format&fit=crop'
-  if (lower.includes('cocina')) return 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?q=80&w=600&auto=format&fit=crop'
-  if (lower.includes('sala') || lower.includes('estancia')) return 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=600&auto=format&fit=crop'
-  if (lower.includes('comedor')) return 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?q=80&w=600&auto=format&fit=crop'
-  if (lower.includes('cochera') || lower.includes('estacionamiento') || lower.includes('garage')) return 'https://images.unsplash.com/photo-1605810757271-9f939eec4d54?q=80&w=600&auto=format&fit=crop'
-  if (lower.includes('jardín') || lower.includes('jardin') || lower.includes('patio') || lower.includes('terraza')) return 'https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?q=80&w=600&auto=format&fit=crop'
-  if (lower.includes('cimentación') || lower.includes('losa') || lower.includes('estructura')) return 'https://images.unsplash.com/photo-1541888087625-f814d1f2e153?q=80&w=600&auto=format&fit=crop'
-  if (lower.includes('fachada') || lower.includes('muro')) return 'https://images.unsplash.com/photo-1513694203232-719a280e022f?q=80&w=600&auto=format&fit=crop'
-  return 'https://images.unsplash.com/photo-1504307651254-35680f356f58?q=80&w=600&auto=format&fit=crop'
-}
+import { areaColor } from '@/lib/area-colors'
+import { PROJECT_STATUS_LABELS, projectStatus } from '@/lib/permissions'
 
 const TABS = ['areas', 'materials', 'cronograma', 'finances', 'solicitudes']
 
@@ -127,6 +115,7 @@ export default async function ProjectDetailsPage({
     { label: 'Bitácoras por firmar', count: unsignedCount ?? 0, hint: 'Les falta alguna firma', empty: 'Todas con firmas completas', icon: FileSignature, tone: 'border-blue-300 bg-blue-50/60', iconTone: 'text-[#144CC9]', href: `/dashboard/pendientes?tipo=firmas&obra=${resolvedParams.id}` },
   ]
 
+  const projectState = projectStatus(project.status)
   const totalReportsCount = areas?.reduce((acc, a) => acc + (a.daily_reports[0]?.count || 0), 0) || 0
 
   return (
@@ -143,8 +132,8 @@ export default async function ProjectDetailsPage({
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-[2rem] border-2 border-slate-200 shadow-sm">
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="px-3 py-1 rounded-full bg-white text-slate-700 font-bold text-[11px] border border-slate-400 shadow-sm">
-                Obra Activa
+              <span className={`px-3 py-1 rounded-full font-bold text-[11px] border shadow-sm ${projectState === 'activa' ? 'bg-white text-slate-700 border-slate-400' : projectState === 'terminada' ? 'bg-emerald-50 text-emerald-800 border-emerald-300' : 'bg-slate-100 text-slate-700 border-slate-400'}`}>
+                {PROJECT_STATUS_LABELS[projectState]}
               </span>
               <span className="px-3 py-1 rounded-full bg-white text-slate-700 font-bold text-[11px] border border-slate-400 shadow-sm">
                 {areas?.length || 0} Áreas Registradas
@@ -167,6 +156,13 @@ export default async function ProjectDetailsPage({
           </div>
         </div>
       </div>
+
+      {projectState !== 'activa' && (
+        <div role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+          <p><strong>{PROJECT_STATUS_LABELS[projectState]}.</strong> Solo consulta: no se registran bitácoras, gastos ni movimientos hasta reactivarla.</p>
+          <Link href="/dashboard/archivo" className="font-semibold text-[#144CC9] hover:underline">Ir a Archivo</Link>
+        </div>
+      )}
 
       {/* Lo que requiere atención: solicitudes, actividades vencidas y bitácoras por firmar */}
       <section aria-labelledby="atencion-titulo" className="space-y-3">
@@ -278,25 +274,16 @@ export default async function ProjectDetailsPage({
                   key={area.id}
                   className="h-full border border-slate-200 rounded-[1.5rem] bg-white shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group overflow-hidden"
                 >
-                  {/* Imagen Header */}
-                  <div className="relative h-36 w-full overflow-hidden bg-slate-100 shrink-0">
-                    <img 
-                      src={getAreaImage(area.name)} 
-                      alt={area.name} 
-                      className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" 
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-                    
+                  {/* Encabezado de color: el elegido para el área, o uno fijo según su nombre */}
+                  <div className="relative h-28 w-full shrink-0" style={{ backgroundColor: areaColor(area).hex }}>
                     {/* Botones Flotantes (Badges y Delete) sobre la imagen */}
                     <div className="absolute top-3 right-3 flex items-center gap-2">
                       {count > 0 ? (
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white border border-white/40 flex items-center gap-1.5 shadow-sm">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#A7EC80]"></span>
                           {count} {count === 1 ? 'bitácora' : 'bitácoras'}
                         </span>
                       ) : (
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/40 backdrop-blur-sm text-white border border-white/20 flex items-center gap-1.5 shadow-sm">
-                          <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
                           0 bitácoras
                         </span>
                       )}
@@ -307,18 +294,20 @@ export default async function ProjectDetailsPage({
                       <h3 className="font-extrabold text-xl text-white drop-shadow-md">
                         {area.name}
                       </h3>
-                      <p className="text-xs text-slate-200 font-medium mt-0.5">Frente de Trabajo</p>
+                      <p className="text-xs text-white/85 font-medium mt-0.5">Frente de trabajo</p>
                     </div>
                   </div>
                   
                   {/* Body del Card */}
                   <div className="p-4 pt-5 flex items-center justify-between gap-2 mt-auto">
-                    <Link
-                      href={`/dashboard/projects/${project.id}/areas/${area.id}/bitacoras/new`}
-                      className="px-3 py-1.5 rounded-full bg-[#144CC9] hover:bg-blue-600 text-white font-bold text-[11px] transition-colors flex items-center gap-1 shadow-sm"
-                    >
-                      + Bitácora
-                    </Link>
+                    {projectState === 'activa' ? (
+                      <Link
+                        href={`/dashboard/projects/${project.id}/areas/${area.id}/bitacoras/new`}
+                        className="px-3 py-1.5 rounded-full bg-[#144CC9] hover:bg-blue-600 text-white font-bold text-[11px] transition-colors flex items-center gap-1 shadow-sm"
+                      >
+                        + Bitácora
+                      </Link>
+                    ) : <span />}
 
                     <Link
                       href={`/dashboard/projects/${project.id}/areas/${area.id}`}
@@ -333,7 +322,7 @@ export default async function ProjectDetailsPage({
             })}
           </div>
 
-          {isAdmin && (
+          {isAdmin && projectState === 'activa' && (
             <Card className="p-6 bg-white/70 backdrop-blur-md border-2 border-dashed border-slate-300 rounded-3xl hover:border-blue-400 transition-colors">
               <NewAreaForm projectId={project.id} />
             </Card>

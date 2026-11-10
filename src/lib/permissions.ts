@@ -5,7 +5,7 @@ import { isDirectorRole } from '@/lib/roles'
 // cada acción vuelve a comprobar quién la llama y sobre qué obra actúa.
 
 export type ProjectAccess =
-  | { ok: true; userId: string; role: string; isDirector: boolean; projectId: string }
+  | { ok: true; userId: string; role: string; isDirector: boolean; projectId: string; status: ProjectStatus }
   | { ok: false; error: string }
 
 /**
@@ -25,10 +25,14 @@ export async function getProjectAccess(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { ok: false, error: 'No autorizado' }
 
-  const [{ data: profile }, { data: project }] = await Promise.all([
+  const [{ data: profile }, withStatus] = await Promise.all([
     supabase.from('profiles').select('role, invited_by').eq('id', user.id).maybeSingle(),
-    supabase.from('projects').select('id, created_by').eq('id', projectId).maybeSingle(),
+    supabase.from('projects').select('id, created_by, status').eq('id', projectId).maybeSingle(),
   ])
+  // Sin la migración del archivo no existe `status`: la obra se considera activa
+  const project: { id: string; created_by: string | null; status?: string | null } | null = withStatus.error
+    ? (await supabase.from('projects').select('id, created_by').eq('id', projectId).maybeSingle()).data
+    : withStatus.data
   if (!project) return { ok: false, error: 'Obra no encontrada.' }
 
   const role = profile?.role || ''
@@ -49,7 +53,25 @@ export async function getProjectAccess(
     return { ok: false, error: 'Tu rol no puede realizar esta acción.' }
   }
 
-  return { ok: true, userId: user.id, role, isDirector, projectId }
+  return { ok: true, userId: user.id, role, isDirector, projectId, status: projectStatus(project.status) }
+}
+
+export type ProjectStatus = 'activa' | 'terminada' | 'archivada'
+
+export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
+  activa: 'Obra activa',
+  terminada: 'Obra terminada',
+  archivada: 'Obra archivada',
+}
+
+export function projectStatus(value: string | null | undefined): ProjectStatus {
+  return value === 'terminada' || value === 'archivada' ? value : 'activa'
+}
+
+/** Mensaje de error si la obra está cerrada (no se registran cambios en obras terminadas o archivadas). */
+export function closedProjectError(access: { status: ProjectStatus }): string | null {
+  if (access.status === 'activa') return null
+  return `La obra está ${access.status}. Reactívala desde Archivo para registrar cambios.`
 }
 
 /** Obra a la que pertenece un registro (bitácora, material, área, tarea, solicitud). */

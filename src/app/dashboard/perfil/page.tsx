@@ -1,5 +1,6 @@
 'use client'
 
+import { prepareUpload } from '@/lib/image'
 import { useActionState, useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -60,12 +61,14 @@ export default function PerfilPage() {
     }
   }, [state])
 
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      const url = URL.createObjectURL(file)
-      setLogoPreview(url)
-    }
+  const [fileError, setFileError] = useState<string | null>(null)
+
+  // La imagen se reduce en el navegador antes de enviarla (las fotos de celular pesan varios MB)
+  const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFileError(null)
+    const { file, error } = await prepareUpload(e.target, { maxSide: 800, png: true })
+    if (file) setLogoPreview(URL.createObjectURL(file))
+    if (error) setFileError(error)
   }
 
   const roleLabel =
@@ -242,6 +245,7 @@ export default function PerfilPage() {
                       <p className="text-xs text-slate-500 font-medium">
                         Formato recomendado: PNG transparente o JPG cuadrado.
                       </p>
+                      {fileError && <p role="alert" id="file-error" className="text-xs font-medium text-red-600">{fileError}</p>}
                     </div>
                   </div>
                 </div>

@@ -11,6 +11,7 @@ import { addDays, formatDateOnly, formatDateTime, startOfMonth, todayInObra } fr
 import { summarizeFinance, formatMoney } from '@/lib/finance'
 import { createPdf, roleLabel, slug } from '@/lib/pdf'
 import { signatureLabel } from '@/lib/signatures'
+import { cleanNotes } from '@/lib/text'
 import { isDirectorRole } from '@/lib/roles'
 
 interface ProjectPdfProps {
@@ -175,15 +176,10 @@ export function ExportProjectPdfButton({ project }: ProjectPdfProps) {
             `Elaboró: ${[creator?.full_name, roleLabel(creator?.role)].filter(Boolean).join(', ') || 'Sin registro'}${(r.version || 1) > 1 ? `  ·  Versión ${r.version}` : ''}\n${signLine}`,
             { size: 8, color: [90, 100, 120] }
           )
-          pdf.paragraph(r.progress_notes || 'Sin observaciones.', { size: 9.5 })
+          pdf.paragraph(cleanNotes(r.progress_notes) || 'Sin observaciones.', { size: 9.5 })
           pdf.y += 2
         }
       }
-
-      pdf.signatures([
-        { label: 'Elaboró el expediente', name: me?.full_name, role: roleLabel(me?.role), required: true },
-        { label: 'Vo. Bo. director de obra', name: director?.full_name, role: 'Director de obra', required: true },
-      ], 'Firmas del expediente')
 
       pdf.save(
         `Expediente_${slug(p.name)}_${dFrom ? `${dFrom}_a_${dTo}` : `hasta_${dTo}`}.pdf`,
