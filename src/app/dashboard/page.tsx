@@ -68,13 +68,13 @@ export default async function DashboardPage() {
           ⚠️ Error al cargar los proyectos: {error.message}
         </div>
       ) : projects?.length === 0 ? (
-        <Card className="flex flex-col items-center justify-center p-16 text-center border-dashed border-2 border-slate-300 rounded-3xl bg-white/80 backdrop-blur-md shadow-xs">
-          <CardHeader className="space-y-3">
+        <Card className="flex flex-col items-center justify-center px-6 py-12 sm:p-16 text-center border-dashed border-2 border-slate-300 rounded-3xl bg-white/80 backdrop-blur-md shadow-xs">
+          <CardHeader className="w-full max-w-2xl justify-items-center space-y-3">
             <div className="mx-auto w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 mb-2 border border-blue-200">
               <Building2 className="w-8 h-8" />
             </div>
             <CardTitle className="text-2xl font-bold text-slate-900">No tienes obras activas</CardTitle>
-            <CardDescription className="max-w-md text-slate-500 text-sm">
+            <CardDescription className="max-w-xl text-slate-500 text-sm sm:text-base">
               {isAdmin
                 ? 'Comienza creando tu primera obra para gestionar áreas, bitácoras y contabilidad en un solo lugar.'
                 : 'Aún no se te ha asignado ninguna obra. Por favor contacta al administrador o director de tu constructora.'}
