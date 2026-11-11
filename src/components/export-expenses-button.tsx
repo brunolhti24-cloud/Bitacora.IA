@@ -1,6 +1,6 @@
 'use client'
 
-import { embedFont, loadImage, sanitizeDoc } from '@/lib/pdf'
+import { BRAND_LOGO, drawPdfHeader, embedFont, loadImage, sanitizeDoc } from '@/lib/pdf'
 import { formatMoney } from '@/lib/finance'
 
 import { formatDateOnly, formatDateTime } from '@/lib/dates'
@@ -126,13 +126,7 @@ export function ExportExpensesButton({ expenses, title = 'Control General de Gas
       const checkPageBreak = (neededHeight: number) => {
         if (currentY + neededHeight > pageHeight - 30) {
           doc.addPage()
-          doc.setFillColor(248, 250, 252)
-          doc.rect(14, 15, 182, 8, 'F')
-          doc.setTextColor(100, 116, 139)
-          doc.setFontSize(8)
-          doc.setFont('helvetica', 'bold')
-          doc.text(`Bitacor.AI - Reporte de Gastos (continuación)`, 18, 20)
-          currentY = 30
+          currentY = drawPdfHeader(doc, { first: false, docLabel, companyName, logo: logoData, brand }) + 8
           drawTableHeader()
         }
       }
@@ -150,64 +144,19 @@ export function ExportExpensesButton({ expenses, title = 'Control General de Gas
         currentY += 8
       }
 
-      // 1. Header Branding
-      doc.setFillColor(26, 26, 46) // Dark Navy
-      doc.rect(0, 0, 210, 36, 'F')
-      
-      // Bitacor.AI a la izquierda, con su logotipo
-      let brandX = 14
-      const brand = await loadImage('/logo.png')
-      if (brand) {
-        try {
-          doc.addImage(brand.base64, brand.format, 14, 5.5, 10, 10, 'bitacor-logo', 'FAST')
-          brandX = 27
-        } catch {
-          // logo ilegible: queda solo el texto
-        }
-      }
-      doc.setTextColor(255, 255, 255)
-      doc.setFontSize(10)
-      doc.setFont('helvetica', 'bold')
-      doc.text('Bitacor.AI', brandX, 10.5)
-
-      doc.setFontSize(7)
-      doc.setFont('helvetica', 'normal')
-      doc.setTextColor(203, 213, 225)
-      doc.text('Reporte de finanzas y control de gastos', brandX, 14.5)
-
-      // Nombre de la empresa en grande
-      const companyDisplayName = companyName || projectName || 'CONTROL FINANCIERO'
-      doc.setTextColor(255, 255, 255)
-      doc.setFontSize(15)
-      doc.setFont('helvetica', 'bold')
-      doc.text(companyDisplayName, 14, 26)
-
-      // Logo de la empresa en el header
-      if (logoData) {
-        try {
-          const maxWidth = 48
-          const maxHeight = 24
-          const ratio = Math.min(maxWidth / logoData.width, maxHeight / logoData.height)
-          const renderW = logoData.width * ratio
-          const renderH = logoData.height * ratio
-          const renderX = 196 - renderW
-          const renderY = 6 + (maxHeight - renderH) / 2
-
-          doc.setFillColor(255, 255, 255)
-          doc.roundedRect(renderX - 2.5, renderY - 1.5, renderW + 5, renderH + 3, 2, 2, 'F')
-          doc.addImage(logoData.base64, logoData.format, renderX, renderY, renderW, renderH, undefined, 'FAST')
-        } catch (imgErr) {
-          console.warn('Error dibujando logo:', imgErr)
-        }
-      }
+      // 1. Encabezado igual al de bitácoras y expediente: empresa sobre blanco y franja de bitacor.ai
+      const brand = await loadImage(BRAND_LOGO)
+      const docLabel = 'Reporte de gastos'
+      const headerH = drawPdfHeader(doc, { first: true, docLabel, companyName, logo: logoData, brand })
 
       // 2. Título y fecha de emisión en renglones separados (antes se encimaban)
       doc.setTextColor(3, 16, 51)
       doc.setFontSize(15)
       doc.setFont('helvetica', 'bold')
       const titleLines: string[] = doc.splitTextToSize(title, 182)
-      doc.text(titleLines, 14, 45)
-      let y = 45 + (titleLines.length - 1) * 6.5 + 6
+      const titleY = headerH + 11
+      doc.text(titleLines, 14, titleY)
+      let y = titleY + (titleLines.length - 1) * 6.5 + 6
 
       doc.setFontSize(9)
       doc.setFont('helvetica', 'normal')
@@ -278,7 +227,7 @@ export function ExportExpensesButton({ expenses, title = 'Control General de Gas
       // Footer
       doc.setFontSize(8)
       doc.setTextColor(148, 163, 184)
-      doc.text(`Generado el ${formatDateTime(new Date())} con Bitacor.AI`, 14, pageHeight - 10)
+      doc.text(`Generado el ${formatDateTime(new Date())} con bitacor.ai`, 14, pageHeight - 10)
 
       doc.save(`Reporte_Gastos_${projectName ? projectName.replace(/\s+/g, '_') : 'General'}_${new Date().toISOString().slice(0, 10)}.pdf`)
     } catch (err) {

@@ -168,7 +168,7 @@ export function ChatWidget({ isAdmin }: { isAdmin: boolean }) {
         <CardHeader className="p-4 border-b bg-gray-900 text-white rounded-t-xl flex flex-row justify-between items-center space-y-0">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
             <MessageSquare className="h-4 w-4" />
-            Asistente Bitacor.AI
+            Asistente bitacor.ai
           </CardTitle>
           <Button variant="ghost" size="sm" onClick={() => setIsOpen(false)} aria-label="Cerrar asistente" className="text-gray-300 hover:text-white hover:bg-gray-800 h-8 w-8 p-0">
             <X className="h-4 w-4" />

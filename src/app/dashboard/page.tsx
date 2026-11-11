@@ -124,7 +124,7 @@ export default async function DashboardPage() {
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-slate-400">
                       <Building2 className="w-12 h-12 opacity-40 mb-2 text-blue-400" />
-                      <span className="text-xs font-extrabold uppercase tracking-widest text-blue-300">OBRA Bitacor.AI</span>
+                      <span className="text-xs font-extrabold uppercase tracking-widest text-blue-300">Sin imagen de obra</span>
                     </div>
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent opacity-90 group-hover:opacity-95 transition-opacity" />
@@ -155,17 +155,15 @@ export default async function DashboardPage() {
                   </div>
                 </div>
 
-                <div className="flex justify-between items-center pt-4 border-t border-slate-100">
-                  <div>
-                    {isAdmin && <ProjectActions projectId={project.id} />}
-                  </div>
+                <div className="space-y-3 pt-4 border-t border-slate-100">
                   <Link
                     href={`/dashboard/projects/${project.id}`}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white font-extrabold text-xs transition-all shadow-2xs group/btn"
+                    className="flex w-full items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white font-extrabold text-sm transition-colors group/btn"
                   >
-                    <span>Entrar a la Obra</span>
-                    <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover/btn:translate-x-1" />
+                    <span>Entrar a la obra</span>
+                    <ArrowRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-1" aria-hidden />
                   </Link>
+                  {canCreate && <ProjectActions projectId={project.id} />}
                 </div>
               </CardContent>
             </Card>

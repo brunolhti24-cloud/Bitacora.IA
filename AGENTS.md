@@ -4,7 +4,7 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
-# Bitacor.AI — contexto del proyecto
+# bitacor.ai — contexto del proyecto
 
 App de control de obra para constructoras en México: obras, bitácoras diarias con
 fotos y firmas, cronograma, materiales, finanzas, solicitudes y expediente en PDF.
@@ -63,18 +63,21 @@ Toda la interfaz y los textos van en español de México.
   la función `record_material_movement` en la base).
 - No afirmes validez oficial o legal de reportes ni PDF.
 - Obras: `projects.status` activa, terminada o archivada (`projectStatus()` en
-  `src/lib/permissions.ts`). El tablero muestra las activas; las demás viven en
-  `/dashboard/archivo`. En una obra cerrada no se registran cambios (`closedProjectError`).
+  `src/lib/permissions.ts`). El tablero muestra las activas ("En proceso"); las demás viven en
+  `/dashboard/archivo?estado=terminada|archivada`. Al terminar una obra se muestra un logro. En una obra cerrada no se registran cambios (`closedProjectError`).
 - Archivos en formularios: las fotos se reducen en el navegador con `prepareUpload()`
   de `src/lib/image.ts`; los server actions aceptan hasta 4 MB (`next.config.ts`).
 - La IA de redacción solo mejora el texto del usuario: no agrega datos ni repite
   obra, fecha o responsable. Las notas se muestran con `cleanNotes()` (`src/lib/text.ts`).
 
 ## Diseño
+- La marca se escribe **bitacor.ai**, toda en minúsculas, también al inicio de una frase
+  (cuidado con clases `uppercase`). El ícono de pestaña sale de `public/logo.png`.
 - El cliente prefirió el diseño original: azul `#144CC9`, marino `#031033`, fondos
   blancos; verde `#A7EC80` solo como acento. Prioriza visualmente lo pendiente
   (solicitudes, actividades vencidas, bitácoras por firmar).
 - PDF: `src/lib/pdf.ts` incrusta Plus Jakarta Sans (`public/fonts/`) y cae a
-  Helvetica si no carga. El encabezado lleva el logo de Bitacor.AI y el de la empresa.
+  Helvetica si no carga. Encabezado (`drawPdfHeader`): arriba, sobre blanco, el logotipo
+  y nombre de la empresa; debajo, la franja azul con bitacor.ai en blanco.
 - Áreas: tarjetas de color (`src/lib/area-colors.ts`), sin imágenes externas.
 - Revisa en móvil (390 px de ancho) que no haya scroll horizontal.

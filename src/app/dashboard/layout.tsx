@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button'
 import { ChatWidget } from '@/components/chat-widget'
 import { NotificationBell } from '@/components/notification-bell'
 import { MobileNav } from '@/components/mobile-nav'
-import { Archive, FolderKanban, CheckSquare, Receipt, ClipboardList, Users, Building2, ShieldCheck, UserCheck, HelpCircle, BarChart, User } from 'lucide-react'
+import { ObrasSubnav } from '@/components/obras-subnav'
+import { FolderKanban, CheckSquare, Receipt, ClipboardList, Users, Building2, ShieldCheck, UserCheck, HelpCircle, BarChart, User } from 'lucide-react'
 
 export default async function DashboardLayout({
   children,
@@ -60,10 +61,10 @@ export default async function DashboardLayout({
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between bg-[#031033] px-3 sm:px-4 md:px-6 shadow-md transition-all gap-3">
         {/* Lado Izquierdo: Logo y Marca */}
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink-0">
-          {/* Bitacor.AI siempre visible; al lado, la empresa del usuario */}
+          {/* bitacor.ai siempre visible; al lado, la empresa del usuario */}
           <Link href="/dashboard" className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <img src="/logo.png" alt="" className="h-7 w-7 sm:h-8 sm:w-8 object-contain" />
-            <span className="hidden min-[430px]:inline text-base sm:text-lg font-black tracking-tight text-white">Bitacor.AI</span>
+            <span className="hidden min-[430px]:inline text-base sm:text-lg font-black tracking-tight text-white">bitacor.ai</span>
           </Link>
 
           <Link
@@ -179,15 +180,7 @@ export default async function DashboardLayout({
               </Link>
             )}
 
-            {!isAdminis && !isSub && (
-              <Link
-                href="/dashboard/archivo"
-                className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-[#031033] hover:text-[#144CC9] hover:bg-black/5 transition-all duration-200 group"
-              >
-                <Archive className="w-5 h-5 text-[#144CC9] shrink-0 group-hover:scale-110 transition-transform" />
-                <span>Archivo</span>
-              </Link>
-            )}
+            {!isAdminis && !isSub && <ObrasSubnav />}
 
             {(isSub || isOperador) && (
               <Link
@@ -235,7 +228,7 @@ export default async function DashboardLayout({
               <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-[#144CC9]/20 rounded-full blur-xl group-hover:bg-[#144CC9]/35 transition-all" />
               <div className="relative flex items-center gap-2.5">
                 <img src="/logo.png" alt="" className="h-9 w-9 object-contain shrink-0" />
-                <span className="text-base font-black tracking-tight text-white">Bitacor.AI</span>
+                <span className="text-base font-black tracking-tight text-white">bitacor.ai</span>
               </div>
               <p className="relative text-xs font-bold text-[#A7EC80] mt-3">Control inteligente de obra</p>
               <p className="relative text-[11px] text-slate-300 mt-0.5 font-medium">Tu obra bajo control.</p>

@@ -14,7 +14,7 @@ const normalize = (text: string) =>
   text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
 
 const HELP = `SOPORTE Y MANUAL DE USUARIO:
-También actúas como agente de soporte sobre cómo usar Bitacor.AI. Si el usuario pregunta cómo realizar una tarea, explícale los pasos:
+También actúas como agente de soporte sobre cómo usar bitacor.ai. Si el usuario pregunta cómo realizar una tarea, explícale los pasos:
 1. Obras y Frentes: se configuran en el listado del panel y se dividen en áreas/frentes de trabajo.
 2. Bitácoras: se llenan dentro del área/frente; requieren fecha, notas (con voz e IA), fotos del área y firma digital.
 3. Materiales: pestaña 'Materiales' de la obra. Entradas, salidas (con destino, quién recibe y motivo) e historial.
@@ -74,7 +74,7 @@ export async function POST(req: Request) {
     const result = streamText({
       model: openai('gpt-4o-mini'),
       messages: modelMessages,
-      system: `Eres el asistente de Bitacor.AI, plataforma de control de obra.
+      system: `Eres el asistente de bitacor.ai, plataforma de control de obra.
 Usa SIEMPRE las herramientas antes de responder sobre datos de obras; nunca inventes datos.
 Cada herramienta devuelve ok: true o ok: false.
 - Si ok es false, explica el problema con sus palabras y NO digas que la acción se realizó. No reintentes la misma herramienta.

@@ -78,7 +78,7 @@ export default function NewProjectPage() {
                 Nuevo Proyecto de Obra
               </CardTitle>
               <CardDescription className="text-sm text-slate-500 mt-1">
-                Registra los datos generales para crear una nueva obra en el sistema Bitacor.AI.
+                Registra los datos generales para crear una nueva obra en el sistema bitacor.ai.
               </CardDescription>
             </div>
           </div>

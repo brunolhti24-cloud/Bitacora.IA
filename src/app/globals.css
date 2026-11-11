@@ -140,3 +140,42 @@
     @apply font-sans;
   }
 }
+/* Logro al terminar una obra (src/components/finished-celebration.tsx).
+   Ocurre pocas veces: aquí sí cabe un momento de celebración. Solo transform y opacity. */
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@keyframes logro-sello {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes logro-confeti {
+  from { opacity: 1; transform: translate(0, 0) rotate(0deg); }
+  to { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--giro)); }
+}
+
+@keyframes logro-aparece {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.logro-sello {
+  animation: logro-sello 260ms var(--ease-out) 120ms both;
+}
+
+.logro-confeti {
+  animation: logro-confeti 1100ms var(--ease-out) both;
+}
+
+.logro-texto {
+  animation: logro-sello 240ms var(--ease-out) both;
+}
+
+/* Movimiento reducido: sin confeti ni escala; solo aparece */
+@media (prefers-reduced-motion: reduce) {
+  .logro-confeti { display: none; }
+  .logro-sello,
+  .logro-texto { animation: logro-aparece 200ms ease both; }
+}

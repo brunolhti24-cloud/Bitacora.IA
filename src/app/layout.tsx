@@ -14,7 +14,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Bitacor.AI - Control de Obra y Bitácoras 2.0",
+  title: "bitacor.ai - Control de Obra y Bitácoras 2.0",
   description: "Plataforma tecnológica de gestión de proyectos de construcción y bitácoras inteligentes",
 };
 

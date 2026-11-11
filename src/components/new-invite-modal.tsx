@@ -35,7 +35,7 @@ export function NewInviteModal() {
   const copyToClipboard = () => {
     if (generatedLink) {
       navigator.clipboard.writeText(
-        `Hola, aquí tienes el enlace para unirte a nuestro equipo de trabajo en Bitacor.AI:\n${generatedLink}\nCódigo: ${generatedCode}`
+        `Hola, aquí tienes el enlace para unirte a nuestro equipo de trabajo en bitacor.ai:\n${generatedLink}\nCódigo: ${generatedCode}`
       )
       setCopied(true)
       setTimeout(() => setCopied(false), 3000)

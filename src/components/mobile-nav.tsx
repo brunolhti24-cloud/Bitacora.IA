@@ -1,12 +1,12 @@
 'use client'
 
+import { ObrasSubnav } from '@/components/obras-subnav'
 import { useState } from 'react'
 import Link from 'next/link'
 import { logout } from '@/app/login/actions'
 import { 
   Menu, 
   X, 
-  Archive,
   FolderKanban, 
   CheckSquare, 
   Users, 
@@ -64,8 +64,8 @@ export function MobileNav({
           <div className="relative w-4/5 max-w-sm bg-[#EAEBEF] h-full shadow-2xl flex flex-col p-4 z-[110] animate-in slide-in-from-left duration-200 overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-full bg-blue-900 text-white inline-flex items-center gap-1 shadow-2xs">
-                  <Sparkles className="w-3 h-3 text-emerald-400" /> Bitacor.AI
+                <span className="text-[10px] font-extrabold tracking-wide px-2.5 py-1 rounded-full bg-blue-900 text-white inline-flex items-center gap-1 shadow-2xs">
+                  <Sparkles className="w-3 h-3 text-emerald-400" /> bitacor.ai
                 </span>
               </div>
               <button 
@@ -112,16 +112,7 @@ export function MobileNav({
                 </Link>
               )}
 
-              {!isAdminis && !isSub && (
-                <Link
-                  href="/dashboard/archivo"
-                  onClick={() => setIsOpen(false)}
-                  className="flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-extrabold text-[#031033] hover:text-[#144CC9] hover:bg-black/5 transition-all"
-                >
-                  <Archive className="w-5 h-5 text-[#144CC9]" />
-                  <span>Archivo</span>
-                </Link>
-              )}
+              {!isAdminis && !isSub && <ObrasSubnav onNavigate={() => setIsOpen(false)} />}
 
               {(isSub || isOperador) && (
                 <Link

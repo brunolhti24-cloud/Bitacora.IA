@@ -18,7 +18,7 @@ export default function ManualPage() {
       icon: BookOpen,
       color: 'text-blue-600 bg-blue-50 border-blue-100',
       gradient: 'from-blue-600 to-indigo-600',
-      description: 'Introducción a la plataforma Bitacor.AI 2.0 y sus flujos principales.'
+      description: 'Introducción a la plataforma bitacor.ai 2.0 y sus flujos principales.'
     },
     {
       id: 'obras',
@@ -95,7 +95,7 @@ export default function ManualPage() {
     // Descarga del archivo PDF original
     const link = document.createElement('a')
     link.href = '/manual_usuario.pdf'
-    link.download = 'manual_usuario_Bitacor.AI_2.0.pdf'
+    link.download = 'manual_usuario_bitacor.ai_2.0.pdf'
     link.click()
   }
 
@@ -109,13 +109,13 @@ export default function ManualPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-3">
             <span className="text-[10px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full bg-[#144CC9]/10 text-[#144CC9] border border-[#144CC9]/20 inline-flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-[#144CC9]" /> Centro de Ayuda Bitacor.AI
+              <Sparkles className="w-3.5 h-3.5 text-[#144CC9]" /> Centro de Ayuda bitacor.ai
             </span>
             <h1 className="text-3xl md:text-4xl font-black tracking-tight">
               Manual de Usuario Interactivo
             </h1>
             <p className="text-sm text-slate-500 max-w-xl font-medium">
-              Aprende a dominar todas las herramientas tecnológicas de Bitacor.AI 2.0. Utiliza el menú interactivo para navegar entre las secciones.
+              Aprende a dominar todas las herramientas tecnológicas de bitacor.ai 2.0. Utiliza el menú interactivo para navegar entre las secciones.
             </p>
           </div>
           
@@ -179,13 +179,13 @@ export default function ManualPage() {
                       👋
                     </div>
                     <div>
-                      <h2 className="text-2xl font-black text-slate-900">Bienvenido a Bitacor.AI 2.0</h2>
+                      <h2 className="text-2xl font-black text-slate-900">Bienvenido a bitacor.ai 2.0</h2>
                       <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Flujos Principales del Sistema</p>
                     </div>
                   </div>
                   
                   <p className="text-base text-slate-600 leading-relaxed font-medium">
-                    Bitacor.AI 2.0 es un centro de comando digital diseñado especialmente para constructoras. Su objetivo principal es conectar a los directores, administradores y residentes de obra para llevar un control exacto de avance físico, inventario de materiales y finanzas.
+                    bitacor.ai 2.0 es un centro de comando digital diseñado especialmente para constructoras. Su objetivo principal es conectar a los directores, administradores y residentes de obra para llevar un control exacto de avance físico, inventario de materiales y finanzas.
                   </p>
 
                   <div className="grid gap-4 sm:grid-cols-2 pt-4">
@@ -234,7 +234,7 @@ export default function ManualPage() {
 
                   <div className="space-y-4 text-slate-600 font-medium text-sm leading-relaxed">
                     <p>
-                      El núcleo de Bitacor.AI son las **Obras (Proyectos)**. Todo registro contable, de materiales y de bitácoras está ligado obligatoriamente a una obra específica.
+                      El núcleo de bitacor.ai son las **Obras (Proyectos)**. Todo registro contable, de materiales y de bitácoras está ligado obligatoriamente a una obra específica.
                     </p>
                     
                     <div className="space-y-2 border-l-2 border-blue-500 pl-4 py-1 bg-blue-50/30 rounded-r-xl pr-3">
@@ -471,7 +471,7 @@ export default function ManualPage() {
 
                   <div className="space-y-4 text-slate-600 font-medium text-sm leading-relaxed">
                     <p>
-                      Bitacor.AI cuenta con roles estructurados para proteger la información financiera y optimizar el flujo de trabajo:
+                      bitacor.ai cuenta con roles estructurados para proteger la información financiera y optimizar el flujo de trabajo:
                     </p>
 
                     <div className="space-y-3">
@@ -534,7 +534,7 @@ export default function ManualPage() {
                       <li>Ingresa tu nombre completo y el nombre de tu constructora.</li>
                       <li>Sube un archivo de imagen transparente con el **Logotipo de tu empresa**.</li>
                       <li>
-                        Al hacer clic en guardar, el logotipo corporativo se aplicará automáticamente en el encabezado de toda la plataforma, reemplazando al logo por defecto de Bitacor.AI.
+                        Al hacer clic en guardar, el logotipo corporativo se aplicará automáticamente en el encabezado de toda la plataforma, reemplazando al logo por defecto de bitacor.ai.
                       </li>
                     </ol>
                   </div>

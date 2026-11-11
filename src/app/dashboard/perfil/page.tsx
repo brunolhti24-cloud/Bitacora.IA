@@ -210,7 +210,7 @@ export default function PerfilPage() {
                     <Input
                       id="company_name"
                       name="company_name"
-                      placeholder="Ej. Constructora Bitacor.AI S.A. de C.V."
+                      placeholder="Ej. Constructora bitacor.ai S.A. de C.V."
                       defaultValue={profile.company_name || ''}
                       className="pl-10 h-11 bg-slate-50/70 border-slate-200 text-slate-900 rounded-xl font-bold focus:bg-white focus:ring-2 focus:ring-purple-500"
                     />

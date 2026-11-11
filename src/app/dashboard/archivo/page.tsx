@@ -10,6 +10,7 @@ import { signatureLabel } from '@/lib/signatures'
 import { cleanNotes } from '@/lib/text'
 import { ProjectActions } from '@/components/project-actions'
 import { ArchiveReportButton } from '@/components/archive-report-button'
+import { FinishedCelebration } from '@/components/finished-celebration'
 
 type Report = {
   id: string
@@ -28,8 +29,10 @@ type Report = {
 const normalize = (text: string) => text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 
 // Obras terminadas o archivadas con todas sus bitácoras, y bitácoras archivadas de obras activas
-export default async function ArchivoPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
-  const { q = '' } = await searchParams
+export default async function ArchivoPage({ searchParams }: { searchParams: Promise<{ q?: string; estado?: string; logro?: string }> }) {
+  const { q = '', estado, logro } = await searchParams
+  // El menú abre "Terminadas" o "Archivadas"; sin filtro se muestran ambas
+  const view: 'terminada' | 'archivada' | null = estado === 'terminada' || estado === 'archivada' ? estado : null
   const query = normalize(q.trim())
 
   const supabase = await createClient()
@@ -40,7 +43,8 @@ export default async function ArchivoPage({ searchParams }: { searchParams: Prom
   const isDirector = isDirectorRole(profile?.role)
   const { data: projectRows } = await getVisibleProjectsQuery(supabase, user.id, profile)
   const projects = (projectRows || []) as { id: string; name: string; client_name?: string | null; location?: string | null; status?: string | null; closed_at?: string | null }[]
-  const closed = projects.filter((p) => projectStatus(p.status) !== 'activa')
+  const closed = projects.filter((p) => (view ? projectStatus(p.status) === view : projectStatus(p.status) !== 'activa'))
+  const celebrated = logro ? projects.find((p) => p.id === logro && projectStatus(p.status) === 'terminada') : null
   const projectName = (id: string) => projects.find((p) => p.id === id)?.name || 'Obra'
 
   // Bitácoras de las obras cerradas, más las archivadas de obras activas
@@ -51,7 +55,7 @@ export default async function ArchivoPage({ searchParams }: { searchParams: Prom
     closedIds.length
       ? supabase.from('daily_reports').select(fields).in('project_id', closedIds).order('report_date', { ascending: false })
       : Promise.resolve({ data: [], error: null }),
-    activeIds.length
+    activeIds.length && view !== 'terminada'
       ? supabase.from('daily_reports').select(fields).in('project_id', activeIds).not('archived_at', 'is', null).order('report_date', { ascending: false })
       : Promise.resolve({ data: [], error: null }),
   ])
@@ -98,12 +102,22 @@ export default async function ArchivoPage({ searchParams }: { searchParams: Prom
           <ArrowLeft className="h-4 w-4" aria-hidden /> Volver al tablero
         </Link>
         <h1 className="flex items-center gap-2.5 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
-          <Archive className="h-7 w-7 text-[#144CC9]" aria-hidden /> Archivo
+          {view === 'terminada' ? <CheckCircle2 className="h-7 w-7 text-emerald-600" aria-hidden /> : <Archive className="h-7 w-7 text-[#144CC9]" aria-hidden />}
+          {view === 'terminada' ? 'Obras terminadas' : view === 'archivada' ? 'Obras archivadas' : 'Archivo'}
         </h1>
-        <p className="text-sm text-slate-500">Obras terminadas o archivadas con todas sus bitácoras. Nada se borra: aquí se consulta.</p>
+        <p className="text-sm text-slate-500">
+          {view === 'terminada'
+            ? 'Obras concluidas con todas las bitácoras que se generaron. Nada se borra: aquí se consulta.'
+            : view === 'archivada'
+            ? 'Obras y bitácoras que se guardaron fuera del tablero. Se pueden reactivar o restaurar.'
+            : 'Obras terminadas o archivadas con todas sus bitácoras. Nada se borra: aquí se consulta.'}
+        </p>
       </div>
 
+      {celebrated && <FinishedCelebration projectName={celebrated.name} reports={closedReports.filter((r) => r.project_id === celebrated.id).length} />}
+
       <form action="/dashboard/archivo" className="flex gap-2" role="search">
+        {view && <input type="hidden" name="estado" value={view} />}
         <label htmlFor="archivo-q" className="sr-only">Buscar en el archivo</label>
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden />
@@ -117,7 +131,7 @@ export default async function ArchivoPage({ searchParams }: { searchParams: Prom
           />
         </div>
         <button type="submit" className="h-11 rounded-xl bg-[#144CC9] px-4 text-sm font-bold text-white hover:bg-blue-700">Buscar</button>
-        {q && <Link href="/dashboard/archivo" className="flex h-11 items-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Limpiar</Link>}
+        {q && <Link href={view ? `/dashboard/archivo?estado=${view}` : '/dashboard/archivo'} className="flex h-11 items-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Limpiar</Link>}
       </form>
 
       {migrationMissing && (
@@ -128,11 +142,15 @@ export default async function ArchivoPage({ searchParams }: { searchParams: Prom
 
       <section aria-labelledby="obras-cerradas" className="space-y-3">
         <h2 id="obras-cerradas" className="text-sm font-bold uppercase tracking-wider text-slate-500">
-          Obras terminadas y archivadas ({groups.length})
+          {view === 'terminada' ? 'Obras terminadas' : view === 'archivada' ? 'Obras archivadas' : 'Obras terminadas y archivadas'} ({groups.length})
         </h2>
         {groups.length === 0 ? (
           <p className="rounded-2xl border border-dashed bg-white p-8 text-center text-sm text-slate-500">
-            {query ? `Ninguna obra o bitácora coincide con “${q}”.` : 'Aún no hay obras terminadas ni archivadas. Desde el tablero, el director puede marcar una obra como terminada o archivarla.'}
+            {query ? `Ninguna obra o bitácora coincide con “${q}”.` : view === 'terminada'
+              ? 'Aún no hay obras terminadas. Desde el tablero, el director puede marcar una obra como terminada.'
+              : view === 'archivada'
+              ? 'Aún no hay obras archivadas. Desde el tablero, el director puede archivar una obra.'
+              : 'Aún no hay obras terminadas ni archivadas. Desde el tablero, el director puede marcar una obra como terminada o archivarla.'}
           </p>
         ) : (
           groups.map(({ project, total, reports }) => {

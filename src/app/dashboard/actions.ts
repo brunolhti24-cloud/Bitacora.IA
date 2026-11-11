@@ -191,13 +191,13 @@ export async function createTask(prevState: any, formData: FormData) {
             'Authorization': `Bearer ${resendKey}`
           },
           body: JSON.stringify({
-            from: 'Bitacor.AI <onboarding@resend.dev>',
+            from: 'bitacor.ai <onboarding@resend.dev>',
             to: [assignedUser.email],
             subject: `Nueva tarea asignada: ${title}`,
             html: `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                 <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 30px; border-radius: 12px; color: white; text-align: center;">
-                  <h1 style="margin: 0; font-size: 24px;">Bitacor.AI</h1>
+                  <h1 style="margin: 0; font-size: 24px;">bitacor.ai</h1>
                   <p style="margin: 5px 0 0; opacity: 0.8; font-size: 14px;">Sistema de Gestion de Obra</p>
                 </div>
                 <div style="padding: 30px 20px;">

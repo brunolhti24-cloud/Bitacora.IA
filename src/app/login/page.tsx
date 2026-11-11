@@ -222,10 +222,10 @@ function LoginFormContent() {
 
         <div className="relative z-10 flex items-center gap-3">
           <div className="flex items-center justify-center">
-            <img src="/logo.png" alt="Bitacor.AI Logo" className="h-12 w-12 object-contain drop-shadow-xl" />
+            <img src="/logo.png" alt="bitacor.ai Logo" className="h-12 w-12 object-contain drop-shadow-xl" />
           </div>
           <div>
-            <span className="text-2xl font-black tracking-tight text-white">Bitacor.AI</span>
+            <span className="text-2xl font-black tracking-tight text-white">bitacor.ai</span>
           </div>
         </div>
 
@@ -262,7 +262,7 @@ function LoginFormContent() {
         </div>
 
         <div className="relative z-10 flex items-center justify-between text-xs text-slate-400 border-t border-white/10 pt-6">
-          <span>© 2026 Bitacor.AI. Todos los derechos reservados.</span>
+          <span>© 2026 bitacor.ai. Todos los derechos reservados.</span>
           <span className="flex items-center gap-1 text-[#A7EC80]">
             <ShieldCheck className="w-4 h-4 text-[#A7EC80]" /> Plataforma Segura
           </span>
@@ -274,8 +274,8 @@ function LoginFormContent() {
         <div className="mx-auto w-full max-w-md space-y-8">
           
           <div className="flex items-center gap-3 lg:hidden mb-6">
-            <img src="/logo.png" alt="Bitacor.AI Logo" className="h-10 w-10 object-contain drop-shadow-sm" />
-            <span className="text-2xl font-black text-[#031033]">Bitacor.AI</span>
+            <img src="/logo.png" alt="bitacor.ai Logo" className="h-10 w-10 object-contain drop-shadow-sm" />
+            <span className="text-2xl font-black text-[#031033]">bitacor.ai</span>
           </div>
 
           {sesion && (
@@ -377,7 +377,7 @@ function LoginFormContent() {
                 {isPending ? (
                   <span className="flex items-center gap-2"><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Procesando...</span>
                 ) : (
-                  <span className="flex items-center gap-2">Ingresar a Bitacor.AI<ArrowRight className="w-4 h-4" /></span>
+                  <span className="flex items-center gap-2">Ingresar a bitacor.ai<ArrowRight className="w-4 h-4" /></span>
                 )}
               </Button>
             </form>
@@ -426,7 +426,7 @@ function LoginFormContent() {
                 {isPending ? (
                   <span className="flex items-center gap-2"><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Creando cuenta...</span>
                 ) : (
-                  <span className="flex items-center gap-2">Crear Cuenta en Bitacor.AI<ArrowRight className="w-4 h-4" /></span>
+                  <span className="flex items-center gap-2">Crear Cuenta en bitacor.ai<ArrowRight className="w-4 h-4" /></span>
                 )}
               </Button>
             </form>
@@ -434,7 +434,7 @@ function LoginFormContent() {
 
           <div className="p-4 rounded-xl bg-[#EAEBEF]/50 border border-slate-200 text-xs text-[#031033] space-y-1">
             <div className="font-bold flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-[#144CC9]" /> Sistema Multirrol Bitacor.AI
+              <CheckCircle2 className="w-4 h-4 text-[#144CC9]" /> Sistema Multirrol bitacor.ai
             </div>
             <p className="text-slate-600 font-medium">
               Acceso personalizado para Administrador (Director), Residente de Obra y Subcontratistas.
