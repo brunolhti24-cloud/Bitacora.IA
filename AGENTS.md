@@ -77,7 +77,7 @@ Toda la interfaz y los textos van en español de México.
   blancos; verde `#A7EC80` solo como acento. Prioriza visualmente lo pendiente
   (solicitudes, actividades vencidas, bitácoras por firmar).
 - PDF: `src/lib/pdf.ts` incrusta Plus Jakarta Sans (`public/fonts/`) y cae a
-  Helvetica si no carga. Encabezado (`drawPdfHeader`): arriba, sobre blanco, el logotipo
-  y nombre de la empresa; debajo, la franja azul con bitacor.ai en blanco.
+  Helvetica si no carga. Encabezado (`drawPdfHeader`): todo sobre blanco; a la izquierda
+  el logotipo y nombre de la empresa, arriba a la derecha bitacor.ai pequeño, y una línea marino.
 - Áreas: tarjetas de color (`src/lib/area-colors.ts`), sin imágenes externas.
 - Revisa en móvil (390 px de ancho) que no haya scroll horizontal.

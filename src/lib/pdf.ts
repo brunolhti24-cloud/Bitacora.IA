@@ -162,71 +162,76 @@ export type SignatureSpec = {
   required?: boolean
 }
 
-/** Franja de bitacor.ai: no cambia aunque la empresa use el logotipo que quiera. */
-const BAND: [number, number, number] = [3, 16, 51]
-const BAND_H = 10
+/** Color de la marca bitacor.ai en los PDF (marino de la app). */
+const BRAND_COLOR: [number, number, number] = [3, 16, 51]
+/** Espacio reservado a la derecha para la marca bitacor.ai. */
+const BRAND_W = 48
 
 /**
- * Encabezado de los PDF. Primera hoja: arriba, en blanco, el logotipo y el nombre de
- * la empresa (sobre blanco cualquier logotipo se ve bien, sin recuadro); debajo, la
- * franja azul con bitacor.ai y el tipo de documento en blanco. Hojas siguientes: solo
- * la franja. Devuelve el alto que ocupa, en mm.
+ * Encabezado de los PDF, todo sobre blanco (cualquier logotipo se ve bien, sin
+ * recuadro). A la izquierda, el logotipo y el nombre de la empresa; arriba a la
+ * derecha, discreta, la marca bitacor.ai con el tipo de documento. Una línea marino
+ * delgada lo separa del contenido. Hojas siguientes: versión compacta.
+ * Devuelve el alto que ocupa, en mm.
  */
 export function drawPdfHeader(
   doc: JsPDF,
   o: { first: boolean; docLabel: string; companyName?: string | null; logo?: LoadedImage | null; brand?: LoadedImage | null }
 ): number {
   const company = o.companyName?.trim()
-  const showCompany = o.first && (!!o.logo || !!company)
-  const whiteH = showCompany ? 28 : 0
+  const h = o.first ? 26 : 14
+  const companyMaxX = PAGE.right - BRAND_W - 4
 
-  if (showCompany) {
-    let textX = PAGE.left
-    if (o.logo) {
-      try {
-        const ratio = Math.min(60 / o.logo.width, 20 / o.logo.height)
-        const w = o.logo.width * ratio
-        const h = o.logo.height * ratio
-        doc.addImage(o.logo.base64, o.logo.format, PAGE.left, (whiteH - h) / 2, w, h, 'company-logo', 'FAST')
-        textX = PAGE.left + w + 6
-      } catch {
-        // logotipo ilegible: queda solo el nombre
-      }
-    }
-    if (company) {
-      doc.setTextColor(...BAND)
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(14)
-      const lines: string[] = doc.splitTextToSize(company, PAGE.right - textX).slice(0, 2)
-      const lineH = 6
-      const startY = whiteH / 2 + 1.8 - ((lines.length - 1) * lineH) / 2
-      lines.forEach((line, i) => doc.text(line, textX, startY + i * lineH))
+  // Empresa a la izquierda
+  let textX = PAGE.left
+  if (o.first && o.logo) {
+    try {
+      const ratio = Math.min(56 / o.logo.width, 18 / o.logo.height)
+      const w = o.logo.width * ratio
+      const lh = o.logo.height * ratio
+      doc.addImage(o.logo.base64, o.logo.format, PAGE.left, (h - lh) / 2, w, lh, 'company-logo', 'FAST')
+      textX = PAGE.left + w + 5
+    } catch {
+      // logotipo ilegible: queda solo el nombre
     }
   }
+  if (company && textX < companyMaxX - 20) {
+    doc.setTextColor(...BRAND_COLOR)
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(o.first ? 13 : 9)
+    const lines: string[] = doc.splitTextToSize(company, companyMaxX - textX).slice(0, o.first ? 2 : 1)
+    const lineH = o.first ? 5.6 : 4
+    const startY = h / 2 + (o.first ? 1.6 : 1.2) - ((lines.length - 1) * lineH) / 2
+    lines.forEach((line, i) => doc.text(line, textX, startY + i * lineH))
+  }
 
-  // Franja azul con letras blancas
-  doc.setFillColor(...BAND)
-  doc.rect(0, whiteH, 210, BAND_H, 'F')
-  const mid = whiteH + BAND_H / 2
-  let brandX = PAGE.left
+  // bitacor.ai arriba a la derecha, pequeño
+  const markY = o.first ? 7 : 4.5
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(9)
+  const nameW = doc.getTextWidth('bitacor.ai')
+  const markSize = 4.6
   if (o.brand) {
     try {
-      doc.addImage(o.brand.base64, o.brand.format, PAGE.left, mid - 3.5, 7, 7, 'bitacor-logo', 'FAST')
-      brandX = PAGE.left + 9
+      doc.addImage(o.brand.base64, o.brand.format, PAGE.right - nameW - markSize - 1.5, markY, markSize, markSize, 'bitacor-logo', 'FAST')
     } catch {
       // logotipo ilegible: queda solo el texto
     }
   }
-  doc.setTextColor(255, 255, 255)
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(10)
-  doc.text('bitacor.ai', brandX, mid + 1.3)
+  doc.setTextColor(...BRAND_COLOR)
+  doc.text('bitacor.ai', PAGE.right, markY + 3.4, { align: 'right' })
   doc.setFont('helvetica', 'normal')
-  doc.setFontSize(9)
-  const right = !o.first && company ? `${o.docLabel}  ·  ${company}` : o.docLabel
-  doc.text(doc.splitTextToSize(right, 130)[0], PAGE.right, mid + 1.2, { align: 'right' })
+  doc.setFontSize(7.5)
+  doc.setTextColor(...MUTED)
+  doc.text(doc.splitTextToSize(o.docLabel, BRAND_W)[0], PAGE.right, markY + 7.6, { align: 'right' })
 
-  return whiteH + BAND_H
+  // Línea que separa el encabezado del contenido
+  doc.setDrawColor(...BRAND_COLOR)
+  doc.setLineWidth(0.6)
+  doc.line(PAGE.left, h, PAGE.right, h)
+  doc.setLineWidth(0.2)
+
+  return h
 }
 
 export async function createPdf(opts: {
