@@ -26,9 +26,11 @@ Toda la interfaz y los textos van en español de México.
 - Las migraciones de `supabase/migrations/` deben ser idempotentes (se pueden
   correr dos veces). Ya aplicadas en BogoArc: `20261022_trazabilidad`,
   `20261026_fotos_bitacora`, `20261028_ingresos_y_archivos`, `20261103_cronograma_y_avance`,
-  `20261110_archivo_y_colores` (su columna `color` ya no se usa), `20261119_imagen_de_areas`.
-  Pendiente de aplicar (confirmar con el dueño): `20261109_seguridad_por_constructora` (reglas por constructora;
+  `20261110_archivo_y_colores` (su columna `color` ya no se usa), `20261119_imagen_de_areas`,
+  `20261109_seguridad_por_constructora` (reglas por constructora: cada director ve solo sus obras;
   el rol y el equipo solo cambian con las funciones `complete_signup` y `update_team_member`).
+  Una migración nueva que cree tablas debe incluir sus políticas RLS por constructora
+  (usa `can_access_project()`, `is_project_director()`, `my_company()`).
 - `supabase/setup.sql` es el esquema original; las migraciones lo amplían
   (por ejemplo, `incomes` usa `description`/`income_date`, no `concept`/`date`).
 - Si el código depende de una migración nueva, haz que funcione (o falle con un
