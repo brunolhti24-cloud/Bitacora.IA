@@ -10,7 +10,7 @@ import { EditAreaModal } from '@/components/edit-area-modal'
 import { FileCheck2, AlertCircle, Clock } from 'lucide-react'
 import { signatureStage, SIGNATURE_LABELS } from '@/lib/signatures'
 import { cleanNotes } from '@/lib/text'
-import { areaColor } from '@/lib/area-colors'
+import { AREA_FALLBACK_BG, areaCover } from '@/lib/area-images'
 import { PROJECT_STATUS_LABELS, projectStatus } from '@/lib/permissions'
 import { ArchiveReportButton } from '@/components/archive-report-button'
 
@@ -77,7 +77,7 @@ export default async function AreaDetailsPage({
   const activeReports = (allReports || []).filter((r) => !r.archived_at)
   const reports = showArchived ? archivedReports : activeReports
   const projectState = projectStatus(area.projects?.status)
-  const color = areaColor(area)
+  const cover = areaCover(area)
   const areaUrl = `/dashboard/projects/${resolvedParams.id}/areas/${area.id}`
 
   return (
@@ -88,11 +88,13 @@ export default async function AreaDetailsPage({
             &larr; Volver a {area.projects?.name}
           </Link>
           <div className="flex items-center gap-3">
-            <span className="h-8 w-2 shrink-0 rounded-full" style={{ backgroundColor: color.hex }} aria-hidden />
+            <span className="h-11 w-16 shrink-0 overflow-hidden rounded-lg" style={{ backgroundColor: AREA_FALLBACK_BG }} aria-hidden>
+              {cover && <img src={cover} alt="" className="h-full w-full object-cover" />}
+            </span>
             <h1 className="text-3xl font-bold tracking-tight text-gray-900">
               {area.name}
             </h1>
-            {isAdmin && <EditAreaModal areaId={area.id} currentName={area.name} currentColor={area.color || null} projectId={resolvedParams.id} />}
+            {isAdmin && <EditAreaModal areaId={area.id} currentName={area.name} currentImage={area.image_url || null} projectId={resolvedParams.id} />}
           </div>
           <p className="text-gray-500 text-sm">Historial de Bitácoras del Área</p>
         </div>

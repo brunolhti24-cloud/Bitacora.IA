@@ -4,13 +4,11 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createArea } from '@/app/dashboard/projects/[id]/actions'
-import { AreaColorPicker } from '@/components/area-color-picker'
 
 export function NewAreaForm({ projectId }: { projectId: string }) {
   const [isAdding, setIsAdding] = useState(false)
   const [name, setName] = useState('')
   const [isPending, setIsPending] = useState(false)
-  const [color, setColor] = useState('')
   const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -20,7 +18,6 @@ export function NewAreaForm({ projectId }: { projectId: string }) {
     setIsPending(true)
     const formData = new FormData()
     formData.append('name', name)
-    if (color) formData.append('color', color)
 
     setError(null)
     const res = await createArea(projectId, null, formData)
@@ -28,7 +25,6 @@ export function NewAreaForm({ projectId }: { projectId: string }) {
     if (res?.error) return setError(res.error)
 
     setName('')
-    setColor('')
     setIsAdding(false)
   }
 
@@ -60,7 +56,7 @@ export function NewAreaForm({ projectId }: { projectId: string }) {
           Cancelar
         </Button>
       </div>
-      <AreaColorPicker value={color} onChange={setColor} name="new-area-color" />
+      <p className="text-xs text-slate-500">La portada se elige sola según el nombre. Después puedes poner una foto real desde “Editar área”.</p>
       {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
     </form>
   )

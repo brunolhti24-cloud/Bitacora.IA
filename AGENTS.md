@@ -27,7 +27,8 @@ Toda la interfaz y los textos van en español de México.
   correr dos veces). Ya aplicadas en BogoArc: `20261022_trazabilidad`,
   `20261026_fotos_bitacora`, `20261028_ingresos_y_archivos`, `20261103_cronograma_y_avance`.
   Pendientes de aplicar (confirmar con el dueño): `20261110_archivo_y_colores` (estado de obra,
-  bitácoras archivadas, color de áreas) y `20261109_seguridad_por_constructora` (reglas por constructora;
+  bitácoras archivadas; su columna `color` ya no se usa), `20261119_imagen_de_areas` (foto por área)
+  y `20261109_seguridad_por_constructora` (reglas por constructora;
   el rol y el equipo solo cambian con las funciones `complete_signup` y `update_team_member`).
 - `supabase/setup.sql` es el esquema original; las migraciones lo amplían
   (por ejemplo, `incomes` usa `description`/`income_date`, no `concept`/`date`).
@@ -79,5 +80,7 @@ Toda la interfaz y los textos van en español de México.
 - PDF: `src/lib/pdf.ts` incrusta Plus Jakarta Sans (`public/fonts/`) y cae a
   Helvetica si no carga. Encabezado (`drawPdfHeader`): todo sobre blanco; a la izquierda
   el logotipo y nombre de la empresa, arriba a la derecha bitacor.ai pequeño, y una línea marino.
-- Áreas: tarjetas de color (`src/lib/area-colors.ts`), sin imágenes externas.
+- Áreas (`areaCover()` en `src/lib/area-images.ts`): foto propia del área (`project_areas.image_url`,
+  la sube el director en "Editar área"), si no una imagen de referencia hecha con IA según el
+  nombre (`public/areas/*.webp`), si no gris oscuro. Nada de colores tipo arcoíris.
 - Revisa en móvil (390 px de ancho) que no haya scroll horizontal.

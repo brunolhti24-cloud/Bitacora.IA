@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { isDirectorRole } from '@/lib/roles'
 import { getProjectAccess, projectIdOf, closedProjectError } from '@/lib/permissions'
 import { signatureStage } from '@/lib/signatures'
-import { AREA_COLORS, isAreaColor } from '@/lib/area-colors'
+import { areaPhotoFolder } from '@/lib/area-images'
 
 export async function createDailyReport(projectId: string, prevState: any, formData: FormData) {
   const supabase = await createClient()
@@ -99,20 +99,7 @@ export async function createArea(projectId: string, prevState: any, formData: Fo
   const name = formData.get('name') as string
   if (!name) return { error: 'El nombre es obligatorio' }
 
-  const colorRaw = formData.get('color')
-  let color: string | null = isAreaColor(colorRaw) ? colorRaw : null
-  if (!color) {
-    // "Automático": el primer color de la paleta que aún no usa otra área de la obra
-    const { data: siblings } = await supabase.from('project_areas').select('color').eq('project_id', projectId)
-    if (siblings) {
-      const used = new Set(siblings.map((a) => a.color).filter(Boolean))
-      color = AREA_COLORS.find((c) => !used.has(c.key))?.key ?? AREA_COLORS[siblings.length % AREA_COLORS.length].key
-    }
-  }
-  const row = { project_id: projectId, name, created_by: user.id }
-  let { error } = await supabase.from('project_areas').insert([color ? { ...row, color } : row])
-  // Sin la migración de colores todavía: se crea el área con color automático
-  if (error?.message.includes('color')) ({ error } = await supabase.from('project_areas').insert([row]))
+  const { error } = await supabase.from('project_areas').insert([{ project_id: projectId, name, created_by: user.id }])
 
   if (error) return { error: error.message }
 
@@ -315,7 +302,13 @@ export async function signDailyReport(reportId: string, projectId: string, areaI
   return { success: true }
 }
 
-export async function updateArea(areaId: string, name: string, projectId: string, color?: string | null) {
+/**
+ * Edita un área: nombre y, opcionalmente, su foto de portada.
+ * imageUrl: undefined = no cambiar; null = quitar la foto (vuelve a la imagen de referencia).
+ * La foto la sube el navegador al almacenamiento; aquí solo se acepta una URL de la
+ * carpeta de áreas de esta obra.
+ */
+export async function updateArea(areaId: string, name: string, projectId: string, imageUrl?: string | null) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autorizado' }
@@ -329,12 +322,18 @@ export async function updateArea(areaId: string, name: string, projectId: string
     return { error: 'El nombre del área no puede estar vacío' }
   }
 
-  // color: undefined = no cambiar; null o '' = automático
-  const patch: { name: string; color?: string | null } = { name: name.trim() }
-  if (color !== undefined) patch.color = isAreaColor(color) ? color : null
+  const patch: { name: string; image_url?: string | null } = { name: name.trim() }
+  if (imageUrl !== undefined) {
+    if (imageUrl) {
+      const { data: { publicUrl: base } } = supabase.storage.from('project_images').getPublicUrl(areaPhotoFolder(projectId))
+      if (!imageUrl.startsWith(base)) return { error: 'La foto no pertenece a esta obra.' }
+    }
+    patch.image_url = imageUrl || null
+  }
+
   let { error } = await supabase.from('project_areas').update(patch).eq('id', areaId)
-  if (error?.message.includes('color')) {
-    if (patch.color) return { error: 'Falta aplicar la migración de colores (20261110_archivo_y_colores.sql).' }
+  if (error?.message.includes('image_url')) {
+    if (imageUrl !== undefined) return { error: 'Falta aplicar la migración de fotos de áreas (20261119_imagen_de_areas.sql).' }
     ;({ error } = await supabase.from('project_areas').update({ name: patch.name }).eq('id', areaId))
   }
 

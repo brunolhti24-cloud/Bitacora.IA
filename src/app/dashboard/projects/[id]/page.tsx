@@ -14,7 +14,7 @@ import { ExportProjectPdfButton } from '@/components/export-project-pdf-button'
 import { DeleteAreaButton } from '@/components/delete-area-button'
 import { Folder, ArrowRight, MapPin, ArrowLeft, ClipboardList, CalendarX2, FileSignature } from 'lucide-react'
 import { formatDateTime, todayInObra } from '@/lib/dates'
-import { areaColor } from '@/lib/area-colors'
+import { AREA_FALLBACK_BG, areaCover } from '@/lib/area-images'
 import { PROJECT_STATUS_LABELS, projectStatus } from '@/lib/permissions'
 
 const TABS = ['areas', 'materials', 'cronograma', 'finances', 'solicitudes']
@@ -274,8 +274,12 @@ export default async function ProjectDetailsPage({
                   key={area.id}
                   className="h-full border border-slate-200 rounded-[1.5rem] bg-white shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group overflow-hidden"
                 >
-                  {/* Encabezado de color: el elegido para el área, o uno fijo según su nombre */}
-                  <div className="relative h-28 w-full shrink-0" style={{ backgroundColor: areaColor(area).hex }}>
+                  {/* Portada: foto del área, imagen de referencia según el nombre o gris neutro */}
+                  <div className="relative h-36 w-full shrink-0 overflow-hidden" style={{ backgroundColor: AREA_FALLBACK_BG }}>
+                    {areaCover(area) && (
+                      <img src={areaCover(area)!} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" aria-hidden />
                     {/* Botones Flotantes (Badges y Delete) sobre la imagen */}
                     <div className="absolute top-3 right-3 flex items-center gap-2">
                       {count > 0 ? (
